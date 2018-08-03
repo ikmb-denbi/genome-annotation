@@ -26,7 +26,8 @@ def helpMessage() {
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
-      --proteins					Proteins from other species
+      --queries						Proteins from other species
+      --nblast						Chunks to divide Blast jobs
       -profile                      Hardware config to use. docker / aws
 
     Options:
@@ -172,6 +173,8 @@ process fastqc {
     """
 }
 
+
+
 Channel
 	.fromPath(params.genome)
 	.set { inputMakeblastdb }
@@ -208,8 +211,54 @@ process RunMakeBlastDB {
 	
 }
 
+
+
+// Create a channel emitting the query fasta file(s), split it in chunks 
+
+Channel
+	.fromPath(params.queries)
+	.splitFasta(by: params.nblast, file: true)
+	.ifEmpty { exit 1, "Could not find proteins file" }
+	.into {fasta}
+
+
+//Proteins (Blast + ) Exonerate Block:
+
 /*
- * STEP 2 - MultiQC
+ * STEP 3 - Blast
+ */
+ 
+process RunBlast {
+
+	publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
+	
+	input:
+	file query_fa from fasta 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db.collect()
+	
+	output:
+	file blast_result
+		
+	script: 
+
+	db_name = blastdb_nhr.baseName
+	chunk_name = query_fa.baseName
+	
+	if (params.type == 'protein') {
+		"""
+		tblastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
+		"""
+	} else if (params.type == 'EST') {
+		"""
+		blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
+		"""
+	}
+}
+
+
+
+/*
+ * STEP X - MultiQC
  */
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
