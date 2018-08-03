@@ -259,6 +259,36 @@ process RunBlast {
 
 
 /*
+ * STEP 4 - Parse Blast Output
+ */
+
+process Blast2QueryTarget {
+	
+	publishDir "${params.outdir}/blast2targets", mode: 'copy'
+	
+	input:
+	file all_blast_results from blast_result.collectFile()
+	
+	output:
+	file query2target_result_uniq into query2target_uniq_out, query2target_uniq_result
+	
+	"""
+	perl BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
+	sort query2target_result | uniq > query2target_result_uniq
+	"""
+}
+
+query2target_uniq_out
+	.collectFile(name: "${params.outdir}/Blast_output.txt") 	
+
+query2target_uniq_result
+	.splitText(by: CHUNKS_exonerate, file: true).set{query2target_chunk}	
+
+
+
+
+
+/*
  * STEP X - MultiQC
  */
 process multiqc {
