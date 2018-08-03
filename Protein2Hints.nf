@@ -52,7 +52,6 @@ if (params.help){
 // Configurable variables
 params.name = false
 //params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-params.fasta = params.genome
 params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
 params.email = false
 params.plaintext_email = false
@@ -174,7 +173,7 @@ process fastqc {
 }
 
 Channel
-	.fromPath(GENOME)
+	.fromPath(params.genome)
 	.set { inputMakeblastdb }
 	
 // We check if the blast db already exists - if not, we create it
