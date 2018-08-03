@@ -273,7 +273,7 @@ process Blast2QueryTarget {
 	file query2target_result_uniq into query2target_uniq_out, query2target_uniq_result
 	
 	"""
-	perl BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
+	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq
 	"""
 }
