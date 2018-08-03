@@ -254,11 +254,11 @@ process RunExonerate {
 	file 'exonerate.out' into exonerate_result
 	
 	script:
-	if (params.type == 'protein') {
+	if (params.qtype == 'protein') {
 	"""
 	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $params.queries $params.genome
 	"""
-	} else if (params.type == 'EST') {
+	} else if (params.qtype == 'EST') {
 	"""
 	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $params.queries $params.genome
 	"""
