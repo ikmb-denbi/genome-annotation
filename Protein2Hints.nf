@@ -27,6 +27,7 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
       --queries						Proteins from other species
+      --qtype						Query type: protein/EST
       --nblast						Chunks to divide Blast jobs
       -profile                      Hardware config to use. docker / aws
 
