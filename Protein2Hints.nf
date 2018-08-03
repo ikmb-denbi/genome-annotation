@@ -184,7 +184,7 @@ Channel
  
 process RunMakeBlastDB {
 	
-	publishDir "${OUTDIR}/BlastDB", mode: 'copy'
+	publishDir "${params.outdir}/BlastDB", mode: 'copy'
 	
 	input:
 	file(genome) from inputMakeblastdb
