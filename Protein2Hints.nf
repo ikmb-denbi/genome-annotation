@@ -245,11 +245,11 @@ process RunBlast {
 	db_name = blastdb_nhr.baseName
 	chunk_name = query_fa.baseName
 	
-	if (params.type == 'protein') {
+	if (params.qtype == 'protein') {
 		"""
 		tblastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
 		"""
-	} else if (params.type == 'EST') {
+	} else if (params.qtype == 'EST') {
 		"""
 		blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
 		"""
