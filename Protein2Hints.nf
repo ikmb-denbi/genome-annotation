@@ -29,6 +29,7 @@ def helpMessage() {
       --queries						Proteins from other species
       --qtype						Query type: protein/EST
       --nblast						Chunks to divide Blast jobs
+      --nexonerate					Chunks to divide Exonerate jobs
       -profile                      Hardware config to use. docker / aws
 
     Options:
@@ -125,54 +126,7 @@ try {
               "============================================================"
 }
 
-/*
- * Create a channel for input read files
- */
-     Channel
-         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
 
-
-/*
- * Parse software version numbers
- */
-process get_software_versions {
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-    """
-    echo $params.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
-    """
-}
-
-
-
-/*
- * STEP 1 - FastQC
- */
-process fastqc {
-    tag "$name"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
-
-    input:
-    set val(name), file(reads) from read_files_fastqc
-
-    output:
-    file "*_fastqc.{zip,html}" into fastqc_results
-
-    script:
-    """
-    fastqc -q $reads
-    """
-}
 
 
 
@@ -183,7 +137,7 @@ Channel
 // We check if the blast db already exists - if not, we create it
 
 /*
- * STEP 2 - Make Blast DB
+ * STEP 1 - Make Blast DB
  */
  
 process RunMakeBlastDB {
@@ -226,7 +180,7 @@ Channel
 //Proteins (Blast + ) Exonerate Block:
 
 /*
- * STEP 3 - Blast
+ * STEP 2 - Blast
  */
  
 process RunBlast {
@@ -259,7 +213,7 @@ process RunBlast {
 
 
 /*
- * STEP 4 - Parse Blast Output
+ * STEP 3 - Parse Blast Output
  */
 
 process Blast2QueryTarget {
@@ -281,13 +235,69 @@ process Blast2QueryTarget {
 query2target_uniq_out
 	.collectFile(name: "${params.outdir}/Blast_output.txt") 	
 
-//query2target_uniq_result
-//	.splitText(by: CHUNKS_exonerate, file: true).set{query2target_chunk}	
+query2target_uniq_result
+	.splitText(by: params.nexonerate, file: true).set{query2target_chunk}	
+
+
+/*
+ * STEP 5 - Exonerate
+ */
+ 
+process RunExonerate {
+
+	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
+	
+	input:
+	file hits_chunk from query2target_chunk
+	
+	output:
+	file 'exonerate.out' into exonerate_result
+	
+	script:
+	if (params.type == 'protein') {
+	"""
+	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $params.queries $params.genome
+	"""
+	} else if (params.type == 'EST') {
+	"""
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $params.queries $params.genome
+	"""
+	}
+}
 
 
 
 
 
+/*
+ * Create a channel for input read files
+ */
+     Channel
+         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
+         .into { read_files_fastqc; read_files_trimming }
+
+
+
+/*
+ * STEP X - FastQC
+ */
+process fastqc {
+    tag "$name"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    input:
+    set val(name), file(reads) from read_files_fastqc
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_results
+
+    script:
+    """
+    fastqc -q $reads
+    """
+}
 /*
  * STEP X - MultiQC
  */
@@ -314,7 +324,7 @@ process multiqc {
 
 
 /*
- * STEP 3 - Output Description HTML
+ * STEP X - Output Description HTML
  */
 process output_documentation {
     tag "$prefix"
@@ -329,6 +339,24 @@ process output_documentation {
     script:
     """
     markdown_to_html.r $output_docs results_description.html
+    """
+}
+
+/*
+ * Parse software version numbers
+ */
+process get_software_versions {
+
+    output:
+    file 'software_versions_mqc.yaml' into software_versions_yaml
+
+    script:
+    """
+    echo $params.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    fastqc --version > v_fastqc.txt
+    multiqc --version > v_multiqc.txt
+    scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
 
