@@ -282,7 +282,7 @@ query2target_uniq_out
 	.collectFile(name: "${params.outdir}/Blast_output.txt") 	
 
 //query2target_uniq_result
-	.splitText(by: CHUNKS_exonerate, file: true).set{query2target_chunk}	
+//	.splitText(by: CHUNKS_exonerate, file: true).set{query2target_chunk}	
 
 
 
