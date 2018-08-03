@@ -114,7 +114,7 @@ log.info """=======================================================
     | \\| |       \\__, \\__/ |  \\ |___     \\`-._,-`-,
                                           `._,._,\'
 
-NF-hints v${params.version}"
+NFcore_Test v${params.version}
 ======================================================="""
 def summary = [:]
 summary['Pipeline Name']  = 'NF-hints'
