@@ -25,14 +25,12 @@ def helpMessage() {
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
-      --genome                      Name of iGenomes reference
+      --genome                      Genome reference
+      --proteins					Proteins from other species
       -profile                      Hardware config to use. docker / aws
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-
-    References                      If not specified in the configuration file or you wish to overwrite any of the references.
-      --fasta                       Path to Fasta reference
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -75,14 +73,6 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
-/*
- * Create a channel for input read files
- */
-     Channel
-         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
-
 
 // Header log info
 log.info """=======================================================
@@ -92,7 +82,7 @@ log.info """=======================================================
     |__| |    /\\     \\__, \\__/ |  \\ |___    
                                                
 
-NF-hints v${params.version}"
+NF-hints v${params.version}
 ======================================================="""
 def summary = [:]
 summary['Pipeline Name']  = 'NF-hints'
@@ -133,6 +123,14 @@ try {
               "  Please run `nextflow self-update` to update Nextflow.\n" +
               "============================================================"
 }
+
+/*
+ * Create a channel for input read files
+ */
+     Channel
+         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
+         .into { read_files_fastqc; read_files_trimming }
 
 
 /*
@@ -175,7 +173,41 @@ process fastqc {
     """
 }
 
+Channel
+	.fromPath(GENOME)
+	.set { inputMakeblastdb }
+	
+// We check if the blast db already exists - if not, we create it
 
+/*
+ * STEP 2 - Make Blast DB
+ */
+ 
+process RunMakeBlastDB {
+	
+	publishDir "${OUTDIR}/BlastDB", mode: 'copy'
+	
+	input:
+	file(genome) from inputMakeblastdb
+	
+	output:
+	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db
+	
+	script:
+	dbName = genome.baseName
+	db_nhr = dbName + ".nhr"
+	db_nin = dbName + ".nin"
+	db_nsq = dbName + ".nsq"
+
+	target = file(db_nhr)
+	
+    if (!target.exists()) {
+		"""
+			makeblastdb -in $genome -dbtype nucl -out $dbName
+		"""
+	}
+	
+}
 
 /*
  * STEP 2 - MultiQC
