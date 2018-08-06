@@ -78,9 +78,9 @@ multiqc_config = file(params.multiqc_config)
 output_docs = file("$baseDir/docs/output.md")
 
 // Validate inputs
-if ( params.fasta ){
-    fasta = file(params.fasta)
-    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
+if ( params.genome ){
+    fasta = file(params.genome)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.genome}"
 }
 
 // Has the run name been specified by the user?
