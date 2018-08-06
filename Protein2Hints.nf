@@ -34,7 +34,8 @@ def helpMessage() {
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-
+	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
+	  
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -58,6 +59,7 @@ params.name = false
 params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
 params.email = false
 params.plaintext_email = false
+params.variant = "no_var"
 
 multiqc_config = file(params.multiqc_config)
 output_docs = file("$baseDir/docs/output.md")
@@ -284,12 +286,12 @@ process Exonerate2Gff {
 	if (params.qtype == 'protein') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
-	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_protein.pl exonerate_gff_lines $VARIANT exonerate_gff
+	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
-	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_EST.pl exonerate_gff_lines $VARIANT exonerate_gff
+	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
 	"""
 	}
 }
