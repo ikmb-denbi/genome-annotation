@@ -465,10 +465,11 @@ process get_software_versions {
     file versions
 
     """
-    tblastn -version | head -n 1 > versions
-    exonerate -version | head -n 1 >> versions
-    gth -version | head -n 1 >> versions
-    RepeatMasker -version | grep 'version' >> versions
+    tblastn -version | head -n 1 > blast_v
+    exonerate -version | head -n 1 > exonerate_v
+    gth -version | head -n 1 > gth_v
+    RepeatMasker -version | grep 'version' > RepMask_v
+    cat blast_v exonerate_v gth_v RepMask_v >> versions
     """
 }
 
