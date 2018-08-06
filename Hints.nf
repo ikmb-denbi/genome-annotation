@@ -78,9 +78,9 @@ multiqc_config = file(params.multiqc_config)
 output_docs = file("$baseDir/docs/output.md")
 
 // Validate inputs
-if ( params.genome ){
-    fasta = file(params.genome)
-    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.genome}"
+if ( params.fasta ){
+    fasta = file(params.fasta)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
 }
 
 // Has the run name been specified by the user?
@@ -106,7 +106,7 @@ summary['Pipeline Name']  = 'NF-hints'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Reads']        = params.reads
-summary['Fasta Ref']    = params.genome
+summary['Fasta Ref']    = params.fasta
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -498,42 +498,6 @@ process runFastqc {
     """
 }
 
-/*
- * STEP 14 - Trimgalore
- */
-process runTrimgalore {
-
-   tag "${prefix}"
-   publishDir "${params.outdir}/trimgalore", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
-            else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
-            else if (filename.indexOf(".fq") > 0) "$filename"
-        }
-
-   input:
-   set val(name), file(reads) from read_files_trim
-
-   output:
-   file "*_val_{1,2}.fq" into trimmed_reads
-   file "*trimming_report.txt" 
-   //into trimgalore_results, trimgalore_logs   
-   file "*_fastqc.{zip,html}" 
-   //into trimgalore_fastqc_reports
-   
-   script:
-   prefix = reads[0].toString().split("_R1")[0]
-   if (params.singleEnd) {
-        """
-        trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
-        """
-   } else {
-        """
-        trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
-		"""
-   }
-
-}
 
 
 /*
