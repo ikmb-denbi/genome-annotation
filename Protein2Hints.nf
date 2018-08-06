@@ -459,17 +459,13 @@ RepeatMasker_hints
  */
 process get_software_versions {
 
-	publishDir "${params.outdir}", mode: 'copy'
+	publishDir "${params.outdir}/report", mode: 'copy'
 	
     output:
     file versions
-    
-    script:
+
     """
-
     tblastn -version | head -n 1 > versions
-    exonerate -version | head -n 1 >> versions
-
     """
 }
 
