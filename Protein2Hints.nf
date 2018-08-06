@@ -300,7 +300,25 @@ output_gff
  	.collectFile(name: "${params.outdir}/Exonerate_output.gff")
 
 
+/*
+ * STEP 7 - Exonerate to Hints
+ */
+ 
+process Exonerate2Hints {
 
+	input:
+	file exonerate_input from exonerate_for_hints.collectFile()
+	
+	output:
+	file exonerate_hints
+	
+	"""
+	grep -v '#' $exonerate_input | grep -e 'CDS' -e 'exon' -e 'intron' | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > exonerate_hints
+	"""
+}
+
+exonerate_hints
+	.collectFile(name: "${params.outdir}/Exonerate_protein_hints.gff")	
 
 
 /*
