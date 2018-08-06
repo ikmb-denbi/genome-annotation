@@ -27,7 +27,6 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
       --query						Proteins from other species
-      --qtype						Query type: protein/EST
       --nblast						Chunks to divide Blast jobs
       --nexonerate					Chunks to divide Exonerate jobs
       -profile                      Hardware config to use. docker / aws
@@ -35,7 +34,8 @@ def helpMessage() {
     Options:
       --singleEnd                   Specifies that the input is single end reads
 	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
-	  
+      --qtype						Query type: ('protein' (default) | 'EST')
+
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -60,6 +60,7 @@ params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
 params.email = false
 params.plaintext_email = false
 params.variant = "no_var"
+params.qtype = "protein"
 
 Queries = file(params.query)
 Genome = file(params.genome)
@@ -328,6 +329,8 @@ exonerate_hints
  
 process RunGenomeThreader {
 	
+	publishDir "${params.outdir}/genomethreader", mode: 'copy'
+		
 	output:
 	file output_gth
 	
@@ -342,7 +345,7 @@ process RunGenomeThreader {
  */
  
 process GenomeThreader2Hints {
-
+	
 	input:
 	file not_clean_gth from output_gth
 	
