@@ -459,16 +459,16 @@ RepeatMasker_hints
  */
 process get_software_versions {
 
-	publishDir "${params.outdir}/report", mode: 'copy'
-	
     output:
-    file "versions"
+    file 'software_versions_mqc.yaml' into software_versions_yaml
 
+    script:
     """
-    tblastn -version | head -n 1 > blast_v
-    exonerate -version | head -n 1 > exonerate_v
-    RepeatMasker -version | grep 'version' > RepMask_v
-    cat blast_v exonerate_v RepMask_v >> versions
+    echo $params.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    exonerate --version > v_fastqc.txt
+    tblastn --version > v_multiqc.txt
+    scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
 
