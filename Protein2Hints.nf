@@ -466,8 +466,7 @@ process get_software_versions {
     """
     echo $params.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    exonerate --version > v_fastqc.txt
-    tblastn --version > v_multiqc.txt
+    tblastn -version > v_blast.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
