@@ -26,7 +26,7 @@ def helpMessage() {
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
-      --queries						Proteins from other species
+      --query						Proteins from other species
       --qtype						Query type: protein/EST
       --nblast						Chunks to divide Blast jobs
       --nexonerate					Chunks to divide Exonerate jobs
@@ -61,7 +61,7 @@ params.email = false
 params.plaintext_email = false
 params.variant = "no_var"
 
-Queries = file(params.queries)
+Queries = file(params.query)
 Genome = file(params.genome)
 
 multiqc_config = file(params.multiqc_config)
@@ -335,6 +335,31 @@ process RunGenomeThreader {
 	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
 	"""
 }
+
+
+/*
+ * STEP 9 - GenomeThreader to Hints
+ */
+ 
+process GenomeThreader2Hints {
+
+	input:
+	file output_gth
+	
+	output:
+	file gth_hints
+	
+	"""
+	gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
+	grep -v '#' not_clean_gth_wIntrons > no_hash_gth
+	GTH_rename_splitoutput.pl no_hash_gth > clean_gth
+	grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > gth_hints
+	"""
+}
+
+gth_hints
+	.collectFile(name: "${params.outdir}/GenomeThreader_protein_hints.gff")
+	
 
 /*
  * Create a channel for input read files
