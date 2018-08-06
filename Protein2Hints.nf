@@ -404,6 +404,45 @@ process RunRepeatMasker {
 	"""
 }
 
+/*
+ * STEP 11 - RepeatMasker - Collect and Clean1
+ */
+ 
+process RemoveHeaderRepeatMasker {	
+	
+	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
+	
+	input:
+	file "with_header_*" from RM_out.collect()
+	
+	output:
+	file "result_unclean.out" into mergedUNCLEAN
+	
+	"""
+	tail -n +4 with_header_* > no_header
+	cat no_header >> result_unclean.out
+	"""
+}
+
+
+/*
+ * STEP 12 - RepeatMasker - Clean2
+ */
+ 
+process CleanRepeatMasker {
+	
+	input:
+	file mergedUNCLEAN
+	
+	output:
+	file RepeatMasker_out into RM_clean_out, RM_2_hints
+	"""
+	grep -v 'with_header' $mergedUNCLEAN | awk 'NF' > RepeatMasker_out
+	"""
+}
+
+RM_clean_out
+ 	.collectFile(name: "${params.outdir}/RepeatMasker_output.gff")
 	
 
 /*
