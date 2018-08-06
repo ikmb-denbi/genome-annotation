@@ -466,12 +466,10 @@ process get_software_versions {
     
     script:
     """
-    echo $params.version > versions
-    echo $workflow.nextflow.version >> versions
+
     tblastn -version | head -n 1 >> versions
     exonerate -version | head -n 1 >> versions
-    #gth -version | head -n 1 >> versions
-    #RepeatMasker -version | grep 'version' >> versions
+
     """
 }
 
