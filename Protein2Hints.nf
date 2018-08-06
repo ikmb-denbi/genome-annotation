@@ -286,12 +286,12 @@ process Exonerate2Gff {
 	if (params.qtype == 'protein') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
-	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
+	/ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
-	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
+	/ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
 	"""
 	}
 }
