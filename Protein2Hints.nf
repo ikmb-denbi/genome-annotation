@@ -454,22 +454,6 @@ process RepeatMasker2Hints {
 RepeatMasker_hints
 	.collectFile(name: "${params.outdir}/RepeatMasker_hints.gff")
 
-/*
- * Parse software version numbers
- */
-process get_software_versions {
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-    """
-    echo $params.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    tblastn -version > v_blast.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
-    """
-}
 
 
 workflow.onComplete {
