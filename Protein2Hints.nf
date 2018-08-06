@@ -268,6 +268,36 @@ process RunExonerate {
 }
 
 
+/*
+ * STEP 6 - Exonerate to GFF
+ */
+ 
+process Exonerate2Gff {
+	
+	input:
+	file exonerate_result
+	
+	output:
+	file exonerate_gff into output_gff, exonerate_for_hints
+	
+	script:
+	if (params.qtype == 'protein') {
+	"""
+	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
+	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_protein.pl exonerate_gff_lines $VARIANT exonerate_gff
+	"""
+	} else if (params.qtype == 'EST') {
+	"""
+	grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
+	perl /ifs/data/nfs_share/sukmb415/scripts/Exonerate2GFF_EST.pl exonerate_gff_lines $VARIANT exonerate_gff
+	"""
+	}
+}
+
+output_gff
+ 	.collectFile(name: "${params.outdir}/Exonerate_output.gff")
+
+
 
 
 
