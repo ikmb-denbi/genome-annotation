@@ -498,6 +498,42 @@ process runFastqc {
     """
 }
 
+/*
+ * STEP 14 - Trimgalore
+ */
+process runTrimgalore {
+
+   tag "${prefix}"
+   publishDir "${params.outdir}/trimgalore", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+            else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
+            else if (filename.indexOf(".fq") > 0) "$filename"
+        }
+
+   input:
+   set val(name), file(reads) from read_files_trim
+
+   output:
+   file "*_val_{1,2}.fq" into trimmed_reads
+   file "*trimming_report.txt" 
+   //into trimgalore_results, trimgalore_logs   
+   file "*_fastqc.{zip,html}" 
+   //into trimgalore_fastqc_reports
+   
+   script:
+   prefix = reads[0].toString().split("_R1")[0]
+   if (params.singleEnd) {
+        """
+        trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+        """
+   } else {
+        """
+        trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+		"""
+   }
+
+}
 
 
 /*
