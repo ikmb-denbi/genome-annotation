@@ -255,7 +255,7 @@ query2target_uniq_result
 
 
 /*
- * STEP 5 - Exonerate
+ * STEP 4 - Exonerate
  */
  
 process RunExonerate {
@@ -282,7 +282,7 @@ process RunExonerate {
 
 
 /*
- * STEP 6 - Exonerate to GFF
+ * STEP 5 - Exonerate to GFF
  */
  
 process Exonerate2Gff {
@@ -312,7 +312,7 @@ output_gff
 
 
 /*
- * STEP 7 - Exonerate to Hints
+ * STEP 6 - Exonerate to Hints
  */
  
 process Exonerate2Hints {
@@ -333,7 +333,7 @@ exonerate_hints
 
 
 /*
- * STEP 8 - GenomeThreader
+ * STEP 7 - GenomeThreader
  */
  
 process RunGenomeThreader {
@@ -350,7 +350,7 @@ process RunGenomeThreader {
 
 
 /*
- * STEP 9 - GenomeThreader to Hints
+ * STEP 8 - GenomeThreader to Hints
  */
  
 process GenomeThreader2Hints {
@@ -383,7 +383,7 @@ Channel
 
 
 /*
- * STEP 10 - RepeatMasker
+ * STEP 9 - RepeatMasker
  */
  
 process RunRepeatMasker {
@@ -405,7 +405,7 @@ process RunRepeatMasker {
 }
 
 /*
- * STEP 11 - RepeatMasker - Collect and Clean1
+ * STEP 10 - RepeatMasker - Collect and Clean1
  */
  
 process RemoveHeaderRepeatMasker {	
@@ -426,7 +426,7 @@ process RemoveHeaderRepeatMasker {
 
 
 /*
- * STEP 12 - RepeatMasker - Clean2
+ * STEP 11 - RepeatMasker - Clean2
  */
  
 process CleanRepeatMasker {
@@ -446,7 +446,7 @@ RM_clean_out
 
 
 /*
- * STEP 13 - RepeatMasker to Hints
+ * STEP 12 - RepeatMasker to Hints
  */
  
 process RepeatMasker2Hints {
@@ -476,11 +476,12 @@ RepeatMasker_hints
 
 
 
+
 /*
- * STEP X - FastQC
+ * STEP 13 - FastQC
  */
-process fastqc {
-    tag "$name"
+process runFastqc {
+    tag "${prefix}"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -491,10 +492,13 @@ process fastqc {
     file "*_fastqc.{zip,html}" into fastqc_results
 
     script:
+	prefix = reads[0].toString().split("_R1")[0]
     """
     fastqc -q $reads
     """
 }
+
+
 
 /*
  * Parse software version numbers
