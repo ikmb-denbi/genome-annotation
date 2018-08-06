@@ -35,6 +35,8 @@ def helpMessage() {
       --qtype						Query type: ('protein' (default) | 'EST')
       --nblast						Chunks to divide Blast jobs (default = 10)
       --nexonerate					Chunks to divide Exonerate jobs (default = 10)
+	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
+	  --species						Species database for RepeatMasker (default = 'mammal'(
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -65,8 +67,10 @@ params.variant = "no_var"
 params.qtype = "protein"
 params.nblast = 10
 params.nexonerate = 10
+params.nrepeats = 2
+params.species = "mammal"
 
-
+//Script parameters
 Queries = file(params.query)
 Genome = file(params.genome)
 
@@ -367,6 +371,39 @@ process GenomeThreader2Hints {
 
 gth_hints
 	.collectFile(name: "${params.outdir}/GenomeThreader_protein_hints.gff")
+
+
+//RepeatMasker Block
+
+Channel
+	.fromPath(Genome)
+	.splitFasta(by: params.nrepeats, file: true)
+	.ifEmpty { exit 1, "Could not find genome file" }
+	.set {fasta_rep}
+
+
+/*
+ * STEP 10 - RepeatMasker
+ */
+ 
+process RunRepeatMasker {
+
+	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
+	
+	input:
+	file query_fa_rep from fasta_rep 
+	
+	output:
+	file(query_out_rep) into RM_out
+	
+	script:
+	query_out_rep = query_fa_rep + ".out"
+	
+	"""
+	RepeatMasker -species $params.species $query_fa_rep
+	"""
+}
+
 	
 
 /*
