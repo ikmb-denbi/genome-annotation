@@ -61,6 +61,9 @@ params.email = false
 params.plaintext_email = false
 params.variant = "no_var"
 
+Queries = file(params.query)
+Genome = file(params.genome)
+
 multiqc_config = file(params.multiqc_config)
 output_docs = file("$baseDir/docs/output.md")
 
@@ -133,7 +136,7 @@ try {
 
 
 Channel
-	.fromPath(params.genome)
+	.fromPath(Genome)
 	.set { inputMakeblastdb }
 	
 // We check if the blast db already exists - if not, we create it
@@ -251,8 +254,6 @@ process RunExonerate {
 	
 	input:
 	file hits_chunk from query2target_chunk
-	file Genome from file(params.genome)
-	file Queries from file(params.queries)
 	
 	output:
 	file 'exonerate.out' into exonerate_result
@@ -321,13 +322,14 @@ exonerate_hints
 	.collectFile(name: "${params.outdir}/Exonerate_protein_hints.gff")	
 
 
-
+/*
+ * STEP 8 - GenomeThreader
+ */
+ 
 process RunGenomeThreader {
 	
 	output:
 	file output_gth
-	file Genome from file(params.genome)
-	file Queries from file(params.queries)
 	
 	"""
 	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
