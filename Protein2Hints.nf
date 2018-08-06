@@ -462,16 +462,16 @@ process get_software_versions {
 	publishDir "${params.outdir}", mode: 'copy'
 	
     output:
-    file versions.txt
+    file "versions.txt" from versions
     
     script:
     """
-    echo $params.version > versions.txt
-    echo $workflow.nextflow.version >> versions.txt
-    tblastn -version | head -n 1 >> versions.txt
-    exonerate -version | head -n 1 >> versions.txt
-    gth -version -version | head -n 1 >> versions.txt
-    RepeatMasker -version | grep 'version' >> versions.txt
+    echo $params.version > versions
+    echo $workflow.nextflow.version >> versions
+    tblastn -version | head -n 1 >> versions
+    exonerate -version | head -n 1 >> versions
+    gth -version -version | head -n 1 >> versions
+    RepeatMasker -version | grep 'version' >> versions
     """
 }
 
