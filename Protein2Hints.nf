@@ -250,6 +250,7 @@ process RunExonerate {
 	input:
 	file hits_chunk from query2target_chunk
 	file Genome from params.genome
+	file Queries from params.queries
 	
 	output:
 	file 'exonerate.out' into exonerate_result
@@ -257,11 +258,11 @@ process RunExonerate {
 	script:
 	if (params.qtype == 'protein') {
 	"""
-	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $params.queries $Genome
+	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $Queries $Genome
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $params.queries $Genome
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Queries $Genome
 	"""
 	}
 }
