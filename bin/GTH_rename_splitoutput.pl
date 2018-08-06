@@ -73,18 +73,7 @@ while (<GTH>) {
 		$Geneframe = $temp[7];
 		$Genecomment = $temp[8];
 		
-	} elsif ($feature eq "mRNA") {
-		$RNAChrom = $temp[0];
-		$RNAmethod = $temp[1];
-		$RNAfeature = $temp[2];
-		$RNAstart = $temp[3];
-		$RNAend = $temp[4];
-		$RNAscore = $temp[5];
-		$RNAstrand = $temp[6];
-		$RNAframe = $temp[7];
-		$RNAcomment = $temp[8];
-		
-		($GeneID) =($RNAcomment =~/;Target=(\S+)\s/);
+		($GeneID) =($Genecomment =~/;Target=(\S+)\s/);
 		print STDOUT $GeneChrom."\t".$Genemethod."\t".$Genefeature."\t".$Genestart."\t".$Geneend."\t".$Genescore."\t".$Genestrand."\t".$Geneframe."\tID=".$GeneID."\n";	
 		print STDOUT $RNAChrom."\t".$RNAmethod."\tmatch_part\t".$RNAstart."\t".$RNAend."\t".$RNAscore."\t".$RNAstrand."\t".$RNAframe."\tID=".$GeneID."-RA;Parent=".$GeneID."\n";
 	
