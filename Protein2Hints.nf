@@ -466,6 +466,7 @@ process get_software_versions {
 
     """
     tblastn -version | head -n 1 > versions
+    exonerate -version | head -n 1 >> versions
     """
 }
 
