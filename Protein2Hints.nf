@@ -442,8 +442,29 @@ process CleanRepeatMasker {
 }
 
 RM_clean_out
- 	.collectFile(name: "${params.outdir}/RepeatMasker_output.gff")
+ 	.collectFile(name: "${params.outdir}/RepeatMasker_output.txt")
+
+
+/*
+ * STEP 13 - RepeatMasker to Hints
+ */
+ 
+process RepeatMasker2Hints {
+
+	input:
+	file RM_2_hints
 	
+	output:
+	file RepeatMasker_hints
+	
+	"""
+	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_hints
+	"""
+}
+
+RepeatMasker_hints
+	.collectFile(name: "${params.outdir}/RepeatMasker_hints.gff")
+
 
 /*
  * Create a channel for input read files
