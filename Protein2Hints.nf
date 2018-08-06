@@ -321,6 +321,19 @@ exonerate_hints
 	.collectFile(name: "${params.outdir}/Exonerate_protein_hints.gff")	
 
 
+
+process RunGenomeThreader {
+	
+	output:
+	file output_gth
+	file Genome from file(params.genome)
+	file Queries from file(params.queries)
+	
+	"""
+	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
+	"""
+}
+
 /*
  * Create a channel for input read files
  */
