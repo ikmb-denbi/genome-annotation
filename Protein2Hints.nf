@@ -344,7 +344,7 @@ process RunGenomeThreader {
 process GenomeThreader2Hints {
 
 	input:
-	file output_gth
+	file not_clean_gth from output_gth
 	
 	output:
 	file gth_hints
