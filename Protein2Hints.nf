@@ -249,8 +249,8 @@ process RunExonerate {
 	
 	input:
 	file hits_chunk from query2target_chunk
-	file Genome from params.genome
-	file Queries from params.queries
+	file Genome from file(params.genome)
+	file Queries from file(params.queries)
 	
 	output:
 	file 'exonerate.out' into exonerate_result
