@@ -462,7 +462,7 @@ process get_software_versions {
 	publishDir "${params.outdir}", mode: 'copy'
 	
     output:
-    file "versions.txt" from versions
+    file versions into "versions.txt" 
     
     script:
     """
