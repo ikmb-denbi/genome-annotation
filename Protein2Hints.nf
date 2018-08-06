@@ -61,7 +61,7 @@ params.email = false
 params.plaintext_email = false
 params.variant = "no_var"
 
-Queries = file(params.query)
+Queries = file(params.queries)
 Genome = file(params.genome)
 
 multiqc_config = file(params.multiqc_config)
@@ -176,7 +176,7 @@ process RunMakeBlastDB {
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
 Channel
-	.fromPath(params.queries)
+	.fromPath(Queries)
 	.splitFasta(by: params.nblast, file: true)
 	.ifEmpty { exit 1, "Could not find proteins file" }
 	.into {fasta}
