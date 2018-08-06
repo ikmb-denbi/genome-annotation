@@ -21,14 +21,16 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run Protein2Hints.nf --genome 'Genome.fasta' --query 'Proteins.fasta' -profile docker
+    nextflow run NF-hints --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
+      --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
       --query						Proteins from other species
       -profile                      Hardware config to use. docker / aws
 
     Options:
+      --singleEnd                   Specifies that the input is single end reads
 	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
       --qtype						Query type: ('protein' (default) | 'EST')
       --nblast						Chunks to divide Blast jobs (default = 10)
@@ -38,6 +40,7 @@ def helpMessage() {
 
     Other options:
       --outdir                      The output directory where the results will be saved
+      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -52,7 +55,12 @@ if (params.help){
     exit 0
 }
 
-
+// Configurable variables
+params.name = false
+//params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
+params.email = false
+params.plaintext_email = false
 
 //Default variables:
 params.variant = "no_var"
@@ -61,12 +69,13 @@ params.nblast = 10
 params.nexonerate = 10
 params.nrepeats = 2
 params.species = "mammal"
-params.name = false
 
 //Script parameters
 Queries = file(params.query)
 Genome = file(params.genome)
 
+multiqc_config = file(params.multiqc_config)
+output_docs = file("$baseDir/docs/output.md")
 
 // Validate inputs
 if ( params.fasta ){
@@ -96,7 +105,9 @@ def summary = [:]
 summary['Pipeline Name']  = 'NF-hints'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
+summary['Reads']        = params.reads
 summary['Fasta Ref']    = params.fasta
+summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -111,6 +122,7 @@ summary['Working dir']    = workflow.workDir
 summary['Output dir']     = params.outdir
 summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
+if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
@@ -453,6 +465,37 @@ process RepeatMasker2Hints {
 RepeatMasker_hints
 	.collectFile(name: "${params.outdir}/RepeatMasker_hints.gff")
 
+
+/*
+ * Create a channel for input read files
+ */
+     Channel
+         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
+         .into { read_files_fastqc; read_files_trimming }
+
+
+
+/*
+ * STEP X - FastQC
+ */
+process fastqc {
+    tag "$name"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    input:
+    set val(name), file(reads) from read_files_fastqc
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_results
+
+    script:
+    """
+    fastqc -q $reads
+    """
+}
+
 /*
  * Parse software version numbers
  */
@@ -470,6 +513,52 @@ process get_software_versions {
     scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
+
+
+/*
+ * STEP X - MultiQC
+ */
+process multiqc {
+    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+    input:
+    file multiqc_config
+    file ('fastqc/*') from fastqc_results.collect()
+    file ('software_versions/*') from software_versions_yaml
+
+    output:
+    file "*multiqc_report.html" into multiqc_report
+    file "*_data"
+
+    script:
+    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    """
+    multiqc -f $rtitle $rfilename --config $multiqc_config .
+    """
+}
+
+
+
+/*
+ * STEP X - Output Description HTML
+ */
+process output_documentation {
+    tag "$prefix"
+    publishDir "${params.outdir}/Documentation", mode: 'copy'
+
+    input:
+    file output_docs
+
+    output:
+    file "results_description.html"
+
+    script:
+    """
+    markdown_to_html.r $output_docs results_description.html
+    """
+}
+
 
 
 workflow.onComplete {
