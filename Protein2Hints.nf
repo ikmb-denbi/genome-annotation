@@ -27,14 +27,14 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
       --query						Proteins from other species
-      --nblast						Chunks to divide Blast jobs
-      --nexonerate					Chunks to divide Exonerate jobs
       -profile                      Hardware config to use. docker / aws
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
 	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
       --qtype						Query type: ('protein' (default) | 'EST')
+      --nblast						Chunks to divide Blast jobs (default = 10)
+      --nexonerate					Chunks to divide Exonerate jobs (default = 10)
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -59,8 +59,13 @@ params.name = false
 params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
 params.email = false
 params.plaintext_email = false
+
+//Default variables:
 params.variant = "no_var"
 params.qtype = "protein"
+params.nblast = 10
+params.nexonerate = 10
+
 
 Queries = file(params.query)
 Genome = file(params.genome)
