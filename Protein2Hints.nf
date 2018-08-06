@@ -462,7 +462,7 @@ process get_software_versions {
 	publishDir "${params.outdir}/report", mode: 'copy'
 	
     output:
-    file versions
+    file "versions"
 
     """
     tblastn -version | head -n 1 > blast_v
