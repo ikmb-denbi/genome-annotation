@@ -175,7 +175,7 @@ process RunHisat2 {
 	set file(dbHis_1),file(dbHis_2),file(dbHis_3),file(dbHis_4),file(dbHis_5),file(dbHis_6),file(dbHis_7),file(dbHis_8) from hisat_db.collect()
 	
 	output:
-	file "*accepted_hits.bam" accepted_hits2hints, accepted_hits2trinity 
+	file "*accepted_hits.bam" into accepted_hits2hints, accepted_hits2trinity 
 	
 	script:
 	indexName = dbHis_1.toString().split(".1")[0]
