@@ -164,7 +164,7 @@ process RunHisat2 {
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
 	input:
-	set val(name), file(reads) from read_files_hisat
+	file(reads) from read_files_hisat
 	file(DbBaseName) from DBnameHisat
 	
 	output:
