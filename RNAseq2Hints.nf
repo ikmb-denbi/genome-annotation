@@ -120,7 +120,7 @@ process runTrimgalore {
 
 Channel
 	.fromPath(Genome)
-	.into { inputMakeHisatdb; DBnameHisat }
+	.set { inputMakeHisatdb }
 
 
 /*
@@ -165,14 +165,14 @@ process RunHisat2 {
 	
 	input:
 	set val(name), file(reads) from read_files_hisat
-	set file('*.ht2') from hisat_db.collect()
-	file(DbBaseName) from DBnameHisat
+	set file('DB_*') from hisat_db.collect()
 	
 	output:
 	file alignment_bam 
 	
 	script:
-	indexName = DbBaseName.baseName
+	indexName = 'DB_*'.baseName
+	
 	ReadsBase = reads[0].toString().split("_R1")[0]
 	Read1 = ReadsBase + "_R1.fastq"
 	Read2 = ReadsBase + "_R2.fastq"
