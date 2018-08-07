@@ -57,7 +57,7 @@ Genome = file(params.genome)
      Channel
          .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
          .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
+         .into { read_files_fastqc; read_files_trimming; read_files_hisat }
 
 /*
  * STEP 1 - FastQC
@@ -120,7 +120,7 @@ process runTrimgalore {
 
 Channel
 	.fromPath(Genome)
-	.set { inputMakeHisatdb }
+	.set { inputMakeHisatdb; DBnameHisat }
 
 
 /*
@@ -153,6 +153,44 @@ process RunMakeHisatDB {
 	
 }
 
+
+/*
+ * STEP 4 - Hisat2
+ */
+
+process RunHisat2 {
+
+	tag "${prefix}"
+	publishDir "${params.outdir}/Hisat2", mode: 'copy'
+	
+	input:
+	set val(name), file(reads) from read_files_hisat
+	file(DbBaseName) from DBnameHisat
+	
+	output:
+	file alignment_bam 
+	
+	script:
+	indexName = DbBaseName.baseName
+	ReadsBase = reads[0].toString().split("_R1")[0]
+	Read1 = ReadsBase + "_R1.fastq"
+	Read2 = ReadsBase + "_R2.fastq"
+	prefix = indexName + "_" + ReadsBase
+	
+	
+	if (params.singleEnd) {
+        """
+        hisat2 -x $indexName -U $reads -S alignment_sam
+        samtools view -Sb alignment_sam > alignment_bam
+        """
+   } else {
+        """
+        hisat2 -x $indexName -1 $Read1 -2 $Read2 -S alignment_sam
+        samtools view -Sb alignment_sam > alignment_bam
+		"""
+   }
+}   
+	
 workflow.onComplete {
         log.info "========================================="
         log.info "Duration:             $workflow.duration"
