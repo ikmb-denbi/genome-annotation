@@ -59,32 +59,95 @@ Genome = file(params.genome)
          .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
          .into { read_files_fastqc; read_files_trimming }
 
+/*
+ * STEP 1 - FastQC
+ */
+process runFastqc {
+    tag "${prefix}"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    input:
+    set val(name), file(reads) from read_files_fastqc
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_results
+
+    script:
+	prefix = reads[0].toString().split("_R1")[0]
+    """
+    fastqc -q $reads
+    """
+}
 
 /*
- * STEP 15 - Make Hisat2 DB
+ * STEP 2 - Trimgalore
+ */
+process runTrimgalore {
+
+   tag "${prefix}"
+   publishDir "${params.outdir}/trimgalore", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+            else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
+            else if (filename.indexOf(".fq") > 0) "$filename"
+        }
+
+   input:
+   set val(name), file(reads) from read_files_trimming
+
+   output:
+   file "*_val_{1,2}.fq" into trimmed_reads
+   file "*trimming_report.txt" 
+   //into trimgalore_results, trimgalore_logs   
+   file "*_fastqc.{zip,html}" 
+   //into trimgalore_fastqc_reports
+   
+   script:
+   prefix = reads[0].toString().split("_R1")[0]
+   if (params.singleEnd) {
+        """
+        trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+        """
+   } else {
+        """
+        trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+		"""
+   }
+
+}
+
+
+Channel
+	.fromPath(Genome)
+	.set { inputMakeHisatdb }
+
+
+/*
+ * STEP 3 - Make Hisat2 DB
  */
  
 process RunMakeHisatDB {
 	
+	tag "${prefix}"
 	publishDir "${params.outdir}/HisatDB", mode: 'copy'
 	
 	input:
 	file(genome) from inputMakeHisatdb
 	
 	output:
-	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db
+	file "*.ht2" into hisat_db
 	
 	script:
 	dbName = genome.baseName
-	db_nhr = dbName + ".nhr"
-	db_nin = dbName + ".nin"
-	db_nsq = dbName + ".nsq"
+	db_1 = dbName + ".1.ht2"
 
-	target = file(db_nhr)
+	target = file(db_1)
 	
+	prefix = dbName
     if (!target.exists()) {
 		"""
-			makeblastdb -in $genome -dbtype nucl -out $dbName
+		hisat2-build $genome $dbName
 		"""
 	}
 	
