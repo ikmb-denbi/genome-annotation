@@ -136,11 +136,18 @@ process RunMakeHisatDB {
 	file(genome) from inputMakeHisatdb
 	
 	output:
-	set file('*.ht2') into hisat_db
+	set file(db_1),file(db_2),file(db_3),file(db_4),file(db_5),file(db_6),file(db_7),file(db_8) into hisat_db
 	
 	script:
 	dbName = genome.baseName
 	db_1 = dbName + ".1.ht2"
+	db_2 = dbName + ".2.ht2"
+	db_3 = dbName + ".3.ht2"
+	db_4 = dbName + ".4.ht2"
+	db_5 = dbName + ".5.ht2"
+	db_6 = dbName + ".6.ht2"
+	db_7 = dbName + ".7.ht2"
+	db_8 = dbName + ".8.ht2"
 
 	target = file(db_1)
 	
@@ -165,13 +172,13 @@ process RunHisat2 {
 	
 	input:
 	set val(name), file(reads) from read_files_hisat
-	set file('DB_*') from hisat_db.collect()
+	set file(dbHis_1),file(dbHis_2),file(dbHis_3),file(dbHis_4),file(dbHis_5),file(dbHis_6),file(dbHis_7),file(dbHis_8) from hisat_db.collect()
 	
 	output:
 	file alignment_bam 
 	
 	script:
-	indexName = "$DB_1".baseName
+	indexName = dbHis_1.toString().split(".1")[0]
 	
 	ReadsBase = reads[0].toString().split("_R1")[0]
 	Read1 = ReadsBase + "_R1.fastq"
