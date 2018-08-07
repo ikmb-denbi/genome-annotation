@@ -120,7 +120,7 @@ process runTrimgalore {
 
 Channel
 	.fromPath(Genome)
-	.set { inputMakeHisatdb; DBnameHisat }
+	.into { inputMakeHisatdb; DBnameHisat }
 
 
 /*
@@ -164,7 +164,7 @@ process RunHisat2 {
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
 	input:
-	file(reads) from read_files_hisat
+	set val(name), file(reads) from read_files_hisat
 	file(DbBaseName) from DBnameHisat
 	
 	output:
