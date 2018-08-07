@@ -136,7 +136,7 @@ process RunMakeHisatDB {
 	file(genome) from inputMakeHisatdb
 	
 	output:
-	file "*.ht2" into hisat_db
+	set file "{*}.ht2" into hisat_db
 	
 	script:
 	dbName = genome.baseName
@@ -165,6 +165,7 @@ process RunHisat2 {
 	
 	input:
 	set val(name), file(reads) from read_files_hisat
+	set file "{*}.ht2" from hisat_db.collect()
 	file(DbBaseName) from DBnameHisat
 	
 	output:
