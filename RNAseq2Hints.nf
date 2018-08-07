@@ -171,7 +171,7 @@ process RunHisat2 {
 	file alignment_bam 
 	
 	script:
-	indexName = 'DB_*'.baseName
+	indexName = 'DB_*'[0].baseName
 	
 	ReadsBase = reads[0].toString().split("_R1")[0]
 	Read1 = ReadsBase + "_R1.fastq"
