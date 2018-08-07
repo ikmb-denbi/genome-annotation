@@ -189,12 +189,14 @@ process RunHisat2 {
 	if (params.singleEnd) {
         """
         hisat2 -x $indexName -U $reads -S alignment_sam
-        samtools view -Sb alignment_sam > ${prefix}_accepted_hits.bam
+        samtools view -Sb alignment_sam > alignment.bam
+        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
         """
    } else {
         """
         hisat2 -x $indexName -1 $Read1 -2 $Read2 -S alignment_sam
-        samtools view -Sb alignment_sam > ${prefix}_accepted_hits.bam
+        samtools view -Sb alignment_sam > alignment.bam
+        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
 		"""
    }
 }   
