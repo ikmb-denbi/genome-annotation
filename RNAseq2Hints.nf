@@ -175,7 +175,7 @@ process RunHisat2 {
 	set file(dbHis_1),file(dbHis_2),file(dbHis_3),file(dbHis_4),file(dbHis_5),file(dbHis_6),file(dbHis_7),file(dbHis_8) from hisat_db.collect()
 	
 	output:
-	file alignment_bam 
+	file "*accepted_hits.bam" accepted_hits2hints, accepted_hits2trinity 
 	
 	script:
 	indexName = dbHis_1.toString().split(".1")[0]
@@ -189,16 +189,39 @@ process RunHisat2 {
 	if (params.singleEnd) {
         """
         hisat2 -x $indexName -U $reads -S alignment_sam
-        samtools view -Sb alignment_sam > alignment_bam
+        samtools view -Sb alignment_sam > ${prefix}_accepted_hits.bam
         """
    } else {
         """
         hisat2 -x $indexName -1 $Read1 -2 $Read2 -S alignment_sam
-        samtools view -Sb alignment_sam > alignment_bam
+        samtools view -Sb alignment_sam > ${prefix}_accepted_hits.bam
 		"""
    }
 }   
+
+/*
+ * STEP 5 - Bam into Hints
+ */
+process Bam2Hints {
+
+	tag "${prefix}"
+	publishDir "${params.outdir}", mode: 'copy'
 	
+	input:
+	file accepted_hits2hints
+	
+	output:
+	file '*_hints.gff'
+	
+	script:
+	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
+	
+	"""
+	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=${prefix}_hints.gff	
+	"""
+}
+
+
 workflow.onComplete {
         log.info "========================================="
         log.info "Duration:             $workflow.duration"
