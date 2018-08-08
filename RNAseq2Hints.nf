@@ -275,7 +275,7 @@ process runTrinity {
 
 
 Channel
-	.from(trinity_transcripts)
+	.from(trinity_transcripts.collectFile())
 	.splitFasta(by: params.nblast, file: true)
 	.set {fasta_trinity}
 
