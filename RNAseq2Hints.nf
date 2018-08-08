@@ -174,7 +174,7 @@ process RunHisat2 {
 	ReadsBase = reads[0].toString().split("_R1")[0]
 	Read1 = ReadsBase + "_R1.fastq"
 	Read2 = ReadsBase + "_R2.fastq"
-	prefix = indexBase + "_" + ReadsBase
+	prefix = ReadsBase + "_vs_" + indexBase
 	
 	
 	if (params.singleEnd) {
