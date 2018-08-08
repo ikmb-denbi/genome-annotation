@@ -214,6 +214,28 @@ process Bam2Hints {
 	"""
 }
 
+/*
+ * STEP 6 - Trinity
+ */
+process runTrinity {
+
+	tag "${prefix}"
+	publishDir "${params.outdir}/trinity", mode: 'copy'
+	
+	input:
+	file accepted_hits2trinity
+	
+	output:
+	file "trinity_out_dir/*_trinity.fasta" into trinity_transcripts
+	
+	script:
+	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
+	"""
+	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 1 --max_memory 5G
+	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
+	"""
+}
+
 
 workflow.onComplete {
         log.info "========================================="
