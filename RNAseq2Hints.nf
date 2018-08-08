@@ -140,8 +140,8 @@ process RunMakeHisatDB {
 	
 	script:
 	dbName = genome.baseName
-
-	target = dbName + ".1.ht2"
+	dbName_1 = dbName + ".1.ht2"
+	target = file(dbName_1)
 	
 	prefix = dbName
     if (!target.exists()) {
