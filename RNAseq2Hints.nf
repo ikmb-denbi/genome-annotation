@@ -277,7 +277,7 @@ process runTrinity {
 Channel
 	.from(trinity_transcripts)
 	.splitFasta(by: params.nblast, file: true)
-	.into {fasta_trinity}
+	.set {fasta_trinity}
 
 
 //Proteins (Blast + ) Exonerate Block:
