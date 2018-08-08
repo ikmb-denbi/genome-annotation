@@ -273,9 +273,10 @@ process runTrinity {
 	"""
 }
 
+trinity_output = trinity_transcripts.collectFile()
 
 Channel
-	.fromPath('${params.outdir}/trinity/trinity_out_dir/*_trinity.fasta')
+	.fromPath(trinity_output)
 	.splitFasta(by: params.nblast, file: true)
 	.set {fasta_trinity}
 
