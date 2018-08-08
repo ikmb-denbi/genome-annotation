@@ -49,6 +49,8 @@ if (params.help){
 //Script parameters
 Queries = file(params.query)
 Genome = file(params.genome)
+params.nblast = 1
+
 
 Channel
 	.fromPath(Genome)
@@ -80,7 +82,7 @@ process RunMakeBlastDB {
 	
     if (!target.exists()) {
 		"""
-			makeblastdb -in $genome -dbtype nucl -out $dbName
+		makeblastdb -in $genome -dbtype nucl -out $dbName
 		"""
 	}
 	
