@@ -50,6 +50,41 @@ if (params.help){
 Queries = file(params.query)
 Genome = file(params.genome)
 
+Channel
+	.fromPath(Genome)
+	.set { inputMakeblastdb }
+	
+// We check if the blast db already exists - if not, we create it
+
+/*
+ * STEP 1 - Make Blast DB
+ */
+ 
+process RunMakeBlastDB {
+	
+	publishDir "${params.outdir}/BlastDB", mode: 'copy'
+	
+	input:
+	file(genome) from inputMakeblastdb
+	
+	output:
+	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db_trinity
+	
+	script:
+	dbName = genome.baseName
+	db_nhr = dbName + ".nhr"
+	db_nin = dbName + ".nin"
+	db_nsq = dbName + ".nsq"
+
+	target = file(db_nhr)
+	
+    if (!target.exists()) {
+		"""
+			makeblastdb -in $genome -dbtype nucl -out $dbName
+		"""
+	}
+	
+}
 
 /*
  * Create a channel for input read files
@@ -233,6 +268,40 @@ process runTrinity {
 	"""
 	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 1 --max_memory 5G
 	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
+	"""
+}
+
+
+Channel
+	.from(trinity_transcripts)
+	.splitFasta(by: params.nblast, file: true)
+	.into {fasta_trinity}
+
+
+//Proteins (Blast + ) Exonerate Block:
+
+/*
+ * STEP 2 - Blast
+ */
+ 
+process RunBlast {
+
+	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
+	
+	input:
+	file query_fa from fasta_trinity 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
+	
+	output:
+	file blast_result
+		
+	script: 
+
+	db_name = blastdb_nhr.baseName
+	chunk_name = query_fa.baseName
+	
+	"""
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
 	"""
 }
 
