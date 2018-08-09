@@ -62,7 +62,7 @@ params.nexonerate = 10
 params.nrepeats = 2
 params.species = "mammal"
 params.name = false
-params.outdie = "Protein2Hints_output"
+params.outdir = "Protein2Hints_output"
 
 //Script parameters
 Queries = file(params.query)
@@ -276,11 +276,13 @@ process RunExonerate {
  
 process Exonerate2Gff {
 	
+	publishDir "${params.outdir}", mode: 'copy'
+	
 	input:
 	file exonerate_result
 	
 	output:
-	file exonerate_gff into output_gff, exonerate_for_hints
+	file exonerate_gff into output_gff
 	
 	script:
 	if (params.qtype == 'protein') {
@@ -297,28 +299,7 @@ process Exonerate2Gff {
 }
 
 output_gff
- 	.collectFile(name: "${params.outdir}/Exonerate_output.gff")
-
-
-/*
- * STEP 6 - Exonerate to Hints
- */
- 
-process Exonerate2Hints {
-
-	input:
-	file exonerate_input from exonerate_for_hints.collectFile()
-	
-	output:
-	file exonerate_hints
-	
-	"""
-	grep -v '#' $exonerate_input | grep -e 'CDS' -e 'exon' -e 'intron' | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > exonerate_hints
-	"""
-}
-
-exonerate_hints
-	.collectFile(name: "${params.outdir}/Exonerate_protein_hints.gff")	
+ 	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_exonerate.gff")
 
 
 /*
@@ -332,9 +313,16 @@ process RunGenomeThreader {
 	output:
 	file output_gth
 	
+	script:
+	if (params.qtype == 'protein') {
 	"""
 	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
 	"""
+	} else if (params.qtype == 'EST') {
+	"""
+	gth -genomic $Genome -cdna $Queries -gff3out -intermediate -o output_gth
+	"""
+	}
 }
 
 
@@ -359,7 +347,7 @@ process GenomeThreader2Hints {
 }
 
 gth_hints
-	.collectFile(name: "${params.outdir}/GenomeThreader_protein_hints.gff")
+	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_genomethreader.gff")
 
 
 //RepeatMasker Block
@@ -452,7 +440,7 @@ process RepeatMasker2Hints {
 }
 
 RepeatMasker_hints
-	.collectFile(name: "${params.outdir}/RepeatMasker_hints.gff")
+	.collectFile(name: "${params.outdir}/Hints_repeatmasker.gff")
 
 
 

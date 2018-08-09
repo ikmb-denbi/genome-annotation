@@ -63,28 +63,24 @@ while (<EXONERATE>) {
 	if ($is_variant eq "var") {
 		if ($feature eq "gene") {
 			($GeneID, $variant) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)-(\w+)\s;\s/);
-			print OUTFILE $Chrom."\t".$method."\tgene\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID.";Name=".$GeneID."\n";
-			print OUTFILE $Chrom."\t".$method."\tmRNA\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID."-".$variant.";Name=".$GeneID."-".$variant.";Parent=".$GeneID."\n";
 		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\texon\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-".$variant."\n";
+			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-".$variant.";src=P;pri=3\n";
 		} elsif ($feature eq "cds") {
-			print OUTFILE $Chrom."\t".$method."\tCDS\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-".$variant."\n";
+			print OUTFILE $Chrom."\t".$method."\tCDSpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-".$variant.";src=P;pri=3\n";
 		} elsif ($feature eq "intron") {
-			print OUTFILE $Chrom."\t".$method."\tintron\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-".$variant."\n";
+			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-".$variant.";src=P;pri=3\n";
 		} else {
 			next;
 		}
 	} elsif ($is_variant eq "no_var") {
 		if ($feature eq "gene") {
 			($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
-			print OUTFILE $Chrom."\t".$method."\tgene\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID.";Name=".$GeneID."\n";
-			print OUTFILE $Chrom."\t".$method."\tmRNA\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID."-RA;Name=".$GeneID."-RA;Parent=".$GeneID."\n";
 		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\texon\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-RA\n";
+			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-RA;src=P;pri=3\n";
 		} elsif ($feature eq "cds") {
-			print OUTFILE $Chrom."\t".$method."\tCDS\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-RA\n";
+			print OUTFILE $Chrom."\t".$method."\tCDSpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-RA;src=P;pri=3\n";
 		} elsif ($feature eq "intron") {
-			print OUTFILE $Chrom."\t".$method."\tintron\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."-RA\n";
+			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."-RA;src=P;pri=3\n";
 		} else {
 			next;
 		}

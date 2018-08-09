@@ -51,6 +51,7 @@ Queries = file(params.query)
 Genome = file(params.genome)
 params.nblast = 1
 params.nexonerate = 2
+params.outdir = "RNAseq2Hints_output"
 
 Channel
 	.fromPath(Genome)

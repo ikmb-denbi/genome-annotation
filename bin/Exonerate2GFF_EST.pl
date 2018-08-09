@@ -63,18 +63,24 @@ while (<EXONERATE>) {
 	if ($is_variant eq "var") {
 		if ($feature eq "gene") {
 			($GeneID, $variant) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)-(\w+)\s;\s/);
-			print OUTFILE $Chrom."\t".$method."\texpressed_sequence_match\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID.";Name=".$GeneID."\n";
 		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\tmatch_part\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."\n";
+			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+		} elsif ($feature eq "intron") {
+			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+		} elsif ($feature eq "utr5" || $feature eq "utr3") {
+			print OUTFILE $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
 		} else {
 			next;
 		}
 	} elsif ($is_variant eq "no_var") {
 		if ($feature eq "gene") {
 			($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
-			print OUTFILE $Chrom."\t".$method."\texpressed_sequence_match\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tID=".$GeneID.";Name=".$GeneID."\n";
 		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\tmatch_part\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tParent=".$GeneID."\n";
+			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+		} elsif ($feature eq "intron") {
+			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+		} elsif ($feature eq "utr5" || $feature eq "utr3") {
+			print OUTFILE $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
 		} else {
 			next;
 		}
