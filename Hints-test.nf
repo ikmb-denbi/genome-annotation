@@ -992,7 +992,7 @@ workflow.onComplete {
         
 	process Concatenate {
 		"""
-		cat ${params.outdir}/Hints/* >> ${params.outdir}/All_Hints.gff
+		cat ${params.outdir}/Hints/* >> All_Hints.gff
 		"""
 	}
 }
