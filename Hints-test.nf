@@ -221,7 +221,6 @@ if (params.prots) {
 		.into {fasta}
 } else { 
 	fasta = Channel.from(false)
-	blast_result = Channel.from(false)
 }
 
 //Proteins (Blast + ) Exonerate Block:
