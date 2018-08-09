@@ -294,6 +294,8 @@ process RunExonerate {
  
 process Exonerate2Hints {
 	
+	tag "${query_tag}"
+	
 	input:
 	file exonerate_result
 	
@@ -301,6 +303,8 @@ process Exonerate2Hints {
 	file exonerate_gff into output_gff
 	
 	script:
+	query_tag = Queries.baseName
+	
 	if (params.qtype == 'protein') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
@@ -324,12 +328,15 @@ output_gff
  
 process RunGenomeThreader {
 	
+	tag "${query_tag}"
 	publishDir "${params.outdir}/genomethreader", mode: 'copy'
 		
 	output:
 	file output_gth
 	
 	script:
+	query_tag = Queries.baseName
+	
 	if (params.qtype == 'protein') {
 	"""
 	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
@@ -348,11 +355,16 @@ process RunGenomeThreader {
  
 process GenomeThreader2Hints {
 	
+	tag "${query_tag}"
+	
 	input:
 	file not_clean_gth from output_gth
 	
 	output:
 	file gth_hints
+	
+	script:
+	query_tag = Queries.baseName
 	
 	"""
 	gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
@@ -380,6 +392,8 @@ Channel
  
 process RunRepeatMasker {
 
+	tag "${genome_tag}"
+	
 	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
 	
 	input:
@@ -390,6 +404,7 @@ process RunRepeatMasker {
 	
 	script:
 	query_out_rep = query_fa_rep + ".out"
+	genome_tag = Genome.baseName
 	
 	"""
 	RepeatMasker -species $params.species $query_fa_rep
@@ -402,6 +417,7 @@ process RunRepeatMasker {
  
 process RemoveHeaderRepeatMasker {	
 	
+	tag "${genome_tag}"
 	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
 	
 	input:
@@ -410,6 +426,8 @@ process RemoveHeaderRepeatMasker {
 	output:
 	file "result_unclean.out" into mergedUNCLEAN
 	
+	script:
+	genome_tag = Genome.baseName
 	"""
 	tail -n +4 with_header_* > no_header
 	cat no_header >> result_unclean.out
@@ -423,11 +441,17 @@ process RemoveHeaderRepeatMasker {
  
 process CleanRepeatMasker {
 	
+	tag "${genome_tag}"
+	
 	input:
 	file mergedUNCLEAN
 	
 	output:
 	file RepeatMasker_out into RM_2_hints
+	
+	script:
+	genome_tag = Genome.baseName
+	
 	"""
 	grep -v 'with_header' $mergedUNCLEAN | awk 'NF' > RepeatMasker_out
 	"""
@@ -440,12 +464,17 @@ process CleanRepeatMasker {
  
 process RepeatMasker2Hints {
 
+	tag "${genome_tag}"
+	
 	input:
 	file RM_2_hints
 	
 	output:
 	file RepeatMasker_hints
-	
+
+	script:
+	genome_tag = Genome.baseName
+		
 	"""
 	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_hints
 	"""
@@ -657,6 +686,7 @@ TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
  
 process RunBlastTrinity {
 
+	tag "${chunk_name}"
 	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
 	
 	input:
@@ -682,6 +712,7 @@ process RunBlastTrinity {
 
 process BlastTrinity2QueryTarget {
 	
+	tag "${read_tag}"
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
@@ -689,6 +720,10 @@ process BlastTrinity2QueryTarget {
 	
 	output:
 	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
+	
+	script:
+	ReadsBase = reads[0].toString().split("_R1")[0]
+	read_tag = ReadBase + " transcripts"
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
@@ -705,7 +740,8 @@ query2target_trinity_uniq_result
  */
  
 process RunExonerateTrinity {
-
+	
+	tag "${read_tag}"
 	publishDir "${params.outdir}/exonerate_trinity/${hits_chunk}", mode: 'copy'
 	
 	input:
@@ -716,6 +752,9 @@ process RunExonerateTrinity {
 	file 'exonerate.out' into exonerate_result_trinity
 	
 	script:
+	ReadsBase = reads[0].toString().split("_R1")[0]
+	read_tag = ReadBase + " transcripts"
+	
 	"""
 	runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
 	"""
@@ -728,6 +767,8 @@ process RunExonerateTrinity {
  
 process Exonerate2HintsTrinity {
 	
+	tag "${read_tag}"
+	
 	input:
 	file exonerate_result_trinity
 	
@@ -735,6 +776,8 @@ process Exonerate2HintsTrinity {
 	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
 	
 	script:
+	ReadsBase = reads[0].toString().split("_R1")[0]
+	read_tag = ReadBase + " transcripts"
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines exonerate_trinity_gff
