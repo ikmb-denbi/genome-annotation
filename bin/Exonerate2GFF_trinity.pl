@@ -62,11 +62,11 @@ while (<EXONERATE>) {
 	if ($feature eq "gene") {
 		($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
 	} elsif ($feature eq "utr3" || $feature eq "utr5" ) {
-		print OUTFILE $Chrom."\tTrinityExonerate\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
+		print OUTFILE $Chrom."\tTrinityExonerate\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;pri=4\n";
 	} elsif ($feature eq "exon") {
-		print OUTFILE $Chrom."\tTrinityExonerate\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
+		print OUTFILE $Chrom."\tTrinityExonerate\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;pri=4\n";
 	} elsif ($feature eq "intron") {
-		print OUTFILE $Chrom."\tTrinityExonerate\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
+		print OUTFILE $Chrom."\tTrinityExonerate\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;pri=4\n";
 	} else {
 		next;
 	}
