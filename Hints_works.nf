@@ -25,21 +25,18 @@ def helpMessage() {
 
     Mandatory arguments:
       --genome                      Genome reference
+      --query						Proteins from other species
+      --reads                       Path to input data (must be surrounded with quotes)
       -profile                      Hardware config to use. docker / aws
-      
-    At least one of:
-      --prots						Proteins from other species
-      --ESTs						ESTs or transcriptome
-      --reads						Path to RNA-seq data (must be surrounded with quotes)
 
     Options:
-	  --trinity						Run transcriptome assembly with trinity and produce hints from the transcripts (true (default) | false)
-	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')	
+	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
+      --qtype						Query type: ('protein' (default) | 'EST')
       --nblast						Chunks to divide Blast jobs (default = 10)
       --nexonerate					Chunks to divide Exonerate jobs (default = 10)
 	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
 	  --species						Species database for RepeatMasker (default = 'mammal')
-	  --singleEnd                   Specifies that the input is single end reads (true | false (default))
+	  --singleEnd                   Specifies that the input is single end reads
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -63,45 +60,29 @@ if (params.help){
 params.variant = "no_var"
 params.qtype = "protein"
 params.nblast = 10
-params.nexonerate = 2
+params.nexonerate = 10
 params.nrepeats = 2
 params.species = "mammal"
 params.name = false
-params.singleEnd = false
-params.trinity = true
+params.outdir = "./Hints_output"
 
-
-//Script parameters
-Proteins = file(params.prots)
-ESTs = file(params.ESTs)
-Genome = file(params.genome)
 
 
 // Validate inputs
-if ( Genome ){
-    if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
+if ( params.genome ){
+    fasta = file(params.genome)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.genome}"
 }
 
-args = 0
-
-if ( Proteins ){
-	args = args + 1
-    if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
+if ( params.query ){
+    fasta = file(params.query)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.query}"
 }
 
-if ( ESTs ){
-	args = args + 1
-    if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
-}
 
-if (params.reads){
-	args = args + 1
-}
-
-if (args == 0) exit 1, "At least one data file must be especified"
-
-
-
+//Script parameters
+Queries = file(params.query)
+Genome = file(params.genome)
 
 
 // Has the run name been specified by the user?
