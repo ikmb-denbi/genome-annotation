@@ -127,7 +127,7 @@ summary['Pipeline Name']  = 'NF-hints'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Fasta Ref']    = Genome
-summary['Query']		= Queries
+summary['Query']		= Proteins
 summary['Query type']	= params.qtype
 summary['Reads']		= params.reads
 summary['Max Memory']   = params.max_memory
@@ -208,7 +208,7 @@ process RunMakeBlastDB {
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
 Channel
-	.fromPath(Queries)
+	.fromPath(Proteins)
 	.splitFasta(by: params.nblast, file: true)
 	.into {fasta}
 
@@ -265,7 +265,7 @@ process Blast2QueryTarget {
 	file query2target_result_uniq into query2target_uniq_result
 	
 	script:
-	query_tag = Queries.baseName
+	query_tag = Proteins.baseName
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq
@@ -292,16 +292,16 @@ process RunExonerate {
 	file 'exonerate.out' into exonerate_result
 	
 	script:
-	query_tag = Queries.baseName
+	query_tag = Proteins.baseName
 	
 	
 	if (params.qtype == 'protein') {
 	"""
-	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $Queries $Genome
+	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $Proteins $Genome
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Queries $Genome
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Proteins $Genome
 	"""
 	}
 }
@@ -322,7 +322,7 @@ process Exonerate2Hints {
 	file exonerate_gff into output_gff
 	
 	script:
-	query_tag = Queries.baseName
+	query_tag = Proteins.baseName
 	
 	if (params.qtype == 'protein') {
 	"""
@@ -354,15 +354,15 @@ process RunGenomeThreader {
 	file output_gth
 	
 	script:
-	query_tag = Queries.baseName
+	query_tag = Proteins.baseName
 	
 	if (params.qtype == 'protein') {
 	"""
-	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
+	gth -genomic $Genome -protein $Proteins -gff3out -intermediate -o output_gth
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
-	gth -genomic $Genome -cdna $Queries -gff3out -intermediate -o output_gth
+	gth -genomic $Genome -cdna $Proteins -gff3out -intermediate -o output_gth
 	"""
 	}
 }
@@ -383,7 +383,7 @@ process GenomeThreader2Hints {
 	file gth_hints
 	
 	script:
-	query_tag = Queries.baseName
+	query_tag = Proteins.baseName
 	
 	"""
 	gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
