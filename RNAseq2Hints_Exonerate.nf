@@ -50,7 +50,7 @@ if (params.help){
 Queries = file(params.query)
 Genome = file(params.genome)
 params.nblast = 1
-
+params.nexonerate = 2
 
 Channel
 	.fromPath(Genome)
