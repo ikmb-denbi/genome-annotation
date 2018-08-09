@@ -64,7 +64,7 @@ params.nexonerate = 10
 params.nrepeats = 2
 params.species = "mammal"
 params.name = false
-params.outdir = "Hints_output"
+params.outdir = "./Hints_output"
 
 
 
