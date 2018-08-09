@@ -273,8 +273,7 @@ process RunExonerate {
 	file 'exonerate.out' into exonerate_result
 	
 	script:
-	query_num = hits_chunk[0].toString().split(".")[0]
-	query_tag = Queries.baseName + " " + query_num
+	query_tag = Queries.baseName
 	
 	
 	if (params.qtype == 'protein') {
