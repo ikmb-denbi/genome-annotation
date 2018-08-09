@@ -228,16 +228,13 @@ process Blast2QueryTarget {
 	file all_blast_results from blast_result.collectFile()
 	
 	output:
-	file query2target_result_uniq into query2target_uniq_out, query2target_uniq_result
+	file query2target_result_uniq into query2target_uniq_result
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq
 	"""
 }
-
-query2target_uniq_out
-	.collectFile(name: "${params.outdir}/Blast_output.txt") 	
 
 query2target_uniq_result
 	.splitText(by: params.nexonerate, file: true).set{query2target_chunk}	
@@ -271,12 +268,10 @@ process RunExonerate {
 
 
 /*
- * STEP 5 - Exonerate to GFF
+ * STEP 5 - Exonerate to Hints
  */
  
-process Exonerate2Gff {
-	
-	publishDir "${params.outdir}", mode: 'copy'
+process Exonerate2Hints {
 	
 	input:
 	file exonerate_result
@@ -303,7 +298,7 @@ output_gff
 
 
 /*
- * STEP 7 - GenomeThreader
+ * STEP 6 - GenomeThreader
  */
  
 process RunGenomeThreader {
@@ -327,7 +322,7 @@ process RunGenomeThreader {
 
 
 /*
- * STEP 8 - GenomeThreader to Hints
+ * STEP 7 - GenomeThreader to Hints
  */
  
 process GenomeThreader2Hints {
@@ -412,14 +407,11 @@ process CleanRepeatMasker {
 	file mergedUNCLEAN
 	
 	output:
-	file RepeatMasker_out into RM_clean_out, RM_2_hints
+	file RepeatMasker_out into RM_2_hints
 	"""
 	grep -v 'with_header' $mergedUNCLEAN | awk 'NF' > RepeatMasker_out
 	"""
 }
-
-RM_clean_out
- 	.collectFile(name: "${params.outdir}/RepeatMasker_output.txt")
 
 
 /*

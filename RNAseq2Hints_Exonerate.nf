@@ -231,9 +231,9 @@ process RunHisat2 {
 }   
 
 /*
- * STEP 5 - Bam into Hints
+ * STEP 5 - Hisat2 into Hints
  */
-process Bam2Hints {
+process Hisat2Hints {
 
 	tag "${prefix}"
 	publishDir "${params.outdir}", mode: 'copy'
@@ -351,7 +351,7 @@ process RunExonerateTrinity {
 
 
 /*
- * STEP 10 - Exonerate to GFF
+ * STEP 10 - Exonerate to Hints
  */
  
 process Exonerate2HintsTrinity {
