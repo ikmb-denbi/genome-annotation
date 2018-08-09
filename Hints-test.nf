@@ -214,12 +214,14 @@ process RunMakeBlastDB {
 
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
-
+if (params.prots) {
 	Channel
 		.fromPath(Proteins)
 		.splitFasta(by: params.nblast, file: true)
 		.into {fasta}
-
+} else { 
+	fasta = Channel.from(false)
+}
 
 //Proteins (Blast + ) Exonerate Block:
 
@@ -228,36 +230,33 @@ process RunMakeBlastDB {
  */
  
 
-if (params.prots) {
-	process RunBlast {
-	
-		tag "${chunk_name}"
-		publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
-	
-		input:
-		file query_fa from fasta 
-		set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db.collect()
-	
-		output:
-		file blast_result
-		
-		script: 
 
-		db_name = blastdb_nhr.baseName
-		chunk_name = query_fa.baseName
+process RunBlast {
 	
-		if (params.qtype == 'protein') {
-			"""
-			tblastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
-			"""
-		} else if (params.qtype == 'EST') {
-			"""
-			blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
-			"""
-		}
+	tag "${chunk_name}"
+	publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
+	
+	input:
+	file query_fa from fasta 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db.collect()
+	
+	output:
+	file blast_result
+		
+	script: 
+
+	db_name = blastdb_nhr.baseName
+	chunk_name = query_fa.baseName
+	
+	if (params.qtype == 'protein') {
+		"""
+		tblastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
+		"""
+	} else if (params.qtype == 'EST') {
+		"""
+		blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
+		"""
 	}
-} else {
-	blast_result = Channel.from(false)
 }
 
 /*
