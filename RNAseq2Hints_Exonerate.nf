@@ -356,7 +356,7 @@ process RunExonerateTrinity {
  * STEP 10 - Exonerate to GFF
  */
  
-process Exonerate2GffTrinity {
+process Exonerate2HintsTrinity {
 	
 	input:
 	file exonerate_result_trinity
@@ -372,28 +372,7 @@ process Exonerate2GffTrinity {
 }
 
 output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Exonerate_trinity_output.gff")
-
-
-/*
- * STEP 11 - Exonerate to Hints
- */
- 
-process Exonerate2HintsTrinity {
-
-	input:
-	file exonerate_trinity_input from exonerate_trinity_for_hints.collectFile()
-	
-	output:
-	file exonerate_trinity_hints
-	
-	"""
-	grep -v '#' $exonerate_trinity_input | grep -e 'CDS' -e 'exon' -e 'intron' | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > exonerate_trinity_hints
-	"""
-}
-
-exonerate_trinity_hints
-	.collectFile(name: "${params.outdir}/Exonerate_trinity_transcript_hints.gff")	
+ 	.collectFile(name: "${params.outdir}/Exonerate_trinity_transcript_hints.gff")
 
 
 workflow.onComplete {
