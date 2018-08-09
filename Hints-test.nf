@@ -64,7 +64,6 @@ params.prots = false
 params.ESTs = false
 params.reads = false
 params.variant = "no_var"
-params.qtype = "protein"
 params.nblast = 10
 params.nexonerate = 2
 params.nrepeats = 2
@@ -72,12 +71,6 @@ params.species = "mammal"
 params.name = false
 params.singleEnd = false
 params.trinity = true
-
-
-//Script parameters
-
-
-
 
 
 // Validate inputs
@@ -112,6 +105,10 @@ if (x == 0) {
 }
 
 
+if (trinity == true && params.reads == false) {
+	exit 1, "Cannot run Trinity without RNA-seq reads"
+}
+
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -137,7 +134,6 @@ summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Fasta Ref']    = Genome
 summary['Proteins']		= params.prots
 summary['ESTs']			= params. ESTs
-summary['Query type']	= params.qtype
 summary['Reads']		= params.reads
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -213,6 +209,9 @@ process RunMakeBlastDB {
 }
 
 
+/*
+ * Proteins Block
+ */
 
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
@@ -343,6 +342,68 @@ output_gff_prots
  	.collectFile(name: "${params.outdir}/Hints_proteins_exonerate.gff")
 
 
+
+/*
+ * STEP Proteins.5 - GenomeThreader
+ */
+ 
+process RunGenomeThreaderProts {
+	
+	tag "${query_tag}"
+	publishDir "${params.outdir}/genomethreader", mode: 'copy'
+		
+	output:
+	file output_gth
+	
+	when:
+	params.prots != false
+	
+	script:
+	query_tag = Proteins.baseName
+	
+	"""
+	gth -genomic $Genome -protein $Proteins -gff3out -intermediate -o output_gth
+	"""
+}
+
+
+/*
+ * STEP Proteins.6 - GenomeThreader to Hints
+ */
+ 
+process GenomeThreader2HintsProts {
+	
+	tag "${query_tag}"
+	
+	input:
+	file not_clean_gth from output_gth
+	
+	output:
+	file gth_hints
+	
+	when:
+	params.prots != false
+	
+	script:
+	query_tag = Proteins.baseName
+	
+	"""
+	gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
+	grep -v '#' not_clean_gth_wIntrons > no_hash_gth
+	GTH_rename_splitoutput.pl no_hash_gth > clean_gth
+	grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > gth_hints
+	"""
+}
+
+gth_hints
+	.collectFile(name: "${params.outdir}/Hints_proteins_genomethreader.gff")
+
+
+
+/*
+ * ESTs Block
+ */
+ 
 if (params.ESTs) {
 	Channel
 		.fromPath(ESTs)
@@ -466,3 +527,111 @@ process Exonerate2HintsEST {
 
 output_gff_ests
  	.collectFile(name: "${params.outdir}/Hints_ESTs_exonerate.gff")
+ 
+
+/*
+ * RepeatMasker Block
+ */
+ 
+Channel
+	.fromPath(Genome)
+	.splitFasta(by: params.nrepeats, file: true)
+	.set {fasta_rep}
+
+
+/*
+ * STEP RepeatMasker.1 - RepeatMasker
+ */
+ 
+process RunRepeatMasker {
+
+	tag "${genome_tag}"
+	
+	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
+	
+	input:
+	file query_fa_rep from fasta_rep 
+	
+	output:
+	file(query_out_rep) into RM_out
+	
+	script:
+	query_out_rep = query_fa_rep + ".out"
+	genome_tag = Genome.baseName
+	
+	"""
+	RepeatMasker -species $params.species $query_fa_rep
+	"""
+}
+
+/*
+ * STEP RepeatMasker.2 - RepeatMasker - Collect and Clean1
+ */
+ 
+process RemoveHeaderRepeatMasker {	
+	
+	tag "${genome_tag}"
+	publishDir "${params.outdir}/repeatmasker", mode: 'copy'
+	
+	input:
+	file "with_header_*" from RM_out.collect()
+	
+	output:
+	file "result_unclean.out" into mergedUNCLEAN
+	
+	script:
+	genome_tag = Genome.baseName
+	"""
+	tail -n +4 with_header_* > no_header
+	cat no_header >> result_unclean.out
+	"""
+}
+
+
+/*
+ * STEP RepeatMasker.3 - RepeatMasker - Clean2
+ */
+ 
+process CleanRepeatMasker {
+	
+	tag "${genome_tag}"
+	
+	input:
+	file mergedUNCLEAN
+	
+	output:
+	file RepeatMasker_out into RM_2_hints
+	
+	script:
+	genome_tag = Genome.baseName
+	
+	"""
+	grep -v 'with_header' $mergedUNCLEAN | awk 'NF' > RepeatMasker_out
+	"""
+}
+
+
+/*
+ * STEP RepeatMasker.4 - RepeatMasker to Hints
+ */
+ 
+process RepeatMasker2Hints {
+
+	tag "${genome_tag}"
+	
+	input:
+	file RM_2_hints
+	
+	output:
+	file RepeatMasker_hints
+
+	script:
+	genome_tag = Genome.baseName
+		
+	"""
+	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_hints
+	"""
+}
+
+RepeatMasker_hints
+	.collectFile(name: "${params.outdir}/Hints_repeatmasker.gff")
