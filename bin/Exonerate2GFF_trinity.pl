@@ -69,7 +69,6 @@ while (<EXONERATE>) {
 		print OUTFILE $Chrom."\tTrinityExonerate\tintronpartpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
 	} else {
 		next;
-		}
 	}
 }
 close (EXONERATE);
