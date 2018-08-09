@@ -91,21 +91,23 @@ println x
 
 if ( params.prots ){
 	Proteins = file(params.prots)
-	args = args + 1
+	x = x + 1
     if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
 }
 
 if ( params.ESTs ){
 	ESTs = file(params.ESTs)
-	args = args + 1
+	x = x + 1
     if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
 }
 
 if (params.reads){
-	args = args + 1
+	x = x + 1
 }
 
-if (args == 0) { 
+println x
+
+if (x == 0) { 
 	exit 1, "At least one data file must be especified"
 }
 
