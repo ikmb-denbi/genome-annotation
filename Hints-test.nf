@@ -93,16 +93,19 @@ if ( params.prots ){
 	Proteins = file(params.prots)
 	x = x + 1
     if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
+    println A
 }
 
 if ( params.ESTs ){
 	ESTs = file(params.ESTs)
 	x = x + 1
     if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
+    println B
 }
 
 if (params.reads){
 	x = x + 1
+	println C
 }
 
 println x
