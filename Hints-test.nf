@@ -396,7 +396,7 @@ process GenomeThreader2HintsProts {
 }
 
 gth_hints
-	.collectFile(name: "${params.outdir}/Hints_proteins_genomethreader.gff")
+	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_genomethreader.gff")
 
 
 
@@ -526,7 +526,7 @@ process Exonerate2HintsEST {
 }
 
 output_gff_ests
- 	.collectFile(name: "${params.outdir}/Hints_ESTs_exonerate.gff")
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_ESTs_exonerate.gff")
  
 
 /*
@@ -634,7 +634,7 @@ process RepeatMasker2Hints {
 }
 
 RepeatMasker_hints
-	.collectFile(name: "${params.outdir}/Hints_repeatmasker.gff")
+	.collectFile(name: "${params.outdir}/Hints/Hints_repeatmasker.gff")
 
 
 /*
@@ -807,7 +807,7 @@ process RunHisat2 {
 process Hisat2Hints {
 
 	tag "${prefix}"
-	publishDir "${params.outdir}", mode: 'copy'
+	publishDir "${params.outdir}/Hints", mode: 'copy'
 	
 	input:
 	file accepted_hits2hints
@@ -958,7 +958,7 @@ process Exonerate2HintsTrinity {
 }
 
 output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Hints_mapped_transcripts.gff")
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_mapped_transcripts.gff")
 
 
 workflow.onComplete {
