@@ -81,7 +81,7 @@ params.trinity = true
 
 
 // Validate inputs
-if ( Genome ){
+if ( params.genome ){
 	Genome = file(params.genome)
     if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
