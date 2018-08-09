@@ -263,6 +263,7 @@ query2target_uniq_result
  
 process RunExonerate {
 	
+	tag "${query_tag}"
 	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
 	
 	input:
@@ -272,6 +273,10 @@ process RunExonerate {
 	file 'exonerate.out' into exonerate_result
 	
 	script:
+	query_num = hits_chunk.toString().split(".")[-1]
+	query_tag = Queries.baseName + " " + query_num
+	
+	
 	if (params.qtype == 'protein') {
 	"""
 	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $Queries $Genome
