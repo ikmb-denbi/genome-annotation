@@ -722,8 +722,8 @@ process BlastTrinity2QueryTarget {
 	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
 	
 	script:
-	ReadsBase = reads[0].toString().split("_R1")[0]
-	read_tag = ReadBase + " transcripts"
+	
+	read_tag = all_blast_results_trinity.toString()
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
@@ -741,7 +741,7 @@ query2target_trinity_uniq_result
  
 process RunExonerateTrinity {
 	
-	tag "${read_tag}"
+	
 	publishDir "${params.outdir}/exonerate_trinity/${hits_chunk}", mode: 'copy'
 	
 	input:
@@ -752,8 +752,6 @@ process RunExonerateTrinity {
 	file 'exonerate.out' into exonerate_result_trinity
 	
 	script:
-	ReadsBase = reads[0].toString().split("_R1")[0]
-	read_tag = ReadBase + " transcripts"
 	
 	"""
 	runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
@@ -767,17 +765,12 @@ process RunExonerateTrinity {
  
 process Exonerate2HintsTrinity {
 	
-	tag "${read_tag}"
-	
 	input:
 	file exonerate_result_trinity
 	
 	output:
 	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
 	
-	script:
-	ReadsBase = reads[0].toString().split("_R1")[0]
-	read_tag = ReadBase + " transcripts"
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines exonerate_trinity_gff
