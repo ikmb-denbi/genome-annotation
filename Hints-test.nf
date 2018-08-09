@@ -220,7 +220,7 @@ if (params.prots) {
 	Channel
 		.fromPath(Proteins)
 		.splitFasta(by: params.nblast, file: true)
-		.into {fasta_prots}
+		.set {fasta_prots}
 } else { 
 	fasta_prots = Channel.from(false)
 }
@@ -347,7 +347,7 @@ if (params.ESTs) {
 	Channel
 		.fromPath(ESTs)
 		.splitFasta(by: params.nblast, file: true)
-		.into {fasta_ests}
+		.set {fasta_ests}
 } else { 
 	fasta_ests = Channel.from(false)
 }
@@ -433,7 +433,7 @@ process RunExonerateEST {
 	query_tag = Proteins.baseName
 	
 	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk_ests $Proteins $Genome
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Proteins $Genome
 	"""
 }
 
