@@ -241,7 +241,7 @@ process Bam2Hints {
 	file accepted_hits2hints
 	
 	output:
-	file '*_hints.gff'
+	file 'Hints_RNAseq_*.gff'
 	
 	script:
 	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
