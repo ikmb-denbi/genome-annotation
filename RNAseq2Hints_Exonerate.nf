@@ -367,7 +367,7 @@ process Exonerate2GffTrinity {
 	script:
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_EST.pl exonerate_gff_lines no_var exonerate_trinity_gff
+	Exonerate2GFF_EST.pl exonerate_gff_lines exonerate_trinity_gff
 	"""
 }
 

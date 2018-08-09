@@ -66,7 +66,7 @@ while (<EXONERATE>) {
 	} elsif ($feature eq "exon") {
 		print OUTFILE $Chrom."\tTrinityExonerate\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
 	} elsif ($feature eq "intron") {
-		print OUTFILE $Chrom."\tTrinityExonerate\tintronpartpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
+		print OUTFILE $Chrom."\tTrinityExonerate\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID."src=T;pri=4\n";
 	} else {
 		next;
 	}
