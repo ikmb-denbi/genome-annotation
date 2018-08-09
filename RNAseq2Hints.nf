@@ -273,12 +273,7 @@ process runTrinity {
 	"""
 }
 
-trinity_output = trinity_transcripts.collectFile()
-
-Channel
-	.fromPath(trinity_output)
-	.splitFasta(by: params.nblast, file: true)
-	.set {fasta_trinity}
+TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
 
 
 //Proteins (Blast + ) Exonerate Block:
@@ -292,7 +287,7 @@ process RunBlast {
 	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
 	
 	input:
-	file query_fa from fasta_trinity 
+	file query_fa from TrinityChannel 
 	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
 	
 	output:
