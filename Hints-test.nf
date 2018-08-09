@@ -349,7 +349,7 @@ if (params.ESTs) {
 		.splitFasta(by: params.nblast, file: true)
 		.into {fasta_ests}
 } else { 
-	fasta = Channel.from(false)
+	fasta_ests = Channel.from(false)
 }
 
 /*
