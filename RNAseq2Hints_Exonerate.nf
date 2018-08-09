@@ -315,16 +315,13 @@ process BlastTrinity2QueryTarget {
 	file all_blast_results_trinity from blast_result_trinity.collectFile()
 	
 	output:
-	file query2target_trinity_result_uniq into query2target_trinity_uniq_out, query2target_trinity_uniq_result
+	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
 	sort query2target_trinity_result | uniq > query2target_trinity_result_uniq
 	"""
-}
-
-query2target_trinity_uniq_out
-	.collectFile(name: "${params.outdir}/Blast_trinity_output.txt") 	
+} 	
 
 query2target_trinity_uniq_result
 	.splitText(by: params.nexonerate, file: true).set{query2target_trinity_chunk}	
