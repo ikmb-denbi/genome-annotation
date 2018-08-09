@@ -104,7 +104,10 @@ if (params.reads){
 	args = args + 1
 }
 
-if (args == 0) exit 1, "At least one data file must be especified"
+if (args == 0) 
+	{ exit 1, "At least one data file must be especified"}
+
+println args
 
 
 
