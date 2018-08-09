@@ -86,7 +86,7 @@ if ( params.genome ){
     if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
 
-x = 1
+x = 0
 println x
 
 if ( params.prots ){
