@@ -105,7 +105,7 @@ if (x == 0) {
 }
 
 
-if (trinity == true && params.reads == false) {
+if (params.trinity == true && params.reads == false) {
 	exit 1, "Cannot run Trinity without RNA-seq reads"
 }
 
