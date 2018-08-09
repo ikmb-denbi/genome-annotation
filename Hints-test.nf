@@ -397,10 +397,10 @@ process Blast2QueryTargetEST {
 	file query2target_result_uniq_ests into query2target_uniq_result_ests
 	
 	when:
-	params.prots != false
+	params.ESTs != false
 	
 	script:
-	query_tag = Proteins.baseName
+	query_tag = ESTs.baseName
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_ests 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq_ests
@@ -427,13 +427,13 @@ process RunExonerateEST {
 	file 'exonerate.out' into exonerate_result_ests
 	
 	when:
-	params.prots != false
+	params.ESTs != false
 	
 	script:
-	query_tag = Proteins.baseName
+	query_tag = ESTs.baseName
 	
 	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Proteins $Genome
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $ESTs $Genome
 	"""
 }
 
@@ -453,10 +453,10 @@ process Exonerate2HintsEST {
 	file exonerate_gff into output_gff_ests
 	
 	when:
-	params.prots != false
+	params.ESTs != false
 	
 	script:
-	query_tag = Proteins.baseName
+	query_tag = ESTs.baseName
 	
 	"""
 	grep -v '#' $exonerate_result_ests | grep 'exonerate:est2genome' > exonerate_gff_lines
