@@ -273,7 +273,7 @@ process RunExonerate {
 	file 'exonerate.out' into exonerate_result
 	
 	script:
-	query_num = hits_chunk.toString().split(".")[-1]
+	query_num = hits_chunk[0].toString().split(".")[-1]
 	query_tag = Queries.baseName + " " + query_num
 	
 	
