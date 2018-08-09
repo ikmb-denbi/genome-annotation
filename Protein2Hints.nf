@@ -34,7 +34,7 @@ def helpMessage() {
       --nblast						Chunks to divide Blast jobs (default = 10)
       --nexonerate					Chunks to divide Exonerate jobs (default = 10)
 	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
-	  --species						Species database for RepeatMasker (default = 'mammal'(
+	  --species						Species database for RepeatMasker (default = 'mammal')
 
     Other options:
       --outdir                      The output directory where the results will be saved

@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         NF-hints
+                         NF-Hints
 ========================================================================================
  NF-hints Analysis Pipeline. Started 2018-08-03.
  #### Homepage / Documentation
@@ -21,26 +21,25 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run NF-hints --reads '*_R{1,2}.fastq.gz' -profile docker
+    nextflow run Protein2Hints.nf --genome 'Genome.fasta' --query 'Proteins.fasta' -profile docker
 
     Mandatory arguments:
-      --reads                       Path to input data (must be surrounded with quotes)
       --genome                      Genome reference
       --query						Proteins from other species
+      --reads                       Path to input data (must be surrounded with quotes)
       -profile                      Hardware config to use. docker / aws
 
     Options:
-      --singleEnd                   Specifies that the input is single end reads
 	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
       --qtype						Query type: ('protein' (default) | 'EST')
       --nblast						Chunks to divide Blast jobs (default = 10)
       --nexonerate					Chunks to divide Exonerate jobs (default = 10)
 	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
-	  --species						Species database for RepeatMasker (default = 'mammal'(
+	  --species						Species database for RepeatMasker (default = 'mammal')
+	  --singleEnd                   Specifies that the input is single end reads
 
     Other options:
       --outdir                      The output directory where the results will be saved
-      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -55,12 +54,7 @@ if (params.help){
     exit 0
 }
 
-// Configurable variables
-params.name = false
-//params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
-params.email = false
-params.plaintext_email = false
+
 
 //Default variables:
 params.variant = "no_var"
@@ -69,19 +63,27 @@ params.nblast = 10
 params.nexonerate = 10
 params.nrepeats = 2
 params.species = "mammal"
+params.name = false
+params.outdir = "Hints_output"
+
+
+
+// Validate inputs
+if ( params.genome ){
+    fasta = file(params.genome)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.genome}"
+}
+
+if ( params.query ){
+    fasta = file(params.query)
+    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.query}"
+}
+
 
 //Script parameters
 Queries = file(params.query)
 Genome = file(params.genome)
 
-multiqc_config = file(params.multiqc_config)
-output_docs = file("$baseDir/docs/output.md")
-
-// Validate inputs
-if ( params.fasta ){
-    fasta = file(params.fasta)
-    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
-}
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -105,9 +107,10 @@ def summary = [:]
 summary['Pipeline Name']  = 'NF-hints'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
-summary['Reads']        = params.reads
-summary['Fasta Ref']    = params.fasta
-summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
+summary['Fasta Ref']    = Genome
+summary['Query']		= Queries
+summary['Query type']	= params.qtype
+summary['Reads']		= params.reads
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -122,7 +125,6 @@ summary['Working dir']    = workflow.workDir
 summary['Output dir']     = params.outdir
 summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
-if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
@@ -163,7 +165,7 @@ process RunMakeBlastDB {
 	file(genome) from inputMakeblastdb
 	
 	output:
-	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db
+	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db, blast_db_trinity
 	
 	script:
 	dbName = genome.baseName
@@ -175,7 +177,7 @@ process RunMakeBlastDB {
 	
     if (!target.exists()) {
 		"""
-			makeblastdb -in $genome -dbtype nucl -out $dbName
+		makeblastdb -in $genome -dbtype nucl -out $dbName
 		"""
 	}
 	
@@ -188,7 +190,6 @@ process RunMakeBlastDB {
 Channel
 	.fromPath(Queries)
 	.splitFasta(by: params.nblast, file: true)
-	.ifEmpty { exit 1, "Could not find proteins file" }
 	.into {fasta}
 
 
@@ -239,16 +240,13 @@ process Blast2QueryTarget {
 	file all_blast_results from blast_result.collectFile()
 	
 	output:
-	file query2target_result_uniq into query2target_uniq_out, query2target_uniq_result
+	file query2target_result_uniq into query2target_uniq_result
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq
 	"""
 }
-
-query2target_uniq_out
-	.collectFile(name: "${params.outdir}/Blast_output.txt") 	
 
 query2target_uniq_result
 	.splitText(by: params.nexonerate, file: true).set{query2target_chunk}	
@@ -282,16 +280,16 @@ process RunExonerate {
 
 
 /*
- * STEP 5 - Exonerate to GFF
+ * STEP 5 - Exonerate to Hints
  */
  
-process Exonerate2Gff {
+process Exonerate2Hints {
 	
 	input:
 	file exonerate_result
 	
 	output:
-	file exonerate_gff into output_gff, exonerate_for_hints
+	file exonerate_gff into output_gff
 	
 	script:
 	if (params.qtype == 'protein') {
@@ -308,32 +306,11 @@ process Exonerate2Gff {
 }
 
 output_gff
- 	.collectFile(name: "${params.outdir}/Exonerate_output.gff")
+ 	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_exonerate.gff")
 
 
 /*
- * STEP 6 - Exonerate to Hints
- */
- 
-process Exonerate2Hints {
-
-	input:
-	file exonerate_input from exonerate_for_hints.collectFile()
-	
-	output:
-	file exonerate_hints
-	
-	"""
-	grep -v '#' $exonerate_input | grep -e 'CDS' -e 'exon' -e 'intron' | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > exonerate_hints
-	"""
-}
-
-exonerate_hints
-	.collectFile(name: "${params.outdir}/Exonerate_protein_hints.gff")	
-
-
-/*
- * STEP 7 - GenomeThreader
+ * STEP 6 - GenomeThreader
  */
  
 process RunGenomeThreader {
@@ -343,14 +320,21 @@ process RunGenomeThreader {
 	output:
 	file output_gth
 	
+	script:
+	if (params.qtype == 'protein') {
 	"""
 	gth -genomic $Genome -protein $Queries -gff3out -intermediate -o output_gth
 	"""
+	} else if (params.qtype == 'EST') {
+	"""
+	gth -genomic $Genome -cdna $Queries -gff3out -intermediate -o output_gth
+	"""
+	}
 }
 
 
 /*
- * STEP 8 - GenomeThreader to Hints
+ * STEP 7 - GenomeThreader to Hints
  */
  
 process GenomeThreader2Hints {
@@ -370,7 +354,7 @@ process GenomeThreader2Hints {
 }
 
 gth_hints
-	.collectFile(name: "${params.outdir}/GenomeThreader_protein_hints.gff")
+	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_genomethreader.gff")
 
 
 //RepeatMasker Block
@@ -378,12 +362,11 @@ gth_hints
 Channel
 	.fromPath(Genome)
 	.splitFasta(by: params.nrepeats, file: true)
-	.ifEmpty { exit 1, "Could not find genome file" }
 	.set {fasta_rep}
 
 
 /*
- * STEP 9 - RepeatMasker
+ * STEP 8 - RepeatMasker
  */
  
 process RunRepeatMasker {
@@ -405,7 +388,7 @@ process RunRepeatMasker {
 }
 
 /*
- * STEP 10 - RepeatMasker - Collect and Clean1
+ * STEP 9 - RepeatMasker - Collect and Clean1
  */
  
 process RemoveHeaderRepeatMasker {	
@@ -426,7 +409,7 @@ process RemoveHeaderRepeatMasker {
 
 
 /*
- * STEP 11 - RepeatMasker - Clean2
+ * STEP 10 - RepeatMasker - Clean2
  */
  
 process CleanRepeatMasker {
@@ -435,18 +418,15 @@ process CleanRepeatMasker {
 	file mergedUNCLEAN
 	
 	output:
-	file RepeatMasker_out into RM_clean_out, RM_2_hints
+	file RepeatMasker_out into RM_2_hints
 	"""
 	grep -v 'with_header' $mergedUNCLEAN | awk 'NF' > RepeatMasker_out
 	"""
 }
 
-RM_clean_out
- 	.collectFile(name: "${params.outdir}/RepeatMasker_output.txt")
-
 
 /*
- * STEP 12 - RepeatMasker to Hints
+ * STEP 11 - RepeatMasker to Hints
  */
  
 process RepeatMasker2Hints {
@@ -463,22 +443,25 @@ process RepeatMasker2Hints {
 }
 
 RepeatMasker_hints
-	.collectFile(name: "${params.outdir}/RepeatMasker_hints.gff")
+	.collectFile(name: "${params.outdir}/Hints_repeatmasker.gff")
 
 
+
+/*
+ * RNAseq block
+ */
+ 
+ 
 /*
  * Create a channel for input read files
  */
      Channel
          .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
          .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
-
-
-
+         .into { read_files_fastqc; read_files_trimming; read_files_hisat }
 
 /*
- * STEP 13 - FastQC
+ * STEP 12 - FastQC
  */
 process runFastqc {
     tag "${prefix}"
@@ -499,7 +482,7 @@ process runFastqc {
 }
 
 /*
- * STEP 2 - Trimgalore
+ * STEP 13 - Trimgalore
  */
 process runTrimgalore {
 
@@ -535,69 +518,222 @@ process runTrimgalore {
 
 }
 
+
+Channel
+	.fromPath(Genome)
+	.set { inputMakeHisatdb }
+
+
 /*
- * Parse software version numbers
+ * STEP 14 - Make Hisat2 DB
  */
-process get_software_versions {
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-    """
-    echo $params.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
-    """
+ 
+process RunMakeHisatDB {
+	
+	tag "${prefix}"
+	publishDir "${params.outdir}/HisatDB", mode: 'copy'
+	
+	input:
+	file(genome) from inputMakeHisatdb
+	
+	output:
+	file "${dbName}.*.ht2" into hs2_indices
+	
+	script:
+	dbName = genome.baseName
+	dbName_1 = dbName + ".1.ht2"
+	target = file(dbName_1)
+	
+	prefix = dbName
+    if (!target.exists()) {
+		"""
+		hisat2-build $genome $dbName
+		"""
+	}
+	
 }
 
 
 /*
- * STEP X - MultiQC
+ * STEP 15 - Hisat2
  */
-process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
-    input:
-    file multiqc_config
-    file ('fastqc/*') from fastqc_results.collect()
-    file ('software_versions/*') from software_versions_yaml
+process RunHisat2 {
 
-    output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
+	tag "${prefix}"
+	publishDir "${params.outdir}/Hisat2", mode: 'copy'
+	
+	input:
+	set val(name), file(reads) from read_files_hisat
+	file hs2_indices from hs2_indices.collect()	
+	
+	output:
+	file "*accepted_hits.bam" into accepted_hits2hints, accepted_hits2trinity 
+	
+	script:
+	indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
+	ReadsBase = reads[0].toString().split("_R1")[0]
+	Read1 = ReadsBase + "_R1.fastq"
+	Read2 = ReadsBase + "_R2.fastq"
+	prefix = ReadsBase + "_vs_" + indexBase
+	
+	
+	if (params.singleEnd) {
+        """
+        hisat2 -x $indexBase -U $reads -S alignment_sam
+        samtools view -Sb alignment_sam > alignment.bam
+        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+        """
+   } else {
+        """
+        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam
+        samtools view -Sb alignment_sam > alignment.bam
+        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+		"""
+   }
+}   
 
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
-    """
+/*
+ * STEP 16 - Hisat2 into Hints
+ */
+process Hisat2Hints {
+
+	tag "${prefix}"
+	publishDir "${params.outdir}", mode: 'copy'
+	
+	input:
+	file accepted_hits2hints
+	
+	output:
+	file 'Hints_RNAseq_*.gff'
+	
+	script:
+	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
+	
+	"""
+	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=Hints_RNAseq_${prefix}.gff	
+	"""
 }
 
+/*
+ * STEP 17 - Trinity
+ */
+process runTrinity {
+
+	tag "${prefix}"
+	publishDir "${params.outdir}/trinity", mode: 'copy'
+	
+	input:
+	file accepted_hits2trinity
+	
+	output:
+	file "trinity_out_dir/*_trinity.fasta" into trinity_transcripts, trinity_transcripts_2exonerate
+	
+	script:
+	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
+	"""
+	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 1 --max_memory 5G
+	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
+	"""
+}
+
+TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
+
+
+//Proteins (Blast + ) Exonerate Block:
+
+/*
+ * STEP 18 - Blast
+ */
+ 
+process RunBlastTrinity {
+
+	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
+	
+	input:
+	file query_fa from TrinityChannel 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
+	
+	output:
+	file blast_result_trinity
+		
+	script: 
+
+	db_name = blastdb_nhr.baseName
+	chunk_name = query_fa.baseName
+	
+	"""
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
+	"""
+}
+
+/*
+ * STEP 19 - Parse Blast Output
+ */
+
+process BlastTrinity2QueryTarget {
+	
+	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
+	
+	input:
+	file all_blast_results_trinity from blast_result_trinity.collectFile()
+	
+	output:
+	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
+	
+	"""
+	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
+	sort query2target_trinity_result | uniq > query2target_trinity_result_uniq
+	"""
+} 	
+
+query2target_trinity_uniq_result
+	.splitText(by: params.nexonerate, file: true).set{query2target_trinity_chunk}	
 
 
 /*
- * STEP X - Output Description HTML
+ * STEP 20 - Exonerate
  */
-process output_documentation {
-    tag "$prefix"
-    publishDir "${params.outdir}/Documentation", mode: 'copy'
+ 
+process RunExonerateTrinity {
 
-    input:
-    file output_docs
-
-    output:
-    file "results_description.html"
-
-    script:
-    """
-    markdown_to_html.r $output_docs results_description.html
-    """
+	publishDir "${params.outdir}/exonerate_trinity/${hits_chunk}", mode: 'copy'
+	
+	input:
+	file hits_trinity_chunk from query2target_trinity_chunk
+	file trinity_transcripts_2exonerate
+	
+	output:
+	file 'exonerate.out' into exonerate_result_trinity
+	
+	script:
+	"""
+	runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
+	"""
 }
 
+
+/*
+ * STEP 21 - Exonerate to Hints
+ */
+ 
+process Exonerate2HintsTrinity {
+	
+	input:
+	file exonerate_result_trinity
+	
+	output:
+	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
+	
+	script:
+	"""
+	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
+	Exonerate2GFF_trinity.pl exonerate_gff_lines exonerate_trinity_gff
+	"""
+}
+
+output_trinity_gff
+ 	.collectFile(name: "${params.outdir}/Hints_mapped_transcripts.gff")
 
 
 workflow.onComplete {
