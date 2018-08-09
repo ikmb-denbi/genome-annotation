@@ -207,11 +207,12 @@ process RunMakeBlastDB {
 
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
-Channel
-	.fromPath(Proteins)
-	.splitFasta(by: params.nblast, file: true)
-	.into {fasta}
-
+if ( Proteins ) {
+	Channel
+		.fromPath(Proteins)
+		.splitFasta(by: params.nblast, file: true)
+		.into {fasta}
+}
 
 //Proteins (Blast + ) Exonerate Block:
 
