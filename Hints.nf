@@ -159,6 +159,7 @@ Channel
  
 process RunMakeBlastDB {
 	
+	tag "${dbName}"
 	publishDir "${params.outdir}/BlastDB", mode: 'copy'
 	
 	input:
@@ -200,7 +201,8 @@ Channel
  */
  
 process RunBlast {
-
+	
+	tag "${chunk_name}"
 	publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
 	
 	input:
@@ -257,7 +259,8 @@ query2target_uniq_result
  */
  
 process RunExonerate {
-
+	
+	tag "${hits_chunk}"
 	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
 	
 	input:
