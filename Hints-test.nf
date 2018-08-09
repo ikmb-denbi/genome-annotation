@@ -108,7 +108,7 @@ if (args == 0) {
 	exit 1, "At least one data file must be especified"
 }
 
-println args
+println "$args"
 
 println "Hello"
 
