@@ -236,6 +236,7 @@ process RunBlast {
 
 process Blast2QueryTarget {
 	
+	tag "${query_tag}"
 	publishDir "${params.outdir}/blast2targets", mode: 'copy'
 	
 	input:
@@ -244,6 +245,8 @@ process Blast2QueryTarget {
 	output:
 	file query2target_result_uniq into query2target_uniq_result
 	
+	script:
+	query_tag = Queries.baseName
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
 	sort query2target_result | uniq > query2target_result_uniq
@@ -260,7 +263,6 @@ query2target_uniq_result
  
 process RunExonerate {
 	
-	tag "${hits_chunk}"
 	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
 	
 	input:
