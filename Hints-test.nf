@@ -254,7 +254,7 @@ if (params.prots) {
 	}
 } else {
 	blast_result = Channel.from(false)
-
+}
 
 /*
  * STEP 3 - Parse Blast Output
