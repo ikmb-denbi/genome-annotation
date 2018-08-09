@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 my $num_args               = $#ARGV + 1;
-if ($num_args != 3)
+if ($num_args != 2)
 
 {
     print "Usage of Exonerate2GFF_EST.pl\n\n";
