@@ -33,13 +33,15 @@ def helpMessage() {
       --reads						Path to RNA-seq data (must be surrounded with quotes)
 
     Options:
-	  --trinity						Run transcriptome assembly with trinity and produce hints from the transcripts (true (default) | false)
-	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')	
-      --nblast						Chunks to divide Blast jobs (default = 10)
-      --nexonerate					Chunks to divide Exonerate jobs (default = 10)
-	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
-	  --species						Species database for RepeatMasker (default = 'mammal')
-	  --singleEnd                   Specifies that the input is single end reads (true | false (default))
+	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
+	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
+	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
+	  --variant						Specifies whether there are isoforms in the query file [ 'no_var' (default) | 'var' ]
+      --nblast						Chunks to divide Blast jobs [ default = 10 ]
+      --nexonerate					Chunks to divide Exonerate jobs [ default = 10 ]
+	  --nrepeats					Chunks to divide RepeatMasker jobs [ default = 2 ]
+	  --species						Species database for RepeatMasker [ default = 'mammal' ]
+	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -60,49 +62,58 @@ if (params.help){
 
 
 //Default variables:
+params.prots = false
+params.ESTs = false
+params.reads = false
+
+params.trinity = true
+params.gth = true
+params.RM = true
+
 params.variant = "no_var"
-params.qtype = "protein"
 params.nblast = 10
 params.nexonerate = 2
 params.nrepeats = 2
 params.species = "mammal"
 params.name = false
 params.singleEnd = false
-params.trinity = true
-
-
-//Script parameters
-Proteins = file(params.prots)
-ESTs = file(params.ESTs)
-Genome = file(params.genome)
 
 
 // Validate inputs
-if ( Genome ){
+if ( params.genome ){
+	Genome = file(params.genome)
     if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
 
-args = 0
+x = 0
 
-if ( Proteins ){
-	args = args + 1
+if ( params.prots ){
+	Proteins = file(params.prots)
+	x = x + 1
     if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
+    println "Will run Exonerate and GenomeThreader on Protein file"
 }
 
-if ( ESTs ){
-	args = args + 1
+if ( params.ESTs ){
+	ESTs = file(params.ESTs)
+	x = x + 1
     if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
+    println "Will run Exonerate on EST/Transcriptome file"
 }
 
 if (params.reads){
-	args = args + 1
+	x = x + 1
+	println "Will run Hisat2 on RNA-seq data"
 }
 
-if (args == 0) exit 1, "At least one data file must be especified"
+if (x == 0) { 
+	exit 1, "At least one data file must be especified"
+}
 
 
-
-
+if (params.trinity == true && params.reads == false) {
+	exit 1, "Cannot run Trinity without RNA-seq reads"
+}
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -127,8 +138,8 @@ summary['Pipeline Name']  = 'NF-hints'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Fasta Ref']    = Genome
-summary['Query']		= Proteins
-summary['Query type']	= params.qtype
+summary['Proteins']		= params.prots
+summary['ESTs']			= params. ESTs
 summary['Reads']		= params.reads
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -185,7 +196,7 @@ process RunMakeBlastDB {
 	file(genome) from inputMakeblastdb
 	
 	output:
-	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db, blast_db_trinity
+	set file(db_nhr),file(db_nin),file(db_nsq) into blast_db_prots, blast_db_ests, blast_db_trinity
 	
 	script:
 	dbName = genome.baseName
@@ -204,150 +215,145 @@ process RunMakeBlastDB {
 }
 
 
+/*
+ * Proteins Block
+ */
 
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
-if ( Proteins ) {
+if (params.prots) {
 	Channel
 		.fromPath(Proteins)
 		.splitFasta(by: params.nblast, file: true)
-		.into {fasta}
+		.set {fasta_prots}
+} else { 
+	fasta_prots = Channel.from(false)
 }
 
 //Proteins (Blast + ) Exonerate Block:
 
 /*
- * STEP 2 - Blast
+ * STEP Proteins.1 - Blast
  */
  
-if (Proteins) {
-process RunBlast {
+process RunBlastProts {
 	
 	tag "${chunk_name}"
 	publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
 	
 	input:
-	file query_fa from fasta 
-	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db.collect()
+	file query_fa_prots from fasta_prots 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_prots.collect()
 	
 	output:
-	file blast_result
+	file blast_result_prots
+	
+	when:
+	params.prots != false
 		
 	script: 
 
 	db_name = blastdb_nhr.baseName
-	chunk_name = query_fa.baseName
+	chunk_name = query_fa_prots.baseName
 	
-	if (params.qtype == 'protein') {
-		"""
-		tblastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
-		"""
-	} else if (params.qtype == 'EST') {
-		"""
-		blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result
-		"""
-	}
+	"""
+	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 > blast_result_prots
+	"""
 }
-}
-
 
 /*
- * STEP 3 - Parse Blast Output
+ * STEP Proteins.2 - Parse Blast Output
  */
 
-process Blast2QueryTarget {
+process Blast2QueryTargetProts {
 	
 	tag "${query_tag}"
 	publishDir "${params.outdir}/blast2targets", mode: 'copy'
 	
 	input:
-	file all_blast_results from blast_result.collectFile()
+	file all_blast_results_prots from blast_result_prots.collectFile()
 	
 	output:
-	file query2target_result_uniq into query2target_uniq_result
+	file query2target_result_uniq_prots into query2target_uniq_result_prots
+	
+	when:
+	params.prots != false
 	
 	script:
 	query_tag = Proteins.baseName
 	"""
-	BlastOutput2QueryTarget.pl $all_blast_results 1e-5 query2target_result
-	sort query2target_result | uniq > query2target_result_uniq
+	BlastOutput2QueryTarget.pl $all_blast_results_prots 1e-5 query2target_result
+	sort query2target_result | uniq > query2target_result_uniq_prots
 	"""
 }
 
-query2target_uniq_result
-	.splitText(by: params.nexonerate, file: true).set{query2target_chunk}	
+query2target_uniq_result_prots
+	.splitText(by: params.nexonerate, file: true).set{query2target_chunk_prots}	
 
 
 /*
- * STEP 4 - Exonerate
+ * STEP Proteins.3 - Exonerate
  */
  
-process RunExonerate {
+process RunExonerateProts {
 	
 	tag "${query_tag}"
 	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
 	
 	input:
-	file hits_chunk from query2target_chunk
+	file hits_chunk from query2target_chunk_prots
 	
 	output:
-	file 'exonerate.out' into exonerate_result
+	file 'exonerate.out' into exonerate_result_prots
+	
+	when:
+	params.prots != false
 	
 	script:
 	query_tag = Proteins.baseName
 	
-	
-	if (params.qtype == 'protein') {
 	"""
 	runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $Proteins $Genome
 	"""
-	} else if (params.qtype == 'EST') {
-	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $Proteins $Genome
-	"""
-	}
 }
 
 
 /*
- * STEP 5 - Exonerate to Hints
+ * STEP Proteins.4 - Exonerate to Hints
  */
  
-process Exonerate2Hints {
+process Exonerate2HintsProts {
 	
 	tag "${query_tag}"
 	
 	input:
-	file exonerate_result
+	file exonerate_result_prots
 	
 	output:
-	file exonerate_gff into output_gff
+	file exonerate_gff into output_gff_prots
+	
+	when:
+	params.prots != false
 	
 	script:
 	query_tag = Proteins.baseName
 	
-	if (params.qtype == 'protein') {
 	"""
-	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
+	grep -v '#' $exonerate_result_prots | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
 	Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
 	"""
-	} else if (params.qtype == 'EST') {
-	"""
-	grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
-	"""
-	}
 }
 
-output_gff
- 	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_exonerate.gff")
+output_gff_prots
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_exonerate.gff")
+
 
 
 /*
- * STEP 6 - GenomeThreader
+ * STEP Proteins.5 - GenomeThreader
  */
  
-process RunGenomeThreader {
+process RunGenomeThreaderProts {
 	
 	tag "${query_tag}"
 	publishDir "${params.outdir}/genomethreader", mode: 'copy'
@@ -355,26 +361,23 @@ process RunGenomeThreader {
 	output:
 	file output_gth
 	
+	when:
+	params.prots != false && params.gth != false
+	
 	script:
 	query_tag = Proteins.baseName
 	
-	if (params.qtype == 'protein') {
 	"""
 	gth -genomic $Genome -protein $Proteins -gff3out -intermediate -o output_gth
 	"""
-	} else if (params.qtype == 'EST') {
-	"""
-	gth -genomic $Genome -cdna $Proteins -gff3out -intermediate -o output_gth
-	"""
-	}
 }
 
 
 /*
- * STEP 7 - GenomeThreader to Hints
+ * STEP Proteins.6 - GenomeThreader to Hints
  */
  
-process GenomeThreader2Hints {
+process GenomeThreader2HintsProts {
 	
 	tag "${query_tag}"
 	
@@ -383,6 +386,9 @@ process GenomeThreader2Hints {
 	
 	output:
 	file gth_hints
+	
+	when:
+	params.prots != false && params.gth != false
 	
 	script:
 	query_tag = Proteins.baseName
@@ -396,19 +402,154 @@ process GenomeThreader2Hints {
 }
 
 gth_hints
-	.collectFile(name: "${params.outdir}/Hints_${params.qtype}_genomethreader.gff")
+	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_genomethreader.gff")
 
-
-//RepeatMasker Block
-
-Channel
-	.fromPath(Genome)
-	.splitFasta(by: params.nrepeats, file: true)
-	.set {fasta_rep}
 
 
 /*
- * STEP 8 - RepeatMasker
+ * ESTs Block
+ */
+ 
+if (params.ESTs) {
+	Channel
+		.fromPath(ESTs)
+		.splitFasta(by: params.nblast, file: true)
+		.set {fasta_ests}
+} else { 
+	fasta_ests = Channel.from(false)
+}
+
+/*
+ * STEP ESTs.1 - Blast
+ */
+ 
+process RunBlastEST {
+	
+	tag "${chunk_name}"
+	publishDir "${params.outdir}/blast_results/${chunk_name}", mode: 'copy'
+	
+	input:
+	file query_fa_ests from fasta_ests 
+	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_ests.collect()
+	
+	output:
+	file blast_result_ests
+	
+	when:
+	params.ESTs != false
+		
+	script: 
+
+	db_name = blastdb_nhr.baseName
+	chunk_name = query_fa_ests.baseName
+	
+	"""
+	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 > blast_result_ests
+	"""
+}
+ 	
+/*
+ * STEP ESTs.2 - Parse Blast Output
+ */
+
+process Blast2QueryTargetEST {
+	
+	tag "${query_tag}"
+	publishDir "${params.outdir}/blast2targets", mode: 'copy'
+	
+	input:
+	file all_blast_results_ests from blast_result_ests.collectFile()
+	
+	output:
+	file query2target_result_uniq_ests into query2target_uniq_result_ests
+	
+	when:
+	params.ESTs != false
+	
+	script:
+	query_tag = ESTs.baseName
+	"""
+	BlastOutput2QueryTarget.pl $all_blast_results_ests 1e-5 query2target_result
+	sort query2target_result | uniq > query2target_result_uniq_ests
+	"""
+}
+
+query2target_uniq_result_ests
+	.splitText(by: params.nexonerate, file: true).set{query2target_chunk_ests}	
+
+
+/*
+ * STEP ESTs.3 - Exonerate
+ */
+ 
+process RunExonerateEST {
+	
+	tag "${query_tag}"
+	publishDir "${params.outdir}/exonerate/${hits_chunk}", mode: 'copy'
+	
+	input:
+	file hits_chunk from query2target_chunk_ests
+	
+	output:
+	file 'exonerate.out' into exonerate_result_ests
+	
+	when:
+	params.ESTs != false
+	
+	script:
+	query_tag = ESTs.baseName
+	
+	"""
+	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $ESTs $Genome
+	"""
+}
+
+
+/*
+ * STEP ESTs.4 - Exonerate to Hints
+ */
+ 
+process Exonerate2HintsEST {
+	
+	tag "${query_tag}"
+	
+	input:
+	file exonerate_result_ests
+	
+	output:
+	file exonerate_gff into output_gff_ests
+	
+	when:
+	params.ESTs != false
+	
+	script:
+	query_tag = ESTs.baseName
+	
+	"""
+	grep -v '#' $exonerate_result_ests | grep 'exonerate:est2genome' > exonerate_gff_lines
+	Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
+	"""
+}
+
+output_gff_ests
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_ESTs_exonerate.gff")
+ 
+
+/*
+ * RepeatMasker Block
+ */
+ 
+if (params.RM == true) {
+	Channel
+		.fromPath(Genome)
+		.splitFasta(by: params.nrepeats, file: true)
+		.set {fasta_rep}
+} else {
+	fasta_rep = Channel.from(false)
+}
+
+/*
+ * STEP RepeatMasker.1 - RepeatMasker
  */
  
 process RunRepeatMasker {
@@ -433,7 +574,7 @@ process RunRepeatMasker {
 }
 
 /*
- * STEP 9 - RepeatMasker - Collect and Clean1
+ * STEP RepeatMasker.2 - RepeatMasker - Collect and Clean1
  */
  
 process RemoveHeaderRepeatMasker {	
@@ -446,7 +587,10 @@ process RemoveHeaderRepeatMasker {
 	
 	output:
 	file "result_unclean.out" into mergedUNCLEAN
-	
+
+	when:
+	params.RM != false
+		
 	script:
 	genome_tag = Genome.baseName
 	"""
@@ -457,7 +601,7 @@ process RemoveHeaderRepeatMasker {
 
 
 /*
- * STEP 10 - RepeatMasker - Clean2
+ * STEP RepeatMasker.3 - RepeatMasker - Clean2
  */
  
 process CleanRepeatMasker {
@@ -469,7 +613,10 @@ process CleanRepeatMasker {
 	
 	output:
 	file RepeatMasker_out into RM_2_hints
-	
+
+	when:
+	params.RM != false
+		
 	script:
 	genome_tag = Genome.baseName
 	
@@ -480,7 +627,7 @@ process CleanRepeatMasker {
 
 
 /*
- * STEP 11 - RepeatMasker to Hints
+ * STEP RepeatMasker.4 - RepeatMasker to Hints
  */
  
 process RepeatMasker2Hints {
@@ -493,6 +640,9 @@ process RepeatMasker2Hints {
 	output:
 	file RepeatMasker_hints
 
+	when:
+	params.RM != false
+	
 	script:
 	genome_tag = Genome.baseName
 		
@@ -502,27 +652,42 @@ process RepeatMasker2Hints {
 }
 
 RepeatMasker_hints
-	.collectFile(name: "${params.outdir}/Hints_repeatmasker.gff")
-
+	.collectFile(name: "${params.outdir}/Hints/Hints_repeatmasker.gff")
 
 
 /*
  * RNAseq block
  */
  
- 
+
+if (params.ESTs) {
+	Channel
+		.fromPath(ESTs)
+		.splitFasta(by: params.nblast, file: true)
+		.set {fasta_ests}
+} else { 
+	fasta_ests = Channel.from(false)
+}
+
+
 /*
  * Create a channel for input read files
  */
-if (params.reads) {
+ 
+ if (params.reads) {
      Channel
          .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
          .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
          .into { read_files_fastqc; read_files_trimming; read_files_hisat }
+} else {
+	read_files_fastqc = Channel.from(false)
+	read_files_trimming = Channel.from(false)
+	read_files_hisat = Channel.from(false)
 }
 
+
 /*
- * STEP 12 - FastQC
+ * STEP RNAseq.1 - FastQC
  */
 process runFastqc {
     tag "${prefix}"
@@ -543,7 +708,7 @@ process runFastqc {
 }
 
 /*
- * STEP 13 - Trimgalore
+ * STEP RNAseq.2 - Trimgalore
  */
 process runTrimgalore {
 
@@ -586,7 +751,7 @@ Channel
 
 
 /*
- * STEP 14 - Make Hisat2 DB
+ * STEP RNAseq.3 - Make Hisat2 DB
  */
  
 process RunMakeHisatDB {
@@ -616,7 +781,7 @@ process RunMakeHisatDB {
 
 
 /*
- * STEP 15 - Hisat2
+ * STEP RNAseq.4 - Hisat2
  */
 
 process RunHisat2 {
@@ -655,18 +820,21 @@ process RunHisat2 {
 }   
 
 /*
- * STEP 16 - Hisat2 into Hints
+ * STEP RNAseq.5 - Hisat2 into Hints
  */
 process Hisat2Hints {
 
 	tag "${prefix}"
-	publishDir "${params.outdir}", mode: 'copy'
+	publishDir "${params.outdir}/Hints", mode: 'copy'
 	
 	input:
 	file accepted_hits2hints
 	
 	output:
 	file 'Hints_RNAseq_*.gff'
+	
+	when:
+	params.reads != false
 	
 	script:
 	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
@@ -677,7 +845,7 @@ process Hisat2Hints {
 }
 
 /*
- * STEP 17 - Trinity
+ * STEP RNAseq.6 - Trinity
  */
 process runTrinity {
 
@@ -690,6 +858,9 @@ process runTrinity {
 	output:
 	file "trinity_out_dir/*_trinity.fasta" into trinity_transcripts, trinity_transcripts_2exonerate
 	
+	when:
+	params.reads != false && params.trinity == true
+	
 	script:
 	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
 	"""
@@ -701,10 +872,14 @@ process runTrinity {
 TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
 
 
-//Proteins (Blast + ) Exonerate Block:
 
 /*
- * STEP 18 - Blast
+ * Trinity Transcriptome (Blast + ) Exonerate Block:
+ */
+ 
+ 
+/*
+ * STEP RNAseq.7 - Blast
  */
  
 process RunBlastTrinity {
@@ -718,7 +893,10 @@ process RunBlastTrinity {
 	
 	output:
 	file blast_result_trinity
-		
+	
+	when:
+	params.reads != false && params.trinity == true	
+	
 	script: 
 
 	db_name = blastdb_nhr.baseName
@@ -730,7 +908,7 @@ process RunBlastTrinity {
 }
 
 /*
- * STEP 19 - Parse Blast Output
+ * STEP RNAseq.8 - Parse Blast Output
  */
 
 process BlastTrinity2QueryTarget {
@@ -743,6 +921,9 @@ process BlastTrinity2QueryTarget {
 	output:
 	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
 	
+	when:
+	params.reads != false && params.trinity == true
+	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
 	sort query2target_trinity_result | uniq > query2target_trinity_result_uniq
@@ -754,7 +935,7 @@ query2target_trinity_uniq_result
 
 
 /*
- * STEP 20 - Exonerate
+ * STEP RNAseq.9 - Exonerate
  */
  
 process RunExonerateTrinity {
@@ -768,6 +949,9 @@ process RunExonerateTrinity {
 	output:
 	file 'exonerate.out' into exonerate_result_trinity
 	
+	when:
+	params.reads != false && params.trinity == true
+		
 	"""
 	runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
 	"""
@@ -775,7 +959,7 @@ process RunExonerateTrinity {
 
 
 /*
- * STEP 21 - Exonerate to Hints
+ * STEP RNAseq.10 - Exonerate to Hints
  */
  
 process Exonerate2HintsTrinity {
@@ -786,6 +970,9 @@ process Exonerate2HintsTrinity {
 	output:
 	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
 	
+	when:
+	params.reads != false && params.trinity == true	
+	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines exonerate_trinity_gff
@@ -793,11 +980,14 @@ process Exonerate2HintsTrinity {
 }
 
 output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Hints_mapped_transcripts.gff")
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_mapped_transcripts.gff")
+
 
 
 workflow.onComplete {
-        log.info "========================================="
-        log.info "Duration:             $workflow.duration"
-        log.info "========================================="
+
+    log.info "========================================="
+    log.info "Duration:             $workflow.duration"
+    log.info "========================================="
+        
 }
