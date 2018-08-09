@@ -86,10 +86,8 @@ if ( params.genome ){
     if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
 
-args = 0
-println "$args"
-println args
-println $args
+x = 1
+println x
 
 if ( params.prots ){
 	Proteins = file(params.prots)
