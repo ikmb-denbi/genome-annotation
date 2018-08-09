@@ -242,6 +242,9 @@ process RunBlast {
 	
 	output:
 	file blast_result
+	
+	when:
+	params.prots != false
 		
 	script: 
 
@@ -274,6 +277,9 @@ process Blast2QueryTarget {
 	output:
 	file query2target_result_uniq into query2target_uniq_result
 	
+	when:
+	params.prots != false
+	
 	script:
 	query_tag = Proteins.baseName
 	"""
@@ -300,6 +306,9 @@ process RunExonerate {
 	
 	output:
 	file 'exonerate.out' into exonerate_result
+	
+	when:
+	params.prots != false
 	
 	script:
 	query_tag = Proteins.baseName
@@ -330,6 +339,9 @@ process Exonerate2Hints {
 	
 	output:
 	file exonerate_gff into output_gff
+	
+	when:
+	params.prots != false
 	
 	script:
 	query_tag = Proteins.baseName
