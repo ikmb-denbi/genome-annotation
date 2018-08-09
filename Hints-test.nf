@@ -33,13 +33,15 @@ def helpMessage() {
       --reads						Path to RNA-seq data (must be surrounded with quotes)
 
     Options:
-	  --trinity						Run transcriptome assembly with trinity and produce hints from the transcripts (true (default) | false)
-	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')	
-      --nblast						Chunks to divide Blast jobs (default = 10)
-      --nexonerate					Chunks to divide Exonerate jobs (default = 10)
-	  --nrepeats					Chunks to divide RepeatMasker jobs (default = 2)
-	  --species						Species database for RepeatMasker (default = 'mammal')
-	  --singleEnd                   Specifies that the input is single end reads (true | false (default))
+	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
+	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
+	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
+	  --variant						Specifies whether there are isoforms in the query file [ 'no_var' (default) | 'var' ]
+      --nblast						Chunks to divide Blast jobs [ default = 10 ]
+      --nexonerate					Chunks to divide Exonerate jobs [ default = 10 ]
+	  --nrepeats					Chunks to divide RepeatMasker jobs [ default = 2 ]
+	  --species						Species database for RepeatMasker [ default = 'mammal' ]
+	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -63,6 +65,11 @@ if (params.help){
 params.prots = false
 params.ESTs = false
 params.reads = false
+
+params.trinity = true
+params.gth = true
+params.RM = true
+
 params.variant = "no_var"
 params.nblast = 10
 params.nexonerate = 2
@@ -70,7 +77,6 @@ params.nrepeats = 2
 params.species = "mammal"
 params.name = false
 params.singleEnd = false
-params.trinity = true
 
 
 // Validate inputs
@@ -356,7 +362,7 @@ process RunGenomeThreaderProts {
 	file output_gth
 	
 	when:
-	params.prots != false
+	params.prots != false && params.gth != false
 	
 	script:
 	query_tag = Proteins.baseName
@@ -382,7 +388,7 @@ process GenomeThreader2HintsProts {
 	file gth_hints
 	
 	when:
-	params.prots != false
+	params.prots != false && params.gth != false
 	
 	script:
 	query_tag = Proteins.baseName
@@ -533,11 +539,14 @@ output_gff_ests
  * RepeatMasker Block
  */
  
-Channel
-	.fromPath(Genome)
-	.splitFasta(by: params.nrepeats, file: true)
-	.set {fasta_rep}
-
+if (params.RM == true) {
+	Channel
+		.fromPath(Genome)
+		.splitFasta(by: params.nrepeats, file: true)
+		.set {fasta_rep}
+} else {
+	fasta_rep = Channel.from(false)
+}
 
 /*
  * STEP RepeatMasker.1 - RepeatMasker
@@ -578,7 +587,10 @@ process RemoveHeaderRepeatMasker {
 	
 	output:
 	file "result_unclean.out" into mergedUNCLEAN
-	
+
+	when:
+	params.RM != false
+		
 	script:
 	genome_tag = Genome.baseName
 	"""
@@ -601,7 +613,10 @@ process CleanRepeatMasker {
 	
 	output:
 	file RepeatMasker_out into RM_2_hints
-	
+
+	when:
+	params.RM != false
+		
 	script:
 	genome_tag = Genome.baseName
 	
@@ -625,6 +640,9 @@ process RepeatMasker2Hints {
 	output:
 	file RepeatMasker_hints
 
+	when:
+	params.RM != false
+	
 	script:
 	genome_tag = Genome.baseName
 		
