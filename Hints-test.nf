@@ -75,24 +75,27 @@ params.trinity = true
 
 
 //Script parameters
-Proteins = file(params.prots)
-ESTs = file(params.ESTs)
-Genome = file(params.genome)
+
+
+
 
 
 // Validate inputs
 if ( Genome ){
+	Genome = file(params.genome)
     if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
 
 args = 0
 
-if ( Proteins ){
+if ( params.prots ){
+	Proteins = file(params.prots)
 	args = args + 1
     if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
 }
 
-if ( ESTs ){
+if ( params.ESTs ){
+	ESTs = file(params.ESTs)
 	args = args + 1
     if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
 }
