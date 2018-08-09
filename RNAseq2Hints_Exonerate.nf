@@ -247,7 +247,7 @@ process Bam2Hints {
 	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
 	
 	"""
-	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=${prefix}_hints.gff	
+	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=Hints_RNAseq_${prefix}.gff	
 	"""
 }
 
@@ -369,7 +369,7 @@ process Exonerate2HintsTrinity {
 }
 
 output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Exonerate_trinity_transcript_hints.gff")
+ 	.collectFile(name: "${params.outdir}/Hints_mapped_transcripts.gff")
 
 
 workflow.onComplete {
