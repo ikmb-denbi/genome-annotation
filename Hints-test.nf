@@ -339,7 +339,7 @@ process Exonerate2HintsProts {
 }
 
 output_gff_prots
- 	.collectFile(name: "${params.outdir}/Hints_proteins_exonerate.gff")
+ 	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_exonerate.gff")
 
 
 
@@ -669,7 +669,7 @@ if (params.ESTs) {
 
 
 /*
- * STEP 12 - FastQC
+ * STEP RNAseq.1 - FastQC
  */
 process runFastqc {
     tag "${prefix}"
@@ -690,7 +690,7 @@ process runFastqc {
 }
 
 /*
- * STEP 13 - Trimgalore
+ * STEP RNAseq.2 - Trimgalore
  */
 process runTrimgalore {
 
@@ -733,7 +733,7 @@ Channel
 
 
 /*
- * STEP 14 - Make Hisat2 DB
+ * STEP RNAseq.3 - Make Hisat2 DB
  */
  
 process RunMakeHisatDB {
@@ -763,7 +763,7 @@ process RunMakeHisatDB {
 
 
 /*
- * STEP 15 - Hisat2
+ * STEP RNAseq.4 - Hisat2
  */
 
 process RunHisat2 {
@@ -802,7 +802,7 @@ process RunHisat2 {
 }   
 
 /*
- * STEP 16 - Hisat2 into Hints
+ * STEP RNAseq.5 - Hisat2 into Hints
  */
 process Hisat2Hints {
 
@@ -827,7 +827,7 @@ process Hisat2Hints {
 }
 
 /*
- * STEP 17 - Trinity
+ * STEP RNAseq.6 - Trinity
  */
 process runTrinity {
 
@@ -854,10 +854,14 @@ process runTrinity {
 TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
 
 
-//Proteins (Blast + ) Exonerate Block:
 
 /*
- * STEP 18 - Blast
+ * Trinity Transcriptome (Blast + ) Exonerate Block:
+ */
+ 
+ 
+/*
+ * STEP RNAseq.7 - Blast
  */
  
 process RunBlastTrinity {
@@ -886,7 +890,7 @@ process RunBlastTrinity {
 }
 
 /*
- * STEP 19 - Parse Blast Output
+ * STEP RNAseq.8 - Parse Blast Output
  */
 
 process BlastTrinity2QueryTarget {
@@ -913,7 +917,7 @@ query2target_trinity_uniq_result
 
 
 /*
- * STEP 20 - Exonerate
+ * STEP RNAseq.9 - Exonerate
  */
  
 process RunExonerateTrinity {
@@ -937,7 +941,7 @@ process RunExonerateTrinity {
 
 
 /*
- * STEP 21 - Exonerate to Hints
+ * STEP RNAseq.10 - Exonerate to Hints
  */
  
 process Exonerate2HintsTrinity {
@@ -961,8 +965,16 @@ output_trinity_gff
  	.collectFile(name: "${params.outdir}/Hints/Hints_mapped_transcripts.gff")
 
 
+
 workflow.onComplete {
-        log.info "========================================="
-        log.info "Duration:             $workflow.duration"
-        log.info "========================================="
+
+    log.info "========================================="
+    log.info "Duration:             $workflow.duration"
+    log.info "========================================="
+        
+	process Concatenate {
+		"""
+		cat ${params.outdir}/Hints/* >> ${params.outdir}/All_Hints.gff
+		"""
+	}
 }
