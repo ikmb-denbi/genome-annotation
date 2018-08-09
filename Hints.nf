@@ -220,6 +220,7 @@ if ( Proteins ) {
  * STEP 2 - Blast
  */
  
+if (Proteins) {
 process RunBlast {
 	
 	tag "${chunk_name}"
@@ -247,7 +248,7 @@ process RunBlast {
 		"""
 	}
 }
-
+}
 
 
 /*
