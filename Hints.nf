@@ -691,7 +691,8 @@ process runFastqc {
     set val(name), file(reads) from read_files_fastqc
 
     output:
-    file "*_fastqc.{zip,html}" into fastqc_results
+    file "*_fastqc.{zip,html}" 
+    //into fastqc_results
 
     script:
 	prefix = reads[0].toString().split("_R1")[0]
@@ -719,7 +720,7 @@ process runTrimgalore {
 
    output:
    file "*_val_{1,2}.fq" into trimmed_reads
-   file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
+  // file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
    file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
    
    script:
@@ -1013,8 +1014,6 @@ process multiqc {
 
     input:
     file multiqc_config
-    file ('fastqc/*') from fastqc_results.collect()
-    file ('trimgalore/*') from trimgalore_results.collect()
     file ('software_versions/*') from software_versions_yaml
 
     output:
