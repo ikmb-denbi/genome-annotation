@@ -53,7 +53,7 @@ results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
 for k, v in regexes.items():
-	if v[0] != "not used":
+	if v != "not used":
 		with open(v[0]) as x:
 			versions = x.read()
 			match = re.search(v[1], versions)
