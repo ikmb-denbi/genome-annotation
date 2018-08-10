@@ -3,6 +3,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import re
 import os.path
+from pathlib import Path
 
 regexes = {
     'NF-hints': ['v_pipeline.txt', r"(\S+)"],
@@ -17,7 +18,8 @@ regexes = {
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 
-if os.path.isfile('v_fastqc.txt'):
+my_file = Path("v_fastqc.txt")
+if my_file.is_file():
 	regexes['FastQC'] = ['v_fastqc.txt', r"FastQC v(\S+)"]
 
 if os.path.isfile('v_blast.txt'):
