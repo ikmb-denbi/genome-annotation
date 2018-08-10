@@ -991,7 +991,7 @@ process get_software_versions {
     echo $params.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
     fastqc --version > v_fastqc.txt
-    blastn -version > v_blast.txt
+    blastn -version &> v_blast.txt
     Trinity --version &> v_trinity.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py > software_versions_mqc.yaml
