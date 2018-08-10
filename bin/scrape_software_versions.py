@@ -3,7 +3,6 @@ from __future__ import print_function
 from collections import OrderedDict
 import re
 import os.path
-from pathlib import Path
 
 regexes = {
     'NF-hints': ['v_pipeline.txt', r"(\S+)"],
