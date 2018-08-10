@@ -8,7 +8,7 @@ regexes = {
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
     'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'Blast': ['v_blast.txt', r"blastn: (\S+)"],
-    'HISAT2': ['v_hisat2.txt', r"hisat2-align-s version (\S+)"],
+    'Hisat2': ['v_hisat2.txt', r"hisat2-align-s version (\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
