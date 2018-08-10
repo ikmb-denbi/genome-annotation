@@ -994,6 +994,10 @@ process get_software_versions {
     """
 }
 
+
+params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
+multiqc_config = file(params.multiqc_config)
+
 /*
  * MultiQC
  */
