@@ -988,35 +988,35 @@ process get_software_versions {
     script:
   
     if (params.reads != false) {
-    """
-    fastqc --version > v_fastqc.txt
-    trim_galore --version &> v_trim_galore.txt
-    hisat2 --version > v_hisat2.txt
-    """
+    	"""
+    	fastqc --version > v_fastqc.txt
+    	trim_galore --version &> v_trim_galore.txt
+    	hisat2 --version > v_hisat2.txt
+    	"""
     } else if (params.prots != false || params.ESTs != false) {
-    """
-    blastn -version > v_blast.txt
-    #exonerate -v > v_exonerate.txt
-    """
+    	"""
+    	blastn -version > v_blast.txt
+    	#exonerate -v > v_exonerate.txt
+    	"""
     } else if (params.gth == true) {
-    """
-    gth -version > v_gth.txt
-    """
+    	"""
+   	 	gth -version > v_gth.txt
+    	"""
     } else if (params. RM == true) {
-    """
-    RepeatMasker -v > v_rm.txt
-    """
+    	"""
+    	RepeatMasker -v > v_rm.txt
+    	"""
     } else if (params.trinity == true) {
-    """
-    #Trinity --version > v_trinity.txt
-    """
-    } else if (params.genome) {
-    """
-    echo $params.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt    
-    multiqc --version > v_multiqc.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
-    """
+    	"""
+    	#Trinity --version > v_trinity.txt
+    	"""
+    } else if (params.genome != false) {
+    	"""
+    	echo $params.version > v_pipeline.txt
+    	echo $workflow.nextflow.version > v_nextflow.txt    
+    	multiqc --version > v_multiqc.txt
+    	scrape_software_versions.py > software_versions_mqc.yaml
+    	"""
     }
 }
 
