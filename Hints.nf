@@ -252,7 +252,7 @@ process RunBlastProts {
 	chunk_name = query_fa_prots.baseName
 	
 	"""
-	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 > blast_result_prots
+	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_prots
 	"""
 }
 
@@ -440,7 +440,7 @@ process RunBlastEST {
 	chunk_name = query_fa_ests.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 > blast_result_ests
+	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_ests
 	"""
 }
 
@@ -568,7 +568,7 @@ process RunRepeatMasker {
 	genome_tag = Genome.baseName
 	
 	"""
-	RepeatMasker -species $params.species $query_fa_rep
+	RepeatMasker -species $params.species -pa 3 $query_fa_rep 
 	"""
 }
 
@@ -764,7 +764,7 @@ process RunMakeHisatDB {
 	prefix = dbName
     if (!target.exists()) {
 		"""
-		hisat2-build $genome $dbName
+		hisat2-build $genome $dbName -p 3
 		"""
 	}
 	
@@ -797,13 +797,13 @@ process RunHisat2 {
 	
 	if (params.singleEnd) {
         """
-        hisat2 -x $indexBase -U $reads -S alignment_sam
+        hisat2 -x $indexBase -U $reads -S alignment_sam -p 3
         samtools view -Sb alignment_sam > alignment.bam
         samtools sort alignment.bam > ${prefix}_accepted_hits.bam
         """
    } else {
         """
-        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam
+        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam -p 3
         samtools view -Sb alignment_sam > alignment.bam
         samtools sort alignment.bam > ${prefix}_accepted_hits.bam
 		"""
@@ -857,7 +857,7 @@ process runTrinity {
 	script:
 	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
 	"""
-	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 1 --max_memory 5G
+	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 3 --max_memory 20G
 	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
 	"""
 }
@@ -896,7 +896,7 @@ process RunBlastTrinity {
 	chunk_name = query_fa.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_trinity
 	"""
 }
 
@@ -976,6 +976,46 @@ process Exonerate2HintsTrinity {
 output_trinity_gff
  	.collectFile(name: "${params.outdir}/Hints/Hints_mapped_transcripts.gff")
 
+/*
+ * Parse software version numbers
+ */
+process get_software_versions {
+
+    output:
+    file 'software_versions_mqc.yaml' into software_versions_yaml
+
+    script:
+    """
+    echo $params.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    fastqc --version > v_fastqc.txt
+    multiqc --version > v_multiqc.txt
+    scrape_software_versions.py > software_versions_mqc.yaml
+    """
+}
+
+/*
+ * MultiQC
+ */
+process multiqc {
+    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+    input:
+    file multiqc_config
+    file ('fastqc/*') from fastqc_results.collect()
+    file ('software_versions/*') from software_versions_yaml
+
+    output:
+    file "*multiqc_report.html" into multiqc_report
+    file "*_data"
+
+    script:
+    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    """
+    multiqc -f $rtitle $rfilename --config $multiqc_config .
+    """
+}
 
 
 workflow.onComplete {
