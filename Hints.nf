@@ -36,7 +36,6 @@ def helpMessage() {
 	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
 	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
 	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
-	  --variant						Specifies whether there are isoforms in the query file [ 'no_var' (default) | 'var' ]
       --nblast						Chunks to divide Blast jobs [ default = 10 ]
       --nexonerate					Chunks to divide Exonerate jobs [ default = 10 ]
 	  --nrepeats					Chunks to divide RepeatMasker jobs [ default = 2 ]
@@ -70,7 +69,6 @@ params.trinity = true
 params.gth = true
 params.RM = true
 
-params.variant = "no_var"
 params.nblast = 10
 params.nexonerate = 2
 params.nrepeats = 2
@@ -340,7 +338,7 @@ process Exonerate2HintsProts {
 	
 	"""
 	grep -v '#' $exonerate_result_prots | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
-	Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
+	Exonerate2GFF_protein.pl exonerate_gff_lines exonerate_gff
 	"""
 }
 
@@ -527,7 +525,7 @@ process Exonerate2HintsEST {
 	
 	"""
 	grep -v '#' $exonerate_result_ests | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
+	Exonerate2GFF_EST.pl exonerate_gff_lines exonerate_gff
 	"""
 }
 

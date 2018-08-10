@@ -6,25 +6,22 @@ use strict;
 use warnings;
 
 my $num_args               = $#ARGV + 1;
-if ($num_args != 3)
+if ($num_args != 2)
 
 {
     print "Usage of Exonerate2GFF_EST.pl\n\n";
-    print "perl Exonerate2GFF_EST.pl <exonerate_output> <'var'|'no_var'> <output_file>\n";
+    print "perl Exonerate2GFF_EST.pl <exonerate_output> <output_file>\n";
     print "where <exonerate_output> is the input file with exonerate results,\n";
-    print " <'var'|'no_var'> if there are variants or not in the queries,\n";
     print " <output_file> is the output file for this script.\n";
     print "For example, >perl Exonerate2GFF_EST.pl exonerate_output.out exonerate.gff\n";
     exit;
 }
 
 my $exonerate_out			= $ARGV[0];		# EXONERATE OUTPUT FILE
-my $is_variant				= $ARGV[1];		# VARIANTS ['var' | 'no_var']
-my $output_file				= $ARGV[2]; 	# OUTPUT FILE
+my $output_file				= $ARGV[1]; 	# OUTPUT FILE
 my $line;
 my @temp;
 my $GeneID;									# ID OF THAT GENE
-my $variant;								# VARIANT [-RA | -RB | ...]
 # COLUMNS FROM EXONERATE GFF:
 my $Chrom;
 my $method;
@@ -60,30 +57,16 @@ while (<EXONERATE>) {
 	
 	($method) = ($method =~/exonerate:(\w+)/);
 	
-	if ($is_variant eq "var") {
-		if ($feature eq "gene") {
-			($GeneID, $variant) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)-(\w+)\s;\s/);
-		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} elsif ($feature eq "intron") {
-			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} elsif ($feature eq "utr5" || $feature eq "utr3") {
-			print OUTFILE $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} else {
-			next;
-		}
-	} elsif ($is_variant eq "no_var") {
-		if ($feature eq "gene") {
-			($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
-		} elsif ($feature eq "exon") {
-			print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} elsif ($feature eq "intron") {
-			print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} elsif ($feature eq "utr5" || $feature eq "utr3") {
-			print OUTFILE $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
-		} else {
-			next;
-		}
+	if ($feature eq "gene") {
+		($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
+	} elsif ($feature eq "exon") {
+		print OUTFILE $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+	} elsif ($feature eq "intron") {
+		print OUTFILE $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+	} elsif ($feature eq "utr5" || $feature eq "utr3") {
+		print OUTFILE $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=T;src=4\n";
+	} else {
+		next;
 	}
 }
 close (EXONERATE);

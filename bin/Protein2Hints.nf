@@ -29,7 +29,6 @@ def helpMessage() {
       -profile                      Hardware config to use. docker / aws
 
     Options:
-	  --variant						Specifies whether there are isoforms in the query file ('no_var' (default) | 'var')
       --qtype						Query type: ('protein' (default) | 'EST')
       --nblast						Chunks to divide Blast jobs (default = 10)
       --nexonerate					Chunks to divide Exonerate jobs (default = 10)
@@ -55,7 +54,6 @@ if (params.help){
 
 
 //Default variables:
-params.variant = "no_var"
 params.qtype = "protein"
 params.nblast = 10
 params.nexonerate = 10
@@ -283,12 +281,12 @@ process Exonerate2Hints {
 	if (params.qtype == 'protein') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
-	Exonerate2GFF_protein.pl exonerate_gff_lines $params.variant exonerate_gff
+	Exonerate2GFF_protein.pl exonerate_gff_lines exonerate_gff
 	"""
 	} else if (params.qtype == 'EST') {
 	"""
 	grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_EST.pl exonerate_gff_lines $params.variant exonerate_gff
+	Exonerate2GFF_EST.pl exonerate_gff_lines  exonerate_gff
 	"""
 	}
 }

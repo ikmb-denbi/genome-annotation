@@ -10,9 +10,8 @@ if ($num_args != 2)
 
 {
     print "Usage of Exonerate2GFF_EST.pl\n\n";
-    print "perl Exonerate2GFF_EST.pl <exonerate_output> <'var'|'no_var'> <output_file>\n";
+    print "perl Exonerate2GFF_EST.pl <exonerate_output> <output_file>\n";
     print "where <exonerate_output> is the input file with exonerate results,\n";
-    print " <'var'|'no_var'> if there are variants or not in the queries,\n";
     print " <output_file> is the output file for this script.\n";
     print "For example, >perl Exonerate2GFF_EST.pl exonerate_output.out exonerate.gff\n";
     exit;
@@ -23,7 +22,6 @@ my $output_file				= $ARGV[1]; 	# OUTPUT FILE
 my $line;
 my @temp;
 my $GeneID;									# ID OF THAT GENE
-my $variant;								# VARIANT [-RA | -RB | ...]
 # COLUMNS FROM EXONERATE GFF:
 my $Chrom;
 my $method;
