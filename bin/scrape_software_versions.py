@@ -8,7 +8,7 @@ regexes = {
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
     'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'Blast': ['v_blast.txt', r"blastn: (\S+)"],
-    'Exonerate': ['v_exonerate.txt', r"exonerate from exonerate version (\S+)"],
+    'Trinity': ['v_trinity.txt', r"Trinity-v(\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
@@ -16,7 +16,7 @@ results['NF-hints'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
 results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
 results['Blast'] = '<span style="color:#999999;\">N/A</span>'
-results['Exonerate'] = '<span style="color:#999999;\">N/A</span>'
+results['Trinity'] = '<span style="color:#999999;\">N/A</span>'
 results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
