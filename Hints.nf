@@ -173,8 +173,6 @@ try {
 
 
 
-
-
 Channel
 	.fromPath(Genome)
 	.set { inputMakeblastdb }
@@ -228,7 +226,6 @@ if (params.prots) {
 	fasta_prots = Channel.from(false)
 }
 
-//Proteins (Blast + ) Exonerate Block:
 
 /*
  * STEP Proteins.1 - Blast
@@ -258,6 +255,7 @@ process RunBlastProts {
 	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 > blast_result_prots
 	"""
 }
+
 
 /*
  * STEP Proteins.2 - Parse Blast Output
@@ -346,7 +344,6 @@ output_gff_prots
  	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_exonerate.gff")
 
 
-
 /*
  * STEP Proteins.5 - GenomeThreader
  */
@@ -417,6 +414,7 @@ if (params.ESTs) {
 	fasta_ests = Channel.from(false)
 }
 
+
 /*
  * STEP ESTs.1 - Blast
  */
@@ -445,7 +443,8 @@ process RunBlastEST {
 	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 > blast_result_ests
 	"""
 }
- 	
+
+
 /*
  * STEP ESTs.2 - Parse Blast Output
  */
@@ -531,7 +530,8 @@ process Exonerate2HintsEST {
 
 output_gff_ests
  	.collectFile(name: "${params.outdir}/Hints/Hints_ESTs_exonerate.gff")
- 
+
+
 
 /*
  * RepeatMasker Block
@@ -545,6 +545,7 @@ if (params.RM == true) {
 } else {
 	fasta_rep = Channel.from(false)
 }
+
 
 /*
  * STEP RepeatMasker.1 - RepeatMasker
@@ -570,6 +571,7 @@ process RunRepeatMasker {
 	RepeatMasker -species $params.species $query_fa_rep
 	"""
 }
+
 
 /*
  * STEP RepeatMasker.2 - RepeatMasker - Collect and Clean1
@@ -653,19 +655,10 @@ RepeatMasker_hints
 	.collectFile(name: "${params.outdir}/Hints/Hints_repeatmasker.gff")
 
 
+
 /*
  * RNAseq block
  */
- 
-
-if (params.ESTs) {
-	Channel
-		.fromPath(ESTs)
-		.splitFasta(by: params.nblast, file: true)
-		.set {fasta_ests}
-} else { 
-	fasta_ests = Channel.from(false)
-}
 
 
 /*
@@ -704,6 +697,7 @@ process runFastqc {
     fastqc -q $reads
     """
 }
+
 
 /*
  * STEP RNAseq.2 - Trimgalore
@@ -746,7 +740,6 @@ process runTrimgalore {
 Channel
 	.fromPath(Genome)
 	.set { inputMakeHisatdb }
-
 
 /*
  * STEP RNAseq.3 - Make Hisat2 DB
@@ -817,6 +810,7 @@ process RunHisat2 {
    }
 }   
 
+
 /*
  * STEP RNAseq.5 - Hisat2 into Hints
  */
@@ -841,6 +835,7 @@ process Hisat2Hints {
 	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=Hints_RNAseq_${prefix}.gff	
 	"""
 }
+
 
 /*
  * STEP RNAseq.6 - Trinity
@@ -904,6 +899,7 @@ process RunBlastTrinity {
 	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
 	"""
 }
+
 
 /*
  * STEP RNAseq.8 - Parse Blast Output
