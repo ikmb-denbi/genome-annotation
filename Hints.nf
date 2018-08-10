@@ -39,6 +39,7 @@ def helpMessage() {
       --nblast						Chunks to divide Blast jobs [ default = 10 ]
       --nexonerate					Chunks to divide Exonerate jobs [ default = 10 ]
 	  --nrepeats					Chunks to divide RepeatMasker jobs [ default = 2 ]
+	  --nthreads					Number of cpus for programs that allow multi-threaded mode [default = 1]
 	  --species						Species database for RepeatMasker [ default = 'mammal' ]
 	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
 
@@ -72,6 +73,7 @@ params.RM = true
 params.nblast = 10
 params.nexonerate = 2
 params.nrepeats = 2
+params.nthreads = 1
 params.species = "mammal"
 params.name = false
 params.singleEnd = false
@@ -252,7 +254,7 @@ process RunBlastProts {
 	chunk_name = query_fa_prots.baseName
 	
 	"""
-	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_prots
+	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_prots
 	"""
 }
 
@@ -440,7 +442,7 @@ process RunBlastEST {
 	chunk_name = query_fa_ests.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_ests
+	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_ests
 	"""
 }
 
@@ -568,7 +570,7 @@ process RunRepeatMasker {
 	genome_tag = Genome.baseName
 	
 	"""
-	RepeatMasker -species $params.species -pa 3 $query_fa_rep 
+	RepeatMasker -species $params.species -pa $params.nthreads $query_fa_rep 
 	"""
 }
 
@@ -764,7 +766,7 @@ process RunMakeHisatDB {
 	prefix = dbName
     if (!target.exists()) {
 		"""
-		hisat2-build $genome $dbName -p 3
+		hisat2-build $genome $dbName -p $params.nthreads
 		"""
 	}
 	
@@ -797,13 +799,13 @@ process RunHisat2 {
 	
 	if (params.singleEnd) {
         """
-        hisat2 -x $indexBase -U $reads -S alignment_sam -p 3
+        hisat2 -x $indexBase -U $reads -S alignment_sam -p $params.nthreads
         samtools view -Sb alignment_sam > alignment.bam
         samtools sort alignment.bam > ${prefix}_accepted_hits.bam
         """
    } else {
         """
-        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam -p 3
+        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam -p $params.nthreads
         samtools view -Sb alignment_sam > alignment.bam
         samtools sort alignment.bam > ${prefix}_accepted_hits.bam
 		"""
@@ -857,7 +859,7 @@ process runTrinity {
 	script:
 	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
 	"""
-	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU 3 --max_memory 20G
+	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
 	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
 	"""
 }
@@ -896,7 +898,7 @@ process RunBlastTrinity {
 	chunk_name = query_fa.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 -num_threads 3 > blast_result_trinity
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_trinity
 	"""
 }
 
