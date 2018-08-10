@@ -18,11 +18,10 @@ regexes = {
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 
-my_file = Path("v_fastqc.txt")
-if my_file.is_file():
+if os.path.exists("v_fastqc.txt"):
 	regexes['FastQC'] = ['v_fastqc.txt', r"FastQC v(\S+)"]
 
-if os.path.isfile('v_blast.txt'):
+if os.path.exists('v_blast.txt'):
 	regexes['Blast'] = ['v_blast.txt', r"blastn: (\S+)"]
 
 if os.path.isfile('v_gth.txt'):
@@ -31,10 +30,10 @@ if os.path.isfile('v_gth.txt'):
 if os.path.isfile('v_rm.txt'):
 	regexes['RepeatMasker'] = ['v_rm.txt', r"version (\S+)"]
 
-if os.path.isfile('v_trim_galore.txt'):
+if os.path.isfile("v_trim_galore.txt"):
 	regexes['Trim Galore!'] = ['v_trim_galore.txt', r"version (\S+)"]
 
-if os.path.isfile('v_hisat2.txt'):
+if os.path.isfile(v_hisat2.txt):
 	regexes['Hisat2'] = ['v_hisat2.txt', r"hisat2-align-s version (\S+)"]
 
 if os.path.isfile('v_trinity.txt'):
