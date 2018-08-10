@@ -12,7 +12,7 @@ regexes = {
     'RepeatMasker': ['v_rm.txt', r"version (\S+)"],
     'Trim Galore!': ['v_trim_galore.txt', r"version (\S+)"],
     'Hisat2': ['v_hisat2.txt', r"hisat2-align-s version (\S+)"],
-    'Trinity': ['v_trinity.txt', r"Trinity version: Trinity-(\S+)"],
+#    'Trinity': ['v_trinity.txt', r"Trinity version: Trinity-(\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
@@ -24,7 +24,7 @@ results['GenomeThreader'] = '<span style="color:#999999;\">N/A</span>'
 results['RepeatMasker'] = '<span style="color:#999999;\">N/A</span>'
 results['Trim Galore!'] = '<span style="color:#999999;\">N/A</span>'
 results['Hisat2'] = '<span style="color:#999999;\">N/A</span>'
-results['Trinity'] = '<span style="color:#999999;\">N/A</span>'
+#results['Trinity'] = '<span style="color:#999999;\">N/A</span>'
 results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
