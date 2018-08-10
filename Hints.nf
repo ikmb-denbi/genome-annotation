@@ -994,6 +994,7 @@ process get_software_versions {
     blastn -version > v_blast.txt
     hisat2 --version > v_hisat2.txt
     gth -version > v_gth.txt
+    RepeatMasker -v > v_rm.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """
