@@ -32,7 +32,7 @@ if os.path.isfile('v_rm.txt'):
 if os.path.isfile("v_trim_galore.txt"):
 	regexes['Trim Galore!'] = ['v_trim_galore.txt', r"version (\S+)"]
 
-if os.path.isfile(v_hisat2.txt):
+if os.path.isfile("v_hisat2.txt"):
 	regexes['Hisat2'] = ['v_hisat2.txt', r"hisat2-align-s version (\S+)"]
 
 if os.path.isfile('v_trinity.txt'):
