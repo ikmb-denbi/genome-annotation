@@ -992,7 +992,7 @@ process get_software_versions {
     echo $workflow.nextflow.version > v_nextflow.txt
     fastqc --version > v_fastqc.txt
     blastn -version > v_blast.txt
-    Trinity --version >& v_trinity.txt
+    Trinity --version >> v_trinity.txt 2>&1
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """
