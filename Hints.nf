@@ -993,6 +993,7 @@ process get_software_versions {
     fastqc --version > v_fastqc.txt
     blastn -version > v_blast.txt
     hisat2 --version > v_hisat2.txt
+    gth -verion > v_gth.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """

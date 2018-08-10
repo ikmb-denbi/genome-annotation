@@ -9,6 +9,7 @@ regexes = {
     'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'Blast': ['v_blast.txt', r"blastn: (\S+)"],
     'Hisat2': ['v_hisat2.txt', r"hisat2-align-s version (\S+)"],
+    'GenomeThreader': ['v_gth.txt', r"gth \(GenomeThreader\) (\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
@@ -17,6 +18,7 @@ results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
 results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
 results['Blast'] = '<span style="color:#999999;\">N/A</span>'
 results['Hisat2'] = '<span style="color:#999999;\">N/A</span>'
+results['GenomeThreader'] = '<span style="color:#999999;\">N/A</span>'
 results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
