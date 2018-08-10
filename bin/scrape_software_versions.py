@@ -58,7 +58,7 @@ for k, v in regexes.items():
 			versions = x.read()
 			match = re.search(v[1], versions)
 			if match:
-           		results[k] = "v{}".format(match.group(1))
+				results[k] = "v{}".format(match.group(1))
 
 # Dump to YAML
 print ('''
