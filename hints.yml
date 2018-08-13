@@ -1,6 +1,6 @@
 # You can use this file to create a conda environment for the NF-Hints pipeline:
 #   conda env create -f hints.yml
-name: Hints
+name: NF-Hints
 channels:
  - defaults
  - conda-forge
