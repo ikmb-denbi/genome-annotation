@@ -36,9 +36,9 @@ def helpMessage() {
 	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
 	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
 	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
-      --nblast						Chunks to divide Blast jobs [ default = 10 ]
-      --nexonerate					Chunks to divide Exonerate jobs [ default = 10 ]
-	  --nrepeats					Chunks to divide RepeatMasker jobs [ default = 2 ]
+      --nblast						Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
+      --nexonerate					Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
+	  --nrepeats					Chunks (# of scaffolds) to divide RepeatMasker jobs [ default = 30 ]
 	  --nthreads					Number of cpus for programs that allow multi-threaded mode [default = 1]
 	  --species						Species database for RepeatMasker [ default = 'mammal' ]
 	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
@@ -70,9 +70,9 @@ params.trinity = true
 params.gth = true
 params.RM = true
 
-params.nblast = 10
-params.nexonerate = 2
-params.nrepeats = 2
+params.nblast = 500
+params.nexonerate = 200
+params.nrepeats = 30
 params.nthreads = 1
 params.species = "mammal"
 params.name = false
