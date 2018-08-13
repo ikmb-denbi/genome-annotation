@@ -254,7 +254,7 @@ process RunBlastProts {
 	chunk_name = query_fa_prots.baseName
 	
 	"""
-	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_prots
+	tblastn -db $db_name -query $query_fa_prots -max_target_seqs 1 -outfmt 6 > blast_result_prots
 	"""
 }
 
@@ -442,7 +442,7 @@ process RunBlastEST {
 	chunk_name = query_fa_ests.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_ests
+	blastn -db $db_name -query $query_fa_ests -max_target_seqs 1 -outfmt 6 > blast_result_ests
 	"""
 }
 
@@ -897,7 +897,7 @@ process RunBlastTrinity {
 	chunk_name = query_fa.baseName
 	
 	"""
-	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 -num_threads $params.nthreads > blast_result_trinity
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
 	"""
 }
 
