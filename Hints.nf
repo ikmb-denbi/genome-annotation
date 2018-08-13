@@ -781,7 +781,7 @@ process RunHisat2 {
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
 	input:
-	set val(name), file(reads) from trimmed_reads
+	file reads from trimmed_reads
 	file hs2_indices from hs2_indices.collect()	
 	
 	output:
@@ -792,7 +792,7 @@ process RunHisat2 {
 	
 	script:
 	indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
-	ReadsBase = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+	ReadsBase = reads[0].toString()
 
 	prefix = ReadsBase
 	
