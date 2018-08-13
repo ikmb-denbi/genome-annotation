@@ -21,7 +21,7 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run Protein2Hints.nf --genome 'Genome.fasta' --query 'Proteins.fasta' -profile docker
+    nextflow run Hints.nf --genome 'Genome.fasta' --query 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
 
     Mandatory arguments:
       --genome                      Genome reference
@@ -53,7 +53,7 @@ def helpMessage() {
  * SET UP CONFIGURATION VARIABLES
  */
 
-// Show help emssage
+// Show help message
 if (params.help){
     helpMessage()
     exit 0
