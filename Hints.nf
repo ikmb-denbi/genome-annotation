@@ -671,11 +671,10 @@ RepeatMasker_hints
      Channel
          .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
          .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming; read_files_hisat }
+         .into { read_files_fastqc; read_files_trimming }
 } else {
 	read_files_fastqc = Channel.from(false)
 	read_files_trimming = Channel.from(false)
-	read_files_hisat = Channel.from(false)
 }
 
 
@@ -782,11 +781,14 @@ process RunHisat2 {
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
 	input:
-	set val(name), file(reads) from read_files_hisat
+	set val(name), file(reads) from trimmed_reads
 	file hs2_indices from hs2_indices.collect()	
 	
 	output:
 	file "*accepted_hits.bam" into accepted_hits2hints, accepted_hits2trinity 
+	
+	when:
+	params.reads != false
 	
 	script:
 	indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
