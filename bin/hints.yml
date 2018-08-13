@@ -1,0 +1,22 @@
+# You can use this file to create a conda environment for the NF-Hints pipeline:
+#   conda env create -f hints.yml
+name: Hints
+channels:
+ - defaults
+ - conda-forge
+ - bioconda
+dependencies:
+ - conda-forge::openjdk=8.0.144 
+ - nextflow=0.27.4 
+ - repeatmasker=4.0.7 
+ - exonerate=2.4.0 
+ - blast=2.5.0 
+ - perl-bioperl=1.6.924  
+ - genometools-genometools=1.5.10 
+ - fastqc=0.11.7 
+ - trim-galore=0.5.0 
+ - bowtie2=2.3.4.1 
+ - trinity=2.5.1 
+ - agustus=3.2.3 
+ - hisat2=2.1.0 
+ - r-base=3.4.1
