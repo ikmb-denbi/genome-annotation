@@ -290,5 +290,4 @@ dependencies:
   - numpy=1.14.2=py27hdbf6ddf_1
   - openjdk=8.0.121=1
   - qt=5.6.2=hd25b39d_14
-prefix: /mnt/lv_userdirs/analysis_mtorres/.conda/envs/Hints
 
