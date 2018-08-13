@@ -792,7 +792,7 @@ process RunHisat2 {
 	
 	script:
 	indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
-	ReadsBase = reads[0].toString()
+	ReadsBase = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
 
 	prefix = ReadsBase
 	
