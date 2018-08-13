@@ -55,6 +55,7 @@ params.retrain = false
 params.newspecies = "NewSpecies"
 params.nthreads = 1
 params.name = false
+params.outdir = "Augustus_output"
 
 
 // Validate inputs
@@ -119,11 +120,8 @@ try {
               "============================================================"
 }
 
- 
-Channel
-    .from( params.hints )
-    .ifEmpty { exit 1, "Cannot find any files matching: ${params.hints}\nNB: Path needs to be enclosed in quotes!" }
-    .set { Hints_file }
+
+Hints = Channel.fromPath( params.hints )
 
 
 /*
@@ -134,13 +132,16 @@ process Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    file Hints_all_files from Hints_file.collect()
+    file Hints
 
     output:
-    file "All_Hints.gff" 
+    file "*_head.gff" 
 
+	script:
+	prefix = Hints[0].toString().split(".gff")[0]
+	
     """
-    cat ${Hints_all_files} >> All_Hints.gff
+    head $Hints > ${prefix}_head.gff
     """
 }
 
