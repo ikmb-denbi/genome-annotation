@@ -121,7 +121,7 @@ try {
 
  
 Channel
-    .fromFile( params.hints )
+    .fromPath( params.hints )
     .ifEmpty { exit 1, "Cannot find any files matching: ${params.hints}\nNB: Path needs to be enclosed in quotes!" }
     .set { Hints_file }
 
