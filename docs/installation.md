@@ -8,25 +8,19 @@ To start using the NF-hints pipeline, there are three steps described below:
     * [Local installation](configuration/local.md)
     * [Adding your own system](configuration/adding_your_own.md)
 
-## 1) Install NextFlow
-Nextflow runs on most POSIX systems (Linux, Mac OSX etc). It can be installed by running the following commands:
+## 1) Install Miniconda2
 
-```bash
-# Make sure that Java v7+ is installed:
-java -version
+In the RZcluster: 
 
-# Install Nextflow
-curl -fsSL get.nextflow.io | bash
+`module load miniconda2` 
 
-# Add Nextflow binary to your PATH:
-mv nextflow ~/bin/
-# OR system-wide installation:
-# sudo mv nextflow /usr/local/bin
-```
+In the assembly cluster: 
 
-**You need NextFlow version >= 0.24 to run this pipeline.**
+`module load Miniconda2` 
 
-See [nextflow.io](https://www.nextflow.io/) and [NGI-NextflowDocs](https://github.com/SciLifeLab/NGI-NextflowDocs) for further instructions on how to install and configure Nextflow.
+Otherwise, install the corresponding miniconda2 for your system: 
+
+[miniconda2 installer](https://repo.continuum.io/miniconda/)
 
 ## 2) Install the Pipeline
 This pipeline itself needs no installation - NextFlow will automatically fetch it from GitHub if `NF-hints` is specified as the pipeline name.
