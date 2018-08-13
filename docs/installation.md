@@ -1,13 +1,5 @@
 # NF-hints Installation
 
-To start using the NF-hints pipeline, there are three steps described below:
-
-1. [Install Nextflow](#install-nextflow)
-2. [Install the pipeline](#install-the-pipeline)
-3. Configure the pipeline
-    * [Local installation](configuration/local.md)
-    * [Adding your own system](configuration/adding_your_own.md)
-
 ## 1) Install Miniconda2
 
 In the RZcluster: 
