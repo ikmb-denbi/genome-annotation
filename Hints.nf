@@ -792,9 +792,8 @@ process RunHisat2 {
 	
 	script:
 	indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
-	ReadsBase = reads[0].toString().split("_R1")[0]
-	Read1 = ReadsBase + "_R1.fastq"
-	Read2 = ReadsBase + "_R2.fastq"
+	ReadsBase = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+
 	prefix = ReadsBase
 	
 	
@@ -806,7 +805,7 @@ process RunHisat2 {
         """
    } else {
         """
-        hisat2 -x $indexBase -1 $Read1 -2 $Read2 -S alignment_sam -p $params.nthreads
+        hisat2 -x $indexBase -1 ${reads[0]} -2 ${reads[1]} -S alignment_sam -p $params.nthreads
         samtools view -Sb alignment_sam > alignment.bam
         samtools sort alignment.bam > ${prefix}_accepted_hits.bam
 		"""
