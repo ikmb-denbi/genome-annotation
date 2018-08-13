@@ -134,13 +134,13 @@ process Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    file "*.gff" from Hints_file.collect()
+    file Hints_all_files from Hints_file.collect()
 
     output:
     file "All_Hints.gff" 
 
     """
-    cat *.gff >> All_Hints.gff
+    cat ${Hints_all_files} >> All_Hints.gff
     """
 }
 
