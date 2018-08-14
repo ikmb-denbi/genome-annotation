@@ -870,7 +870,8 @@ process runTrinity {
 	script:
 	
 	"""
-	Trinity --genome_guided_bam $hisathits --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
+	cat $hisathits >> all_hits
+	Trinity --genome_guided_bam all_hits --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
 	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/Transcripts_trinity.fasta
 	"""
 }
@@ -973,8 +974,6 @@ process RunExonerateTrinity {
  */
  
 process Exonerate2HintsTrinity {
-	
-	publishDir "${params.outdir}/Hints/", mode: 'copy'
 	
 	input:
 	file exonerate_result_trinity
