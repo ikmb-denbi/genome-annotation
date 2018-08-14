@@ -135,7 +135,7 @@ process Concatenate {
     file all_Hints from Hints.collect()
 
     output:
-    file All_Hints.gff
+    file 'All_Hints.gff'
 	
     """
     cat $all_Hints >> All_Hints.gff
