@@ -132,16 +132,13 @@ process Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    file Hints
+    file all_Hints from Hints.collect()
 
     output:
-    file "All_Hints.gff" 
-
-	script:
-	prefix = Hints[0].toString().split(".gff")[0]
+    file All_Hints.gff
 	
     """
-    cat $Hints >> All_Hints.gff
+    cat $all_Hints >> All_Hints.gff
     """
 }
 
