@@ -970,13 +970,14 @@ process RunExonerateTrinity {
 process Exonerate2HintsTrinity {
 	
 	tag "${prefix}"
+	publishDir "${params.outdir}/Hints/", mode: 'copy'
 	
 	input:
 	file exonerate_result_trinity
 	file query2target_prefix
 	
 	output:
-	file "Hints_*_exonerate_trinity.gff" into output_trinity_gff
+	file "Hints_*_exonerate_trinity.gff"
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -989,9 +990,6 @@ process Exonerate2HintsTrinity {
 	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_${prefix}_exonerate_trinity.gff
 	"""
 }
-
-output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Hints/*")
 
 /*
  * Parse software version numbers
