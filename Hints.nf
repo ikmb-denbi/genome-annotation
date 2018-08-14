@@ -856,23 +856,22 @@ process Hisat2Hints {
  */
 process runTrinity {
 
-	tag "${prefix}"
 	publishDir "${params.outdir}/trinity", mode: 'copy'
 	
 	input:
-	file accepted_hits2trinity
+	file hisathits from accepted_hits2trinity.collect()
 	
 	output:
-	file "trinity_out_dir/*_trinity.fasta" into trinity_transcripts, trinity_transcripts_2exonerate
+	file "trinity_out_dir/Transcripts_trinity.fasta" into trinity_transcripts
 	
 	when:
 	params.reads != false && params.trinity == true
 	
 	script:
-	prefix = accepted_hits2trinity[0].toString().split("_accepted")[0]
+	
 	"""
-	Trinity --genome_guided_bam $accepted_hits2trinity --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
-	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/${prefix}_trinity.fasta
+	Trinity --genome_guided_bam $hisathits --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
+	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/Transcripts_trinity.fasta
 	"""
 }
 
@@ -891,7 +890,6 @@ TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
  
 process RunBlastTrinity {
 	
-	tag "${prefix}"
 	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
 	
 	input:
@@ -899,7 +897,7 @@ process RunBlastTrinity {
 	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
 	
 	output:
-	file "*_blast_trinity" into result_blast_trinity
+	file blast_trinity
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -908,9 +906,9 @@ process RunBlastTrinity {
 
 	db_name = blastdb_nhr.baseName
 	chunk_name = query_fa.baseName
-	prefix = query_fa[0].toString().split("_trinity")[0]
+
 	"""
-	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > ${prefix}_blast_trinity
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_trinity
 	"""
 }
 
@@ -921,11 +919,10 @@ process RunBlastTrinity {
 
 process BlastTrinity2QueryTarget {
 	
-	tag "${prefix}"
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
-	file all_blast_results_trinity from result_blast_trinity.collectFile()
+	file all_blast_results_trinity from blast_trinity.collectFile()
 	
 	output:
 	file "*_query2target_trinity_uniq" into query2target_trinity_uniq_result, query2target_prefix
