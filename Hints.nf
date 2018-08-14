@@ -690,7 +690,7 @@ process runFastqc {
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     input:
-    file(reads) from read_files_fastqc
+    set val(name), file(reads) from read_files_fastqc
 
     output:
     file "*_fastqc.{zip,html}" 
@@ -721,7 +721,7 @@ process runTrimgalore {
         }
 
    input:
-   file(reads) from read_files_trimming
+   set val(name), file(reads) from read_files_trimming
 
 	output:
    file "*_val_{1,2}.fq" into trimmed_reads
