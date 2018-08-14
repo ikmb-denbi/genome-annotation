@@ -976,7 +976,7 @@ process Exonerate2HintsTrinity {
 	file query2target_prefix
 	
 	output:
-	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
+	file "Hints_*_exonerate_trinity.gff" into output_trinity_gff
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -986,12 +986,12 @@ process Exonerate2HintsTrinity {
 	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_trinity.pl exonerate_gff_lines exonerate_trinity_gff
+	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_${prefix}_exonerate_trinity.gff
 	"""
 }
 
 output_trinity_gff
- 	.collectFile(name: "${params.outdir}/Hints/Hints_mapped_transcripts.gff")
+ 	.collectFile(name: "${params.outdir}/Hints/*")
 
 /*
  * Parse software version numbers
