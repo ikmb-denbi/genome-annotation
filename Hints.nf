@@ -978,7 +978,6 @@ process Exonerate2HintsTrinity {
 	
 	input:
 	file exonerate_result_trinity
-	file query2target_prefix
 	
 	output:
 	file Hints_trinity_mapped_gff
