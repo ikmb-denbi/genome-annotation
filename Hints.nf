@@ -70,8 +70,8 @@ params.trinity = true
 params.gth = true
 params.RM = true
 
-params.nblast = 1
-params.nexonerate = 1
+params.nblast = 20
+params.nexonerate = 5
 params.nrepeats = 1
 params.nthreads = 1
 params.species = "mammal"
@@ -690,7 +690,7 @@ process runFastqc {
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     input:
-    set val(name), file(reads) from read_files_fastqc
+    file(reads) from read_files_fastqc
 
     output:
     file "*_fastqc.{zip,html}" 
@@ -721,7 +721,7 @@ process runTrimgalore {
         }
 
    input:
-   set val(name), file(reads) from read_files_trimming
+   file(reads) from read_files_trimming
 
 	output:
    file "*_val_{1,2}.fq" into trimmed_reads
