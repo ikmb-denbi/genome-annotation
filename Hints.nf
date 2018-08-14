@@ -696,6 +696,9 @@ process runFastqc {
     file "*_fastqc.{zip,html}" 
     //into fastqc_results
 
+	when:
+	params.reads != false
+
     script:
 	prefix = reads[0].toString().split("_R1")[0]
     """
@@ -720,11 +723,14 @@ process runTrimgalore {
    input:
    set val(name), file(reads) from read_files_trimming
 
-   output:
+	output:
    file "*_val_{1,2}.fq" into trimmed_reads
   // file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
    file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
-   
+ 	
+	when:
+	params.reads != false
+  
    script:
    prefix = reads[0].toString().split("_R1")[0]
    if (params.singleEnd) {
@@ -759,6 +765,9 @@ process RunMakeHisatDB {
 	output:
 	file "${dbName}.*.ht2" into hs2_indices
 	
+	when:
+	params.reads != false
+
 	script:
 	dbName = genome.baseName
 	dbName_1 = dbName + ".1.ht2"
