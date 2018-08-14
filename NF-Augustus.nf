@@ -25,14 +25,15 @@ def helpMessage() {
 
     Mandatory arguments:
       --genome                      Genome reference
-      --hints						Directory with hints file(s)
-      --model						Augustus available profile to use (default = human)
-      -c                     	 	Configuration file to use
+      --hints						Directory with hints file(s) (e.g. --hints 'Hints/*.gff')
+      -c                     	 	Configuration file to use 
 
     Options:
+	  --model						Augustus available profile to use (default = human)
 	  --retrain						Whether the available Augustus profile should be retrained with models especific for the species of interest [ true | false (default) ]
 	  --newspecies					If '--retrain true', give a name to the new profile to create (default = 'NewSpecies')
 	  --nthreads					Number of cpus for multi-thread mode [default = 1]
+	  --cfg							Config file to use instead of default
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -56,6 +57,7 @@ params.newspecies = "NewSpecies"
 params.nthreads = 1
 params.name = false
 params.outdir = "Augustus_output"
+params.cfg = "bin/augustus_default.cfg"
 
 
 // Validate inputs
@@ -132,14 +134,33 @@ process Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    file all_Hints from Hints.collect()
+    file hints2conc from Hints.collect()
 
     output:
-    file 'All_Hints.gff'
+    file 'All_Hints.gff' into all_hints
 	
     """
-    cat $all_Hints >> All_Hints.gff
+    cat $hints2conc >> All_Hints.gff
     """
+}
+
+/*
+ * STEP 2 - Augustus
+ */
+process runAugustus1 {
+
+	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
+	
+	input:
+	file all_hints
+	
+	
+	output:
+	file 'Augustus_run1.gff'
+	
+	"""
+	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.cfg --hintsfile=$all_hints $Genome > Augustus_run1.gff
+	"""
 }
 
 workflow.onComplete {
