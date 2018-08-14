@@ -539,7 +539,7 @@ output_gff_ests
  * RepeatMasker Block
  */
  
-if (params.RM == true) {
+if (params.RM != false) {
 	Channel
 		.fromPath(Genome)
 		.splitFasta(by: params.nrepeats, file: true)
@@ -977,7 +977,7 @@ process Exonerate2HintsTrinity {
 	file query2target_prefix
 	
 	output:
-	file "Hints_*_exonerate_trinity.gff"
+	file "Hints_trinity_mapped_*.gff"
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -987,7 +987,7 @@ process Exonerate2HintsTrinity {
 	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_${prefix}_exonerate_trinity.gff
+	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_mapped_${prefix}.gff
 	"""
 }
 
