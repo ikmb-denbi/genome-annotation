@@ -916,7 +916,7 @@ process BlastTrinity2QueryTarget {
 	file all_blast_results_trinity from result_blast_trinity.collectFile()
 	
 	output:
-	file "*_query2target_trinity_uniq" into query2target_trinity_uniq_result
+	file "*_query2target_trinity_uniq" into query2target_trinity_uniq_result, query2target_prefix
 	
 	when:
 	params.reads != false && params.trinity == true
@@ -948,7 +948,7 @@ process RunExonerateTrinity {
 	file trinity_transcripts_2exonerate
 	
 	output:
-	file '*.exonerate.out' into exonerate_result_trinity
+	file 'exonerate.out' into exonerate_result_trinity
 	
 	when:
 	params.reads != false && params.trinity == true
@@ -973,6 +973,7 @@ process Exonerate2HintsTrinity {
 	
 	input:
 	file exonerate_result_trinity
+	file query2target_prefix
 	
 	output:
 	file exonerate_trinity_gff into output_trinity_gff, exonerate_trinity_for_hints
@@ -981,7 +982,7 @@ process Exonerate2HintsTrinity {
 	params.reads != false && params.trinity == true	
 	
 	script:
-	prefix = exonerate_result_trinity[0].toString().split(".exonerate")[0]
+	prefix = query2target_prefix[0].toString().split("_query2target")[0]
 	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
