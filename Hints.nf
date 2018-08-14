@@ -878,8 +878,8 @@ TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
  */
  
 process RunBlastTrinity {
-
-	tag "${chunk_name}"
+	
+	tag "${prefix}"
 	publishDir "${params.outdir}/blast_trinity/${chunk_name}", mode: 'copy'
 	
 	input:
@@ -896,7 +896,7 @@ process RunBlastTrinity {
 
 	db_name = blastdb_nhr.baseName
 	chunk_name = query_fa.baseName
-	
+	prefix = query_fa[0].toString().split("_trinity")[0]
 	"""
 	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
 	"""
@@ -909,6 +909,7 @@ process RunBlastTrinity {
 
 process BlastTrinity2QueryTarget {
 	
+	tag "${prefix}"
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
@@ -919,6 +920,9 @@ process BlastTrinity2QueryTarget {
 	
 	when:
 	params.reads != false && params.trinity == true
+	
+	script:
+	prefix = all_blast_results_trinity[0].toString()
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result

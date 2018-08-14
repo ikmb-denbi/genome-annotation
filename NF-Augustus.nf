@@ -135,13 +135,13 @@ process Concatenate {
     file Hints
 
     output:
-    file "*_head.gff" 
+    file "All_Hints.gff" 
 
 	script:
 	prefix = Hints[0].toString().split(".gff")[0]
 	
     """
-    head $Hints > ${prefix}_head.gff
+    cat $Hints >> All_Hints.gff
     """
 }
 
