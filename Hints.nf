@@ -922,7 +922,7 @@ process BlastTrinity2QueryTarget {
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
-	file all_blast_results_trinity from result_blast_trinity.collectFile()
+	file all_blast_results_trinity from blast_trinity.collectFile()
 	
 	output:
 	file query2target_trinity_uniq into query2target_trinity_uniq_result
