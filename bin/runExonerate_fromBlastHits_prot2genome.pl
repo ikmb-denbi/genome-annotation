@@ -93,7 +93,7 @@ while (<MATCHES>){
 	}
 	print "Exonerating $query against $target ...\n";
 	#system("echo \"$query\" | cdbyank $cdb_prot_index > $query.fa");
-	system("exonerate --model protein2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $query.fa $genome_basename/$target.fasta >> exonerate.out");
+	system("exonerate --model protein2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $query.fa $genome_basename/$target.fasta >> $query_exonerate.out");
 	system("rm $query.fa");
 }
 
