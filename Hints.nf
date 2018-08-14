@@ -862,7 +862,7 @@ process runTrinity {
 	file hisathits from accepted_hits2trinity.collect()
 	
 	output:
-	file "trinity_out_dir/Transcripts_trinity.fasta" into trinity_transcripts
+	file "trinity_out_dir/Transcripts_trinity.fasta" into trinity_transcripts, trinity_transcripts_2exonerate
 	
 	when:
 	params.reads != false && params.trinity == true
@@ -906,7 +906,7 @@ process RunBlastTrinity {
 
 	db_name = blastdb_nhr.baseName
 	chunk_name = query_fa.baseName
-
+	
 	"""
 	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_trinity
 	"""
@@ -922,20 +922,19 @@ process BlastTrinity2QueryTarget {
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
-	file all_blast_results_trinity from blast_trinity.collectFile()
+	file all_blast_results_trinity from result_blast_trinity.collectFile()
 	
 	output:
-	file "*_query2target_trinity_uniq" into query2target_trinity_uniq_result, query2target_prefix
+	file query2target_trinity_uniq into query2target_trinity_uniq_result
 	
 	when:
 	params.reads != false && params.trinity == true
 	
 	script:
-	prefix = all_blast_results_trinity[0].toString().split("_blast")[0]
-	
+
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
-	sort query2target_trinity_result | uniq > ${prefix}_query2target_trinity_uniq
+	sort query2target_trinity_result | uniq > query2target_trinity_uniq
 	"""
 } 	
 
@@ -949,7 +948,6 @@ query2target_trinity_uniq_result
  
 process RunExonerateTrinity {
 	
-	tag "${prefix}" 
 	publishDir "${params.outdir}/exonerate_trinity/${hits_chunk}", mode: 'copy'
 	
 	input:
@@ -963,8 +961,6 @@ process RunExonerateTrinity {
 	params.reads != false && params.trinity == true
 	
 	script:
-	prefix = hits_trinity_chunk[0].toString().split("_query2target")[0]
-	
 		
 	"""
 	runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
@@ -978,7 +974,6 @@ process RunExonerateTrinity {
  
 process Exonerate2HintsTrinity {
 	
-	tag "${prefix}"
 	publishDir "${params.outdir}/Hints/", mode: 'copy'
 	
 	input:
@@ -986,19 +981,22 @@ process Exonerate2HintsTrinity {
 	file query2target_prefix
 	
 	output:
-	file "Hints_trinity_mapped_*.gff"
+	file Hints_trinity_mapped_gff
 	
 	when:
 	params.reads != false && params.trinity == true	
 	
 	script:
-	prefix = query2target_prefix[0].toString().split("_query2target")[0]
 	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_mapped_${prefix}.gff
+	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_mapped_gff
 	"""
 }
+
+Hints_trinity_mapped_gff
+	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
+
 
 /*
  * Parse software version numbers
