@@ -887,7 +887,7 @@ process RunBlastTrinity {
 	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
 	
 	output:
-	file blast_result_trinity
+	file "*_blast_trinity"
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -898,7 +898,7 @@ process RunBlastTrinity {
 	chunk_name = query_fa.baseName
 	prefix = query_fa[0].toString().split("_trinity")[0]
 	"""
-	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > blast_result_trinity
+	blastn -db $db_name -query $query_fa -max_target_seqs 1 -outfmt 6 > ${prefix}_blast_trinity
 	"""
 }
 
@@ -913,7 +913,7 @@ process BlastTrinity2QueryTarget {
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
-	file all_blast_results_trinity from blast_result_trinity.collectFile()
+	file all_blast_results_trinity from "*_blast_trinity".collectFile()
 	
 	output:
 	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
@@ -922,7 +922,7 @@ process BlastTrinity2QueryTarget {
 	params.reads != false && params.trinity == true
 	
 	script:
-	prefix = all_blast_results_trinity[0].toString()
+	prefix = all_blast_results_trinity[0].toString().split("_blast")[0]
 	
 	"""
 	BlastOutput2QueryTarget.pl $all_blast_results_trinity 1e-5 query2target_trinity_result
