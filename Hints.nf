@@ -870,8 +870,9 @@ process runTrinity {
 	script:
 	
 	"""
-	cat $hisathits >> all_hits
-	Trinity --genome_guided_bam all_hits --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
+	samtools merge merged.bam $hisathits
+	samtools sort merged.bam > sorted.bam
+	Trinity --genome_guided_bam sorted.bam --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
 	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/Transcripts_trinity.fasta
 	"""
 }
