@@ -70,9 +70,9 @@ params.trinity = true
 params.gth = true
 params.RM = true
 
-params.nblast = 500
-params.nexonerate = 200
-params.nrepeats = 30
+params.nblast = 1
+params.nexonerate = 1
+params.nrepeats = 1
 params.nthreads = 1
 params.species = "mammal"
 params.name = false
@@ -565,6 +565,9 @@ process RunRepeatMasker {
 	output:
 	file(query_out_rep) into RM_out
 	
+	when:
+	params.RM != false
+
 	script:
 	query_out_rep = query_fa_rep + ".out"
 	genome_tag = Genome.baseName
