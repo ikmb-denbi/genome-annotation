@@ -887,7 +887,7 @@ process RunBlastTrinity {
 	set file(blastdb_nhr),file(blast_nin),file(blast_nsq) from blast_db_trinity.collect()
 	
 	output:
-	file "*_blast_trinity"
+	file "*_blast_trinity" into result_blast_trinity
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -913,7 +913,7 @@ process BlastTrinity2QueryTarget {
 	publishDir "${params.outdir}/blast2targets_trinity", mode: 'copy'
 	
 	input:
-	file all_blast_results_trinity from "*_blast_trinity".collectFile()
+	file all_blast_results_trinity from result_blast_trinity.collectFile()
 	
 	output:
 	file query2target_trinity_result_uniq into query2target_trinity_uniq_result
