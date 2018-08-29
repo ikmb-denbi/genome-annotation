@@ -20,3 +20,4 @@ dependencies:
  - augustus=3.2.3 
  - hisat2=2.1.0 
  - r-base=3.4.1
+ - multiqc
