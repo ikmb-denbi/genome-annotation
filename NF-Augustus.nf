@@ -167,7 +167,7 @@ process runAugustus1 {
 	file 'Augustus_out' into augustus_out_gff, augustus_out2train
 	
 	"""
-	grep '>' $fasta_aug > scafs
+	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
 	grep -F -f scafs $all_hints > scafs_hints
 	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.cfg --hintsfile=scafs_hints fasta_aug > Augustus_out
 	"""
