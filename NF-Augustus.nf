@@ -32,6 +32,7 @@ def helpMessage() {
 	  --model						Augustus available profile to use (default = human)
 	  --retrain						Whether the available Augustus profile should be retrained with models especific for the species of interest [ true | false (default) ]
 	  --newspecies					If '--retrain true', give a name to the new profile to create (default = 'NewSpecies')
+	  --naugustus					Chunks (# of scaffolds) to divide Augustus jobs [ default = 1 ]
 	  --nthreads					Number of cpus for multi-thread mode [default = 1]
 	  --cfg							Config file to use instead of default
 
@@ -58,6 +59,7 @@ params.nthreads = 1
 params.name = false
 params.outdir = "Augustus_output"
 params.cfg = "bin/augustus_default.cfg"
+params.naugustus = 1
 
 
 // Validate inputs
@@ -82,7 +84,7 @@ log.info """=======================================================
     |__| |    /\\     \\__, \\__/ |  \\ |___    
                                                
 
-NF-hints v${params.version}
+NF-Augustus v${params.version}
 ======================================================="""
 def summary = [:]
 summary['Pipeline Name']  = 'NF-hints'
@@ -144,6 +146,11 @@ process Concatenate {
     """
 }
 
+Channel
+		.fromPath(Genome)
+		.splitFasta(by: params.naugustus, file: true)
+		.set {fasta_aug}
+		
 /*
  * STEP 2 - Augustus
  */
@@ -153,15 +160,47 @@ process runAugustus1 {
 	
 	input:
 	file all_hints
+	file fasta_aug
 	
 	
 	output:
-	file 'Augustus_run1.gff'
+	file 'Augustus_out' into augustus_out_gff, augustus_out2train
 	
 	"""
-	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.cfg --hintsfile=$all_hints $Genome > Augustus_run1.gff
+	grep '>' $fasta_aug | perl -ple 's/^>(\S+)\s?.*/$1/' > scafs
+	grep -F -f scafs $all_hints > scafs_hints
+	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.cfg --hintsfile=scafs_hints fasta_aug > Augustus_out
 	"""
 }
+
+augustus_out_gff
+	.collectFile( name: "${params.outdir}/Augustus_run1.gff" )
+
+
+/*
+ * STEP 3 - Select Best Models
+ */
+
+//process BestModels {
+
+//	publishDir "${params.outdir}/best_models/", mode: 'copy'
+	
+//	input:
+//	file all_models from augustus_out2train.collect()
+	
+//	output:
+	
+//	when:
+//	params.retrain == true
+	
+//	"""
+	
+//	"""
+//}
+
+
+
+
 
 workflow.onComplete {
 
