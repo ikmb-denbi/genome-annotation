@@ -157,7 +157,8 @@ Channel
 process runAugustus1 {
 
 	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
-	
+//published only the last chunk. Should be changed
+
 	input:
 	file all_hints
 	file fasta_aug
