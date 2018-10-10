@@ -2,13 +2,9 @@
 
 ## 1) Install Miniconda2
 
-In the RZcluster: 
+In the IKMB clusters:  
 
 `module load miniconda2` 
-
-In the assembly cluster: 
-
-`module load Miniconda2` 
 
 Otherwise, install the corresponding miniconda2 for your system: 
 
