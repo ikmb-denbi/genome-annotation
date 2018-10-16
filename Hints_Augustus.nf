@@ -643,7 +643,7 @@ process RepeatMasker2Hints {
 	file RM_2_hints
 	
 	output:
-	file RepeatMasker_hints
+	file RepeatMasker_gff into RepeatMasker_hints, RepeatMasker_2concatenate
 
 	when:
 	params.RM != false
@@ -652,7 +652,7 @@ process RepeatMasker2Hints {
 	genome_tag = Genome.baseName
 		
 	"""
-	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_hints
+	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_gff
 	"""
 }
 
@@ -1024,12 +1024,13 @@ process  Concatenate {
 	
 	input:
 	file Hints_trinity from Hints_trinity2concatenate.collectFile()
+	file Hints_RM from RepeatMasker_2concatenate
 	
 	output:
 	file 'All_Hints.gff' into all_hints
 	
 	"""
-	cat $Hints_trinity >> All_Hints.gff
+	cat $Hints_trinity $Hints_RM >> All_Hints.gff
 	"""
 }
 
