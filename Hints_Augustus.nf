@@ -999,6 +999,23 @@ Hints_trinity_mapped_gff
 
 
 /*
+ * STEP Add files for missing Hints
+ */
+
+process NoTrinityHints {
+
+	output:
+	file Trinity_no_hints into Hints_trinity2concatenate
+	
+	when:
+	params.trinity == false
+	
+	"""
+	touch Trinity_no_hints
+	"""
+} 
+
+/*
  * STEP Augustus.1 - Concatenate Hints
  */
  
