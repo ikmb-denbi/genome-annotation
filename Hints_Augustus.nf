@@ -980,8 +980,8 @@ process Exonerate2HintsTrinity {
 	file exonerate_result_trinity
 	
 	output:
-	file Hints_trinity_mapped_gff
-	file 'hints_trinity.done' into trigger_hints_trinity
+	file Hints_trinity_gff into Hints_trinity2concatenate, Hints_trinity_mapped_gff
+	file 
 	
 	when:
 	params.reads != false && params.trinity == true	
@@ -990,7 +990,7 @@ process Exonerate2HintsTrinity {
 	
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
-	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_mapped_gff
+	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_gff
 	touch hints_trinity.done
 	"""
 }
@@ -1008,13 +1008,13 @@ process  Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 	
 	input:
-	file trigger_hints_trinity
+	file Hints_trinity2concatenate
 	
 	output:
 	file 'All_Hints.gff' into all_hints
 	
 	"""
-	cat $params.outdir/Hints/* >> All_Hints.gff
+	cat Hints_trinity2concatenate >> All_Hints.gff
 	"""
 }
 
