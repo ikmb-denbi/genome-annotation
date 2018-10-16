@@ -1007,13 +1007,13 @@ process  Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 	
 	input:
-	file Hints_trinity2concatenate
+	file Hints_trinity from collect(Hints_trinity2concatenate)
 	
 	output:
 	file 'All_Hints.gff' into all_hints
 	
 	"""
-	cat $Hints_trinity2concatenate >> All_Hints.gff
+	cat $Hints_trinity >> All_Hints.gff
 	"""
 }
 
