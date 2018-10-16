@@ -1038,7 +1038,7 @@ process runAugustus1 {
 	
 	"""
 	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
-	grep -F -f -w scafs $AllHints > scafs_hints
+	grep -F -w -f scafs $AllHints > scafs_hints
 	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
 	"""
 }
