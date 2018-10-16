@@ -1013,7 +1013,7 @@ process  Concatenate {
 	file 'All_Hints.gff' into all_hints
 	
 	"""
-	cat Hints_trinity2concatenate >> All_Hints.gff
+	cat $Hints_trinity2concatenate >> All_Hints.gff
 	"""
 }
 
