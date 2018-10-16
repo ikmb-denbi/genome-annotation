@@ -990,7 +990,6 @@ process Exonerate2HintsTrinity {
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_gff
-	touch hints_trinity.done
 	"""
 }
 
@@ -1002,18 +1001,18 @@ Hints_trinity_mapped_gff
  * STEP Add files for missing Hints
  */
 
-process NoTrinityHints {
+//process NoTrinityHints {
 
-	output:
-	file Trinity_no_hints into Hints_trinity2concatenate
+//	output:
+//	file Trinity_no_hints into Hints_trinity2concatenate
 	
-	when:
+//	when:
 	params.trinity == false
 	
-	"""
-	touch Trinity_no_hints
-	"""
-} 
+//	"""
+//	touch Trinity_no_hints
+//	"""
+//} 
 
 /*
  * STEP Augustus.1 - Concatenate Hints
