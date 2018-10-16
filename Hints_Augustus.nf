@@ -1014,7 +1014,7 @@ process  Concatenate {
 	file 'All_Hints.gff' into all_hints
 	
 	"""
-	cat ${params.outdir}/Hints/* >> All_Hints.gff
+	cat $params.outdir/Hints/* >> All_Hints.gff
 	"""
 }
 
