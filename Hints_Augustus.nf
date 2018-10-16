@@ -981,7 +981,6 @@ process Exonerate2HintsTrinity {
 	
 	output:
 	file Hints_trinity_gff into Hints_trinity2concatenate, Hints_trinity_mapped_gff
-	file 
 	
 	when:
 	params.reads != false && params.trinity == true	
