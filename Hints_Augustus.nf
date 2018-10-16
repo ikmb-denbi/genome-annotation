@@ -81,6 +81,10 @@ params.species = "mammal"
 params.name = false
 params.singleEnd = false
 
+// Augustus
+params.model = "human"
+params.naugustus = 1
+params.AugCfg = "bin/augustus_default.cfg"
 
 // Validate inputs
 if ( params.genome ){
@@ -989,45 +993,58 @@ process Exonerate2HintsTrinity {
 	
 	output:
 	file Hints_trinity_gff into Hints_trinity2concatenate, Hints_trinity_mapped_gff
+	file 'trinity_hints.done' into trigger_trinity
 	
-	when:
-	params.reads != false && params.trinity == true	
 	
 	script:
-	
+	if (params.reads != false && params.trinity == true) {
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_gff
 	cat Hints_trinity_gff >> $AllHints
+	touch trinity_hints.done
 	"""
+	} else {
+	"""
+	touch trinity_hints.done
+	"""
+	}
 }
 
 Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
 
 
+Channel
+		.fromPath(Genome)
+		.splitFasta(by: params.naugustus, file: true)
+		.set {fasta_aug}
+		
 /*
- * STEP Augustus.1 - Concatenate Hints
+ * STEP Augustus
  */
- 
-process  Concatenate {
+process runAugustus1 {
 
-	publishDir "${params.outdir}", mode: 'copy'
-	
+	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
+//published only the last chunk. Should be changed
+
 	input:
-	file Hints_trinity from Hints_trinity2concatenate.collectFile()
-	file Hints_RM from RepeatMasker_2concatenate
+	file trigger_trinity
+	file fasta_aug
+	
 	
 	output:
-	file 'All_Hints.gff' into all_hints
+	file 'Augustus_out' into augustus_out_gff, augustus_out2train
 	
 	"""
-	cat $Hints_trinity $Hints_RM >> All_Hints.gff
+	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
+	grep -F -f -w scafs $AllHints > scafs_hints
+	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
 	"""
 }
 
-
-
+augustus_out_gff
+	.collectFile( name: "${params.outdir}/Augustus_run1.gff" )
 
 
 
