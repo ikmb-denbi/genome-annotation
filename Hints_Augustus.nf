@@ -342,6 +342,7 @@ process Exonerate2HintsProts {
 	"""
 	grep -v '#' $exonerate_result_prots | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
 	Exonerate2GFF_protein.pl exonerate_gff_lines exonerate_gff
+	cat exonerate_gff >> $AllHints
 	"""
 }
 
@@ -398,6 +399,7 @@ process GenomeThreader2HintsProts {
 	grep -v '#' not_clean_gth_wIntrons > no_hash_gth
 	GTH_rename_splitoutput.pl no_hash_gth > clean_gth
 	grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > gth_hints
+	cat gth_hints >> $AllHints
 	"""
 }
 
@@ -530,6 +532,7 @@ process Exonerate2HintsEST {
 	"""
 	grep -v '#' $exonerate_result_ests | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_EST.pl exonerate_gff_lines exonerate_gff
+	cat exonerate_gff >> $AllHints
 	"""
 }
 
@@ -656,6 +659,7 @@ process RepeatMasker2Hints {
 		
 	"""
 	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_gff
+	cat RepeatMasker_gff >> $AllHints
 	"""
 }
 
@@ -850,6 +854,7 @@ process Hisat2Hints {
 	
 	"""
 	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=Hints_RNAseq_${prefix}.gff	
+	cat Hints_RNAseq_${prefix}.gff >> $AllHints
 	"""
 }
 
