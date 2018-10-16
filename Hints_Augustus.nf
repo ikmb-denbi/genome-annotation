@@ -65,6 +65,9 @@ if (params.help){
 params.prots = false
 params.ESTs = false
 params.reads = false
+params.AllHints = "AllHints.gff"
+
+AllHints = file(params.AllHints)
 
 params.trinity = true
 params.gth = true
@@ -990,29 +993,13 @@ process Exonerate2HintsTrinity {
 	"""
 	grep -v '#' $exonerate_result_trinity | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_trinity.pl exonerate_gff_lines Hints_trinity_gff
+	cat Hints_trinity_gff >> $AllHints
 	"""
 }
 
 Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
 
-
-/*
- * STEP Add files for missing Hints
- */
-
-//process NoTrinityHints {
-
-//	output:
-//	file Trinity_no_hints into Hints_trinity2concatenate
-	
-//	when:
-	params.trinity == false
-	
-//	"""
-//	touch Trinity_no_hints
-//	"""
-//} 
 
 /*
  * STEP Augustus.1 - Concatenate Hints
