@@ -1007,7 +1007,7 @@ process  Concatenate {
 	publishDir "${params.outdir}", mode: 'copy'
 	
 	input:
-	file Hints_trinity from collect(Hints_trinity2concatenate)
+	file Hints_trinity from Hints_trinity2concatenate.collectFile()
 	
 	output:
 	file 'All_Hints.gff' into all_hints
