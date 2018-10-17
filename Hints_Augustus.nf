@@ -691,6 +691,7 @@ process RepeatMasker2Hints {
 	"""
 	touch RM_hints.done
 	"""
+	}
 }
 
 RepeatMasker_hints
