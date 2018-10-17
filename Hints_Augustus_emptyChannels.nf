@@ -1089,7 +1089,7 @@ process Augustus2gff3 {
 	
 	"""
 	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
-	augustus_add_exons.rb -i augustus_clean > augustus_gff3
+	ruby augustus_add_exons.rb -i augustus_clean > augustus_gff3
 	"""
 }
 
