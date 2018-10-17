@@ -367,6 +367,10 @@ output_gff_prots
  	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_exonerate.gff")
 
 
+if (params.gth == false) {
+	trigger_prot_gth = Channel.create()
+}
+
 /*
  * STEP Proteins.5 - GenomeThreader
  */
@@ -580,6 +584,7 @@ if (params.RM != false) {
 		.set {fasta_rep}
 } else {
 	fasta_rep = Channel.from(false)
+	trigger_RM = Channel.create()
 }
 
 
@@ -718,6 +723,8 @@ RepeatMasker_hints
 } else {
 	read_files_fastqc = Channel.from(false)
 	read_files_trimming = Channel.from(false)
+	trigger_RNAseq = Channel.create()
+	
 }
 
 
@@ -896,6 +903,9 @@ process Hisat2Hints {
 	}
 }
 
+if (params.trinity == false) {
+	trigger_trinity = Channel.create()
+}
 
 /*
  * STEP RNAseq.6 - Trinity
@@ -1063,12 +1073,12 @@ process runAugustus1 {
 //published only the last chunk. Should be changed
 
 	input:
-	file x from trigger_prot_exonerate.ifEmpty()
-//	file trigger_prot_gth
-	file y from trigger_est_exonerate.ifEmpty()
-//	file trigger_RM
-//	file trigger_RNAseq
-//	file trigger_trinity
+	file a from trigger_prot_exonerate.ifEmpty()
+	file b from trigger_prot_gth.ifEmpty()
+	file c from trigger_est_exonerate.ifEmpty()
+	file d from trigger_RM.ifEmpty()
+	file e from trigger_RNAseq.ifEmpty()
+	file f from trigger_trinity.ifEmpty()
 	file fasta_aug
 	
 	
@@ -1102,7 +1112,7 @@ process Augustus2gff3 {
 	file augustus_gff3 into 'Augustus.gff3'
 	
 	"""
-	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' | ruby augustus_add_exons.rb > augustus_gff3
+	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' | augustus_add_exons.rb > augustus_gff3
 	"""
 }
 
