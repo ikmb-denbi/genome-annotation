@@ -1063,9 +1063,9 @@ process runAugustus1 {
 //published only the last chunk. Should be changed
 
 	input:
-	file trigger_prot_exonerate.ifEmpty()
+	file x from trigger_prot_exonerate.ifEmpty()
 //	file trigger_prot_gth
-	file trigger_est_exonerate.ifEmpty()
+	file y from trigger_est_exonerate.ifEmpty()
 //	file trigger_RM
 //	file trigger_RNAseq
 //	file trigger_trinity
