@@ -21,3 +21,4 @@ dependencies:
  - hisat2=2.1.0 
  - r-base=3.4.1
  - multiqc
+ - ruby-2.2.3
