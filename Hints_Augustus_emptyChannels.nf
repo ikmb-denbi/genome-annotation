@@ -94,6 +94,9 @@ params.AugCfg = "bin/augustus_default.cfg"
 params.UTR = 'off'
 params.isof = 'false'
 
+GFF3_RUBYscript = file(workflow.projectDir + "/bin/augustus_add_exons.rb")
+
+
 // Validate inputs
 if ( params.genome ){
 	Genome = file(params.genome)
@@ -1089,7 +1092,7 @@ process Augustus2gff3 {
 	
 	"""
 	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
-	ruby augustus_add_exons.rb -i augustus_clean > augustus_gff3
+	ruby $GFF3_RUBYscript -i augustus_clean > augustus_gff3
 	"""
 }
 
