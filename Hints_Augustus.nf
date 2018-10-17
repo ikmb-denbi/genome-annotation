@@ -1116,7 +1116,7 @@ process Augustus2proteins {
 	file augustus2parse from augustus_2prots.collectFile()
 	
 	output:
-	file '*.aa' into 'Augustus_proteins.fa'
+	file '*.aa' into 'Augustus_proteins.gff3'
 	
 	"""
 	getAnnoFasta.pl $augustus2parse
