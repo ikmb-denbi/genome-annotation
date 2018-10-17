@@ -356,10 +356,6 @@ process Exonerate2HintsProts {
 	cat exonerate_gff >> $AllHints
 	touch prot_exonerate_hints.done
 	"""
-	} else {
-	"""
-	touch prot_exonerate_hints.done
-	"""
 	}
 }
 
@@ -422,11 +418,7 @@ process GenomeThreader2HintsProts {
 	cat gth_hints >> $AllHints
 	touch prot_gth_hints.done
 	"""
-	} else {
-	"""
-	touch prot_gth_hints.done
-	"""
-	}
+	} 
 }
 
 gth_hints
@@ -561,10 +553,6 @@ process Exonerate2HintsEST {
 	cat exonerate_gff >> $AllHints
 	touch est_exonerate_hints.done
 	"""
-	} else {
-	"""
-	touch est_exonerate_hints.done
-	"""
 	}
 }
 
@@ -692,10 +680,6 @@ process RepeatMasker2Hints {
 	"""
 	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_gff
 	cat RepeatMasker_gff >> $AllHints
-	touch RM_hints.done
-	"""
-	} else {
-	"""
 	touch RM_hints.done
 	"""
 	}
@@ -896,10 +880,6 @@ process Hisat2Hints {
 	cat Hints_RNAseq_${prefix}.gff >> $AllHints
 	touch RNAseq_hints.done
 	"""
-	} else {
-	"""
-	touch RNAseq_hints.done
-	"""
 	}
 }
 
@@ -1048,10 +1028,6 @@ process Exonerate2HintsTrinity {
 	cat Hints_trinity_gff >> $AllHints
 	touch trinity_hints.done
 	"""
-	} else {
-	"""
-	touch trinity_hints.done
-	"""
 	}
 }
 
@@ -1112,7 +1088,8 @@ process Augustus2gff3 {
 	file augustus_gff3 into 'Augustus.gff3'
 	
 	"""
-	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' | augustus_add_exons.rb > augustus_gff3
+	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
+	augustus_add_exons.rb -i augustus_clean > augustus_gff3
 	"""
 }
 
