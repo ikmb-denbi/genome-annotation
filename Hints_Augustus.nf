@@ -1053,7 +1053,7 @@ Channel
 		.set {fasta_aug}
 		
 /*
- * STEP Augustus
+ * STEP Augustus.1 - Genome Annotation
  */
 process runAugustus1 {
 
@@ -1071,7 +1071,8 @@ process runAugustus1 {
 	
 	
 	output:
-	file 'Augustus_out' into augustus_out_gff
+	file 'Augustus_out' into augustus_out_gff, augustus_2gff3, augustus_2prots
+	
 	
 	"""
 	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
@@ -1084,6 +1085,44 @@ augustus_out_gff
 	.collectFile( name: "${params.outdir}/Augustus.gff" )
 
 
+/*
+ * STEP Augustus.2 - Get GFF3 file
+ */
+
+process Augustus2gff3 {
+	
+	publishDir "${params.outdir}", mode: 'copy'
+	
+	input:
+	file augustus2parse from augustus_2gff3.collectFile()
+	
+	output:
+	file augustus_gff3 into 'Augustus.gff3'
+	
+	"""
+	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' | ruby augustus_add_exons.rb > augustus_gff3
+	"""
+}
+
+/*
+ * STEP Augustus.3 - Get Protein Sequences
+ */
+
+process Augustus2proteins {
+	
+	publishDir "${params.outdir}", mode: 'copy'
+	
+	input:
+	file augustus2parse from augustus_2prots.collectFile()
+	
+	output:
+	file '*.aa' into 'Augustus_proteins.fa'
+	
+	"""
+	getAnnoFasta.pl $augustus2parse
+	"""
+}
+	
 
 /*
  * Parse software version numbers
