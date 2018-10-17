@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         NF-Hints
+                         NF-Hints-Augustus
 ========================================================================================
- NF-hints Analysis Pipeline. Started 2018-08-03.
+ NF-hints-Augustus Analysis Pipeline. Started 2018-10-17.
  #### Homepage / Documentation
- https://git.ikmb.uni-kiel.de/m.torres/NF-hints.git
+ https://git.ikmb.uni-kiel.de/m.torres/NF-hints-augustus.git
  #### Authors
  MTorres m.torres <m.torres@ikmb.uni-kiel.de> - https://git.ikmb.uni-kiel.de/m.torres>
 ----------------------------------------------------------------------------------------
@@ -21,11 +21,11 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run Hints.nf --genome 'Genome.fasta' --query 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
+    nextflow run Hints_Augustus.nf --genome 'Genome.fasta' --query 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
 
     Mandatory arguments:
       --genome                      Genome reference
-      -profile                      Hardware config to use. docker / aws
+      -profile                      Hardware config to use
       
     At least one of:
       --prots						Proteins from other species
@@ -36,15 +36,20 @@ def helpMessage() {
 	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
 	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
 	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
+	  --UTR							Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'off' (default) | 'on' ]
+	  --isof						Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
       --nblast						Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
       --nexonerate					Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-	  --nrepeats					Chunks (# of scaffolds) to divide RepeatMasker jobs [ default = 30 ]
+	  --nscaffolds					Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
 	  --nthreads					Number of cpus for programs that allow multi-threaded mode [default = 1]
 	  --species						Species database for RepeatMasker [ default = 'mammal' ]
+	  --model						Species model for Augustus [ default = 'human' ]
 	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
 
     Other options:
-      --outdir                      The output directory where the results will be saved
+      --outdir                      The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
+      --AllHints					Name of final GFF file with all hints [ default = 'AllHints.gff' ]
+      --AugCfg						Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
       -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -66,6 +71,7 @@ params.prots = false
 params.ESTs = false
 params.reads = false
 params.AllHints = "AllHints.gff"
+params.outdir = "Hints_augustus_output"
 
 AllHints = file(params.AllHints)
 
@@ -83,8 +89,10 @@ params.singleEnd = false
 
 // Augustus
 params.model = "human"
-params.naugustus = 1
+params.naugustus = 30
 params.AugCfg = "bin/augustus_default.cfg"
+params.UTR = 'off'
+params.isof = 'false'
 
 // Validate inputs
 if ( params.genome ){
@@ -141,7 +149,7 @@ log.info """=======================================================
 NF-hints v${params.version}
 ======================================================="""
 def summary = [:]
-summary['Pipeline Name']  = 'NF-hints'
+summary['Pipeline Name']  = 'NF-hints-Augustus'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Fasta Ref']    = Genome
@@ -159,7 +167,6 @@ summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outdir
 summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
@@ -336,18 +343,23 @@ process Exonerate2HintsProts {
 	
 	output:
 	file exonerate_gff into output_gff_prots
-	
-	when:
-	params.prots != false
+	file 'prot_exonerate_hints.done' into trigger_prot_exonerate
 	
 	script:
 	query_tag = Proteins.baseName
 	
+	if (params.prots != false) {
 	"""
 	grep -v '#' $exonerate_result_prots | grep 'exonerate:protein2genome:local' > exonerate_gff_lines
 	Exonerate2GFF_protein.pl exonerate_gff_lines exonerate_gff
 	cat exonerate_gff >> $AllHints
+	touch prot_exonerate_hints.done
 	"""
+	} else {
+	"""
+	touch prot_exonerate_hints.done
+	"""
+	}
 }
 
 output_gff_prots
@@ -391,20 +403,25 @@ process GenomeThreader2HintsProts {
 	
 	output:
 	file gth_hints
-	
-	when:
-	params.prots != false && params.gth != false
+	file 'prot_gth_hints.done' into trigger_prot_gth
 	
 	script:
 	query_tag = Proteins.baseName
 	
+	if (params.prots != false && params.gth != false) {
 	"""
 	gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
 	grep -v '#' not_clean_gth_wIntrons > no_hash_gth
 	GTH_rename_splitoutput.pl no_hash_gth > clean_gth
 	grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > gth_hints
 	cat gth_hints >> $AllHints
+	touch prot_gth_hints.done
 	"""
+	} else {
+	"""
+	touch prot_gth_hints.done
+	"""
+	}
 }
 
 gth_hints
@@ -526,18 +543,23 @@ process Exonerate2HintsEST {
 	
 	output:
 	file exonerate_gff into output_gff_ests
-	
-	when:
-	params.ESTs != false
+	file 'est_exonerate_hints.done' into trigger_est_exonerate
 	
 	script:
 	query_tag = ESTs.baseName
 	
+	if (params.ESTs != false) {
 	"""
 	grep -v '#' $exonerate_result_ests | grep 'exonerate:est2genome' > exonerate_gff_lines
 	Exonerate2GFF_EST.pl exonerate_gff_lines exonerate_gff
 	cat exonerate_gff >> $AllHints
+	touch est_exonerate_hints.done
 	"""
+	} else {
+	"""
+	touch est_exonerate_hints.done
+	"""
+	}
 }
 
 output_gff_ests
@@ -654,16 +676,20 @@ process RepeatMasker2Hints {
 	
 	output:
 	file RepeatMasker_gff into RepeatMasker_hints, RepeatMasker_2concatenate
-
-	when:
-	params.RM != false
+	file 'RM_hints.done' into trigger_RM
 	
 	script:
 	genome_tag = Genome.baseName
-		
+	
+	if (params.RM != false) {	
 	"""
 	RepeatMasker2hints.pl $RM_2_hints | sort -n -k 1,1 > RepeatMasker_gff
 	cat RepeatMasker_gff >> $AllHints
+	touch RM_hints.done
+	"""
+	} else {
+	"""
+	touch RM_hints.done
 	"""
 }
 
@@ -849,17 +875,22 @@ process Hisat2Hints {
 	
 	output:
 	file 'Hints_RNAseq_*.gff'
-	
-	when:
-	params.reads != false
+	file 'RNAseq_hints.done' into trigger_RNAseq
 	
 	script:
 	prefix = accepted_hits2hints[0].toString().split("_accepted")[0]
 	
+	if (params.reads != false) {
 	"""
 	bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=Hints_RNAseq_${prefix}.gff	
 	cat Hints_RNAseq_${prefix}.gff >> $AllHints
+	touch RNAseq_hints.done
 	"""
+	} else {
+	"""
+	touch RNAseq_hints.done
+	"""
+	}
 }
 
 
@@ -1029,22 +1060,27 @@ process runAugustus1 {
 //published only the last chunk. Should be changed
 
 	input:
+	file trigger_prot_exonerate
+	file trigger_prot_gth
+	file trigger_est_exonerate
+	file trigger_RM
+	file trigger_RNAseq
 	file trigger_trinity
 	file fasta_aug
 	
 	
 	output:
-	file 'Augustus_out' into augustus_out_gff, augustus_out2train
+	file 'Augustus_out' into augustus_out_gff
 	
 	"""
 	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
 	grep -F -w -f scafs $AllHints > scafs_hints
-	augustus --species=$params.model --UTR=off --alternatives-from-evidence=false --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
+	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
 	"""
 }
 
 augustus_out_gff
-	.collectFile( name: "${params.outdir}/Augustus_run1.gff" )
+	.collectFile( name: "${params.outdir}/Augustus.gff" )
 
 
 
