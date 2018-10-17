@@ -1073,7 +1073,7 @@ process runAugustus1 {
 }
 
 augustus_out_gff
-	.collectFile( name: "${params.outdir}/Augustus.gff" )
+	.collectFile( name: "${params.outdir}/Annotation/Augustus.out" )
 
 
 /*
@@ -1082,7 +1082,7 @@ augustus_out_gff
 
 process Augustus2gff3 {
 	
-	publishDir "${params.outdir}", mode: 'copy'
+	publishDir "${params.outdir}/Annotation/", mode: 'copy'
 	
 	input:
 	file augustus2parse from augustus_2gff3.collectFile()
@@ -1102,13 +1102,13 @@ process Augustus2gff3 {
 
 process Augustus2proteins {
 	
-	publishDir "${params.outdir}", mode: 'copy'
+	publishDir "${params.outdir}/Annotation/", mode: 'copy'
 	
 	input:
 	file augustus2parse from augustus_2prots.collectFile()
 	
 	output:
-	file '*.aa' into 'Augustus_proteins.gff3'
+	file '*.aa' into 'Augustus_proteins.fa'
 	
 	"""
 	getAnnoFasta.pl $augustus2parse
