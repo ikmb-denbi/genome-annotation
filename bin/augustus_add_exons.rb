@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/bin/env ruby
 # == NAME
 # script_skeleton.rb
 #
