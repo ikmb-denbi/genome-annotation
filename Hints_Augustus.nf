@@ -101,7 +101,7 @@ params.name = false
 AllHints = file(params.allHints)
 GFF3_RUBYscript = file(workflow.projectDir + "/bin/augustus_add_exons.rb")
 
-if(params.augCfg != false) {
+if(params.augCfg == false) {
 	AUG_CONF = file(workflow.projectDir + "/bin/augustus_default.cfg")
 } else {
 	AUG_CONF = params.augCfg
