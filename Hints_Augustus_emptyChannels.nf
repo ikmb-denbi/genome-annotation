@@ -1038,10 +1038,9 @@ Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
 
 
-Channel
-	.fromPath(Genome)
-	.splitFasta(by: params.naugustus, file: true)
-	.set {fasta_aug}
+//Channel
+//	.fromPath(Genome)
+//	.set {fasta_aug}
 		
 /*
  * STEP Augustus.1 - Genome Annotation
@@ -1049,29 +1048,26 @@ Channel
 process runAugustus1 {
 	
 	tag "${chunk_name}"
-	publishDir "${params.outdir}/Augustus_run1/${chunk_name}", mode: 'copy'
+	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
 //published only the last chunk. Should be changed
 
 	input:
-//	file a from trigger_prot_exonerate.ifEmpty()
-//	file b from trigger_prot_gth.ifEmpty()
-//	file c from trigger_est_exonerate.ifEmpty()
-//	file d from trigger_RM.ifEmpty()
-//	file e from trigger_RNAseq.ifEmpty()
-//	file f from trigger_trinity.ifEmpty()
+	file a from trigger_prot_exonerate.ifEmpty()
+	file b from trigger_prot_gth.ifEmpty()
+	file c from trigger_est_exonerate.ifEmpty()
+	file d from trigger_RM.ifEmpty()
+	file e from trigger_RNAseq.ifEmpty()
+	file f from trigger_trinity.ifEmpty()
 	file query_fasta_aug from fasta_aug
 	
 	
 	output:
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
 	
-	script:
-	chunk_name = query_fasta_aug.baseName
-	
 	"""
-	grep '>' $query_fasta_aug | perl -ple 's/>//' > scafs
-	grep -F -w -f scafs $AllHints > scafs_hints
-	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $query_fasta_aug > Augustus_out
+//	grep '>' $query_fasta_aug | perl -ple 's/>//' > scafs
+//	grep -F -w -f scafs $AllHints > scafs_hints
+	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=$AllHints $Genome > Augustus_out
 	"""
 }
 
@@ -1086,7 +1082,7 @@ augustus_out_gff
 process Augustus2gff3 {
 	
 	input:
-	file augustus2parse from augustus_2gff3.collectFile()
+	file augustus2parse from augustus_2gff3
 	
 	output:
 	file augustus_gff3
@@ -1107,7 +1103,7 @@ augustus_gff3
 process Augustus2proteins {
 	
 	input:
-	file augustus2parse from augustus_2prots.collectFile()
+	file augustus2parse from augustus_2prots
 	
 	output:
 	file '*.aa' into augustus_proteins
