@@ -44,7 +44,7 @@ def helpMessage() {
 	  	--model					Species model for Augustus [ default = 'human' ]
 	  	--UTR					Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
 	  	--isof					Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
-	  	--AugCfg				Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
+	  	--augCfg				Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
 	  	
 	  	How to split programs:
       	--nblast				Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
@@ -55,7 +55,7 @@ def helpMessage() {
 	  	Other options:
       	--singleEnd             Specifies that the input is single end reads [ true | false (default) ]
       	--outdir                The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
-      	--AllHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
+      	--allHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
       	-name                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -85,7 +85,7 @@ params.species = "mammal"
 params.model = "human"
 params.UTR = 'off'
 params.isof = 'false'
-params.AugCfg = false
+params.augCfg = false
 
 params.nblast = 20
 params.nexonerate = 5
@@ -94,17 +94,17 @@ params.nthreads = 1
 
 params.singleEnd = false
 params.outdir = "Hints_augustus_output"
-params.AllHints = "AllHints.gff"
+params.allHints = "AllHints.gff"
 params.name = false
 
 
-AllHints = file(params.AllHints)
+AllHints = file(params.allHints)
 GFF3_RUBYscript = file(workflow.projectDir + "/bin/augustus_add_exons.rb")
 
-if(params.AugCfg != false) {
+if(params.augCfg != false) {
 	AUG_CONF = file(workflow.projectDir + "/bin/augustus_default.cfg")
 } else {
-	AUG_CONF = params.AugCfg
+	AUG_CONF = params.augCfg
 }
 
 // Validate inputs
@@ -143,10 +143,9 @@ if (params.trinity == true && params.reads == false) {
 	exit 1, "Cannot run Trinity without RNA-seq reads"
 }
 
-// If there is already a Hints file from a previous run, delete it
+// Is there already a Hints file from a previous run?
 if(AllHints.exists() ) {
-	result = AllHints.delete
-	println "Previous Hints file $AllHints has been deleted before starting the pipeline"
+	exit 1, println "$AllHints already exists, please remove it or give a different name for --AllHintshas been deleted before starting the pipeline"
 }
 
 // Has the run name been specified by the user?
