@@ -3,9 +3,9 @@
 ========================================================================================
                          NF-Hints-Augustus
 ========================================================================================
- NF-hints-Augustus Analysis Pipeline. Started 2018-10-17.
+ NF-Hints-Augustus Analysis Pipeline. Started 2018-10-17.
  #### Homepage / Documentation
- https://git.ikmb.uni-kiel.de/m.torres/NF-hints-augustus.git
+ https://git.ikmb.uni-kiel.de/m.torres/NF-hints.git
  #### Authors
  MTorres m.torres <m.torres@ikmb.uni-kiel.de> - https://git.ikmb.uni-kiel.de/m.torres>
 ----------------------------------------------------------------------------------------
@@ -15,42 +15,48 @@
 def helpMessage() {
     log.info"""
     =========================================
-     NF-hints v${params.version}
+     NF-Hints-Augustus v${params.version}
     =========================================
     Usage:
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run Hints_Augustus.nf --genome 'Genome.fasta' --query 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
+    nextflow run Hints_Augustus.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
 
     Mandatory arguments:
-      --genome                      Genome reference
-      -profile                      Hardware config to use
+    --genome                    Genome reference
+    -profile                    Hardware config to use
       
     At least one of:
-      --prots						Proteins from other species
-      --ESTs						ESTs or transcriptome
-      --reads						Path to RNA-seq data (must be surrounded with quotes)
+    --prots						Proteins from other species
+    --ESTs						ESTs or transcriptome
+    --reads						Path to RNA-seq data (must be surrounded with quotes)
 
     Options:
-	  --trinity						Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
-	  --gth							Run GenomeThreader to produce hints from protein file [ true (default) | false ]
-	  --RM							Run RepeatMasker to produce hints [ true (default) | false ]
-	  --UTR							Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'off' (default) | 'on' ]
-	  --isof						Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
-      --nblast						Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
-      --nexonerate					Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-	  --nscaffolds					Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-	  --nthreads					Number of cpus for programs that allow multi-threaded mode [default = 1]
-	  --species						Species database for RepeatMasker [ default = 'mammal' ]
-	  --model						Species model for Augustus [ default = 'human' ]
-	  --singleEnd                   Specifies that the input is single end reads [ true | false (default) ]
+    
+    	Programs to run:
+	  	--trinity				Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
+	  	--gth					Run GenomeThreader to produce hints from protein file [ true (default) | false ]
+	  	--RM					Run RepeatMasker to produce hints [ true (default) | false ]
+	  	
+	  	Programs parameters:
+	  	--species				Species database for RepeatMasker [ default = 'mammal' ]
+	  	--model					Species model for Augustus [ default = 'human' ]
+	  	--UTR					Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
+	  	--isof					Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
+	  	--AugCfg				Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
+	  	
+	  	How to split programs:
+      	--nblast				Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
+      	--nexonerate			Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
+	  	--nrepeats				Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
+	  	--nthreads				Number of cpus for programs that allow multi-threaded mode [default = 1]
 
-    Other options:
-      --outdir                      The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
-      --AllHints					Name of final GFF file with all hints [ default = 'AllHints.gff' ]
-      --AugCfg						Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
-      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+	  	Other options:
+      	--singleEnd             Specifies that the input is single end reads [ true | false (default) ]
+      	--outdir                The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
+      	--AllHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
+      	-name                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
 
@@ -70,29 +76,36 @@ if (params.help){
 params.prots = false
 params.ESTs = false
 params.reads = false
-params.AllHints = "AllHints.gff"
-params.outdir = "Hints_augustus_output"
-
-AllHints = file(params.AllHints)
 
 params.trinity = true
 params.gth = true
 params.RM = true
 
+params.species = "mammal"
+params.model = "human"
+params.UTR = 'off'
+params.isof = 'false'
+params.AugCfg = false
+
 params.nblast = 20
 params.nexonerate = 5
 params.nrepeats = 1
 params.nthreads = 1
-params.species = "mammal"
-params.name = false
-params.singleEnd = false
 
-// Augustus
-params.model = "human"
-params.naugustus = 30
-params.AugCfg = "bin/augustus_default.cfg"
-params.UTR = 'off'
-params.isof = 'false'
+params.singleEnd = false
+params.outdir = "Hints_augustus_output"
+params.AllHints = "AllHints.gff"
+params.name = false
+
+
+AllHints = file(params.AllHints)
+GFF3_RUBYscript = file(workflow.projectDir + "/bin/augustus_add_exons.rb")
+
+if(params.AugCfg != false) {
+	AUG_CONF = file(workflow.projectDir + "/bin/augustus_default.cfg")
+} else {
+	AUG_CONF = params.AugCfg
+}
 
 // Validate inputs
 if ( params.genome ){
@@ -130,6 +143,12 @@ if (params.trinity == true && params.reads == false) {
 	exit 1, "Cannot run Trinity without RNA-seq reads"
 }
 
+// If there is already a Hints file from a previous run, delete it
+if(AllHints.exists() ) {
+	AllHints.delete
+	println "Previous Hints file $AllHints has been deleted before starting the pipeline"
+}
+
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -149,7 +168,7 @@ log.info """=======================================================
 NF-hints v${params.version}
 ======================================================="""
 def summary = [:]
-summary['Pipeline Name']  = 'NF-hints-Augustus'
+summary['Pipeline Name']  = 'NF-Hints-Augustus'
 summary['Pipeline Version'] = params.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 summary['Fasta Ref']    = Genome
@@ -193,7 +212,7 @@ Channel
 	.fromPath(Genome)
 	.set { inputMakeblastdb }
 	
-// We check if the blast db already exists - if not, we create it
+// Check if the blast db already exists - if not, we create it
 
 /*
  * STEP 1 - Make Blast DB
@@ -240,6 +259,7 @@ if (params.prots) {
 		.set {fasta_prots}
 } else { 
 	fasta_prots = Channel.from(false)
+	trigger_prot_exonerate = Channel.create()
 }
 
 
@@ -355,16 +375,16 @@ process Exonerate2HintsProts {
 	cat exonerate_gff >> $AllHints
 	touch prot_exonerate_hints.done
 	"""
-	} else {
-	"""
-	touch prot_exonerate_hints.done
-	"""
 	}
 }
 
 output_gff_prots
  	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_exonerate.gff")
 
+
+if (params.gth == false) {
+	trigger_prot_gth = Channel.create()
+}
 
 /*
  * STEP Proteins.5 - GenomeThreader
@@ -417,11 +437,7 @@ process GenomeThreader2HintsProts {
 	cat gth_hints >> $AllHints
 	touch prot_gth_hints.done
 	"""
-	} else {
-	"""
-	touch prot_gth_hints.done
-	"""
-	}
+	} 
 }
 
 gth_hints
@@ -440,6 +456,7 @@ if (params.ESTs) {
 		.set {fasta_ests}
 } else { 
 	fasta_ests = Channel.from(false)
+	trigger_est_exonerate = Channel.create()
 }
 
 
@@ -555,10 +572,6 @@ process Exonerate2HintsEST {
 	cat exonerate_gff >> $AllHints
 	touch est_exonerate_hints.done
 	"""
-	} else {
-	"""
-	touch est_exonerate_hints.done
-	"""
 	}
 }
 
@@ -578,6 +591,7 @@ if (params.RM != false) {
 		.set {fasta_rep}
 } else {
 	fasta_rep = Channel.from(false)
+	trigger_RM = Channel.create()
 }
 
 
@@ -687,10 +701,6 @@ process RepeatMasker2Hints {
 	cat RepeatMasker_gff >> $AllHints
 	touch RM_hints.done
 	"""
-	} else {
-	"""
-	touch RM_hints.done
-	"""
 	}
 }
 
@@ -716,6 +726,8 @@ RepeatMasker_hints
 } else {
 	read_files_fastqc = Channel.from(false)
 	read_files_trimming = Channel.from(false)
+	trigger_RNAseq = Channel.create()
+	
 }
 
 
@@ -887,13 +899,12 @@ process Hisat2Hints {
 	cat Hints_RNAseq_${prefix}.gff >> $AllHints
 	touch RNAseq_hints.done
 	"""
-	} else {
-	"""
-	touch RNAseq_hints.done
-	"""
 	}
 }
 
+if (params.trinity == false) {
+	trigger_trinity = Channel.create()
+}
 
 /*
  * STEP RNAseq.6 - Trinity
@@ -1036,53 +1047,37 @@ process Exonerate2HintsTrinity {
 	cat Hints_trinity_gff >> $AllHints
 	touch trinity_hints.done
 	"""
-	} else {
-	"""
-	touch trinity_hints.done
-	"""
 	}
 }
 
 Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
-
-
-Channel
-		.fromPath(Genome)
-		.splitFasta(by: params.naugustus, file: true)
-		.set {fasta_aug}
 		
 /*
  * STEP Augustus.1 - Genome Annotation
  */
-process runAugustus1 {
-
-	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
-//published only the last chunk. Should be changed
+process runAugustus {
+	
+	tag "${chunk_name}"
 
 	input:
-	file trigger_prot_exonerate
-	file trigger_prot_gth
-	file trigger_est_exonerate
-	file trigger_RM
-	file trigger_RNAseq
-	file trigger_trinity
-	file fasta_aug
-	
+	file a from trigger_prot_exonerate.ifEmpty()
+	file b from trigger_prot_gth.ifEmpty()
+	file c from trigger_est_exonerate.ifEmpty()
+	file d from trigger_RM.ifEmpty()
+	file e from trigger_RNAseq.ifEmpty()
+	file f from trigger_trinity.ifEmpty()	
 	
 	output:
-	file 'Augustus_out' into augustus_out_gff, augustus_2gff3, augustus_2prots
-	
+	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
 	
 	"""
-	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
-	grep -F -w -f scafs $AllHints > scafs_hints
-	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
+	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$AllHints $Genome > Augustus_out
 	"""
 }
 
 augustus_out_gff
-	.collectFile( name: "${params.outdir}/Augustus.gff" )
+	.collectFile( name: "${params.outdir}/Augustus_out.gff" )
 
 
 /*
@@ -1091,18 +1086,20 @@ augustus_out_gff
 
 process Augustus2gff3 {
 	
-	publishDir "${params.outdir}", mode: 'copy'
-	
 	input:
-	file augustus2parse from augustus_2gff3.collectFile()
+	file augustus2parse from augustus_2gff3
 	
 	output:
-	file augustus_gff3 into 'Augustus.gff3'
+	file augustus_gff3
 	
 	"""
-	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' | ruby augustus_add_exons.rb > augustus_gff3
+	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
+	ruby $GFF3_RUBYscript -i augustus_clean > augustus_gff3
 	"""
 }
+
+augustus_gff3
+	.collectFile( name: "${params.outdir}/Augustus.gff3" )
 
 /*
  * STEP Augustus.3 - Get Protein Sequences
@@ -1110,19 +1107,19 @@ process Augustus2gff3 {
 
 process Augustus2proteins {
 	
-	publishDir "${params.outdir}", mode: 'copy'
-	
 	input:
-	file augustus2parse from augustus_2prots.collectFile()
+	file augustus2parse from augustus_2prots
 	
 	output:
-	file '*.aa' into 'Augustus_proteins.gff3'
+	file '*.aa' into augustus_proteins
 	
 	"""
 	getAnnoFasta.pl $augustus2parse
 	"""
 }
-	
+
+augustus_proteins
+	.collectFile( name: "${params.outdir}/Augustus_proteins.fa" )
 
 /*
  * Parse software version numbers
