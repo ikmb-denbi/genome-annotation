@@ -1073,7 +1073,7 @@ process runAugustus1 {
 }
 
 augustus_out_gff
-	.collectFile( name: "${params.outdir}/Annotation/Augustus.out" )
+	.collectFile( name: "${params.outdir}/Augustus_out.gff" )
 
 
 /*
@@ -1088,13 +1088,16 @@ process Augustus2gff3 {
 	file augustus2parse from augustus_2gff3.collectFile()
 	
 	output:
-	file augustus_gff3 into 'Augustus.gff3'
+	file augustus_gff3
 	
 	"""
 	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
 	ruby $GFF3_RUBYscript -i augustus_clean > augustus_gff3
 	"""
 }
+
+augustus_gff3
+	.collectFile( name: "${params.outdir}/Augustus.gff3" )
 
 /*
  * STEP Augustus.3 - Get Protein Sequences
@@ -1108,13 +1111,15 @@ process Augustus2proteins {
 	file augustus2parse from augustus_2prots.collectFile()
 	
 	output:
-	file '*.aa' into 'Augustus_proteins.fa'
+	file '*.aa' into augustus_proteins
 	
 	"""
 	getAnnoFasta.pl $augustus2parse
 	"""
 }
-	
+
+augustus_proteins
+	.collectFile( name: "${params.outdir}/Augustus_proteins.fa" )
 
 /*
  * Parse software version numbers
