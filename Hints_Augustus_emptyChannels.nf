@@ -1047,8 +1047,9 @@ Channel
  * STEP Augustus.1 - Genome Annotation
  */
 process runAugustus1 {
-
-	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
+	
+	tag "${chunk_name}"
+	publishDir "${params.outdir}/Augustus_run1/${chunk_name}", mode: 'copy'
 //published only the last chunk. Should be changed
 
 	input:
@@ -1058,17 +1059,19 @@ process runAugustus1 {
 	file d from trigger_RM.ifEmpty()
 	file e from trigger_RNAseq.ifEmpty()
 	file f from trigger_trinity.ifEmpty()
-	file fasta_aug
+	file query_fasta_aug from fasta_aug
 	
 	
 	output:
-	file 'Augustus_out' into augustus_out_gff, augustus_2gff3, augustus_2prots
+	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
 	
+	script:
+	chunk_name = query_fasta_aug.baseName
 	
 	"""
 	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
 	grep -F -w -f scafs $AllHints > scafs_hints
-	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $fasta_aug > Augustus_out
+	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $query_fasta_aug > Augustus_out
 	"""
 }
 
@@ -1081,8 +1084,6 @@ augustus_out_gff
  */
 
 process Augustus2gff3 {
-	
-	publishDir "${params.outdir}/Annotation/", mode: 'copy'
 	
 	input:
 	file augustus2parse from augustus_2gff3.collectFile()
@@ -1104,8 +1105,6 @@ augustus_gff3
  */
 
 process Augustus2proteins {
-	
-	publishDir "${params.outdir}/Annotation/", mode: 'copy'
 	
 	input:
 	file augustus2parse from augustus_2prots.collectFile()
