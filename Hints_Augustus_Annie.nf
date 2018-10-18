@@ -120,7 +120,7 @@ if(params.augCfg == false) {
 	AUG_CONF = params.augCfg
 }
 
-if(params.uniprot == false {
+if(params.uniprot == false) {
 	UNIPROTDB = file(workflow.projectDir + "/bin/Eumetazoa_UniProt_reviewed_evidence.fa")
 } else {
 	UNIPRTOTDB = params.uniprot
