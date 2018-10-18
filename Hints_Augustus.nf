@@ -145,7 +145,7 @@ if (params.trinity == true && params.reads == false) {
 
 // Is there already a Hints file from a previous run?
 if(AllHints.exists() ) {
-	exit 1, "$AllHints already exists, please remove it or give a different name for --AllHintshas been deleted before starting the pipeline"
+	exit 1, "$AllHints already exists, please remove it or give a different name for --AllHints"
 }
 
 // Has the run name been specified by the user?
