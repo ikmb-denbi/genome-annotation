@@ -1036,20 +1036,14 @@ process Exonerate2HintsTrinity {
 
 Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
-
-
-//Channel
-//	.fromPath(Genome)
-//	.set {fasta_aug}
 		
 /*
  * STEP Augustus.1 - Genome Annotation
  */
-process runAugustus1 {
+process runAugustus {
 	
 	tag "${chunk_name}"
 	publishDir "${params.outdir}/Augustus_run1/", mode: 'copy'
-//published only the last chunk. Should be changed
 
 	input:
 	file a from trigger_prot_exonerate.ifEmpty()
@@ -1057,9 +1051,7 @@ process runAugustus1 {
 	file c from trigger_est_exonerate.ifEmpty()
 	file d from trigger_RM.ifEmpty()
 	file e from trigger_RNAseq.ifEmpty()
-	file f from trigger_trinity.ifEmpty()
-//	file query_fasta_aug from fasta_aug
-	
+	file f from trigger_trinity.ifEmpty()	
 	
 	output:
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
