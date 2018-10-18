@@ -56,6 +56,7 @@ def helpMessage() {
       	--singleEnd             Specifies that the input is single end reads [ true | false (default) ]
       	--outdir                The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
       	--allHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
+      	--addHints				Additional hints file (GFF format) to be concatenated to the resulting hints before running augustus (e.g. from running PASA) [ default = 'false' ]
       	-name                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -95,6 +96,7 @@ params.nthreads = 1
 params.singleEnd = false
 params.outdir = "Hints_augustus_output"
 params.allHints = "AllHints.gff"
+params.addHints = false
 params.name = false
 
 
@@ -1056,8 +1058,6 @@ Hints_trinity_mapped_gff
  * STEP Augustus.1 - Genome Annotation
  */
 process runAugustus {
-	
-	tag "${chunk_name}"
 
 	input:
 	file a from trigger_prot_exonerate.ifEmpty()
@@ -1070,9 +1070,17 @@ process runAugustus {
 	output:
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
 	
+	script:
+	if (params.addHints == false) {
 	"""
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$AllHints $Genome > Augustus_out
 	"""
+	} else {
+	"""
+	cat $AllHints $addHints >> combinedHints
+	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=combinedHints $Genome > Augustus_out
+	"""
+	}
 }
 
 augustus_out_gff
