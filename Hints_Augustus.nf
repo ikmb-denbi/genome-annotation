@@ -145,7 +145,7 @@ if (params.trinity == true && params.reads == false) {
 
 // If there is already a Hints file from a previous run, delete it
 if(AllHints.exists() ) {
-	AllHints.delete
+	result = AllHints.delete
 	println "Previous Hints file $AllHints has been deleted before starting the pipeline"
 }
 
