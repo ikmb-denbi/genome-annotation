@@ -1077,7 +1077,7 @@ process RunAugustus {
 	"""
 	} else {
 	"""
-	cat $AllHints $addHints >> combinedHints
+	cat $AllHints $params.addHints >> combinedHints
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=combinedHints $Genome > Augustus_out
 	"""
 	}
