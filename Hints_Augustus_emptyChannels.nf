@@ -89,7 +89,7 @@ params.singleEnd = false
 
 // Augustus
 params.model = "human"
-params.naugustus = 1
+params.naugustus = 2
 params.AugCfg = "bin/augustus_default.cfg"
 params.UTR = 'off'
 params.isof = 'false'
