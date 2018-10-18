@@ -1079,7 +1079,7 @@ process RunAugustus {
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$AllHints $Genome > Augustus_out
 	"""
 	} else {
-	AdditionalHints = "$CUR_DIR" +  "$params.addHints"
+	AdditionalHints = "$CUR_DIR" + "/" +  "$params.addHints"
 	"""
 	cat $AllHints $AdditionalHints >> combinedHints
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=combinedHints $Genome > Augustus_out
