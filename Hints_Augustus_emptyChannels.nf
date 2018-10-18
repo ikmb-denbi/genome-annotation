@@ -1069,7 +1069,7 @@ process runAugustus1 {
 	chunk_name = query_fasta_aug.baseName
 	
 	"""
-	grep '>' $fasta_aug | perl -ple 's/>//' > scafs
+	grep '>' $query_fasta_aug | perl -ple 's/>//' > scafs
 	grep -F -w -f scafs $AllHints > scafs_hints
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=scafs_hints $query_fasta_aug > Augustus_out
 	"""
