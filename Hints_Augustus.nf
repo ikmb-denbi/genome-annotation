@@ -38,6 +38,7 @@ def helpMessage() {
 	  	--trinity				Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
 	  	--gth					Run GenomeThreader to produce hints from protein file [ true (default) | false ]
 	  	--RM					Run RepeatMasker to produce hints [ true (default) | false ]
+	  	--augustus				Run Augustus to predict genes [true (default) | false ]
 	  	
 	  	Programs parameters:
 	  	--species				Species database for RepeatMasker [ default = 'mammal' ]
@@ -81,6 +82,7 @@ params.reads = false
 params.trinity = true
 params.gth = true
 params.RM = true
+params.augustus = true
 
 params.species = "mammal"
 params.model = "human"
@@ -101,7 +103,9 @@ params.name = false
 
 
 AllHints = file(params.allHints)
+
 GFF3_RUBYscript = file(workflow.projectDir + "/bin/augustus_add_exons.rb")
+CUR_DIR = "$PWD"
 
 if(params.augCfg == false) {
 	AUG_CONF = file(workflow.projectDir + "/bin/augustus_default.cfg")
@@ -109,7 +113,7 @@ if(params.augCfg == false) {
 	AUG_CONF = params.augCfg
 }
 
-CUR_DIR = "$PWD"
+
 
 
 // Validate inputs
@@ -1042,7 +1046,6 @@ process Exonerate2HintsTrinity {
 	file Hints_trinity_gff into Hints_trinity2concatenate, Hints_trinity_mapped_gff
 	file 'trinity_hints.done' into trigger_trinity
 	
-	
 	script:
 	if (params.reads != false && params.trinity == true) {
 	"""
@@ -1072,6 +1075,9 @@ process RunAugustus {
 	
 	output:
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
+	
+	when:
+	params.augustus != false
 	
 	script:
 	if (params.addHints == false) {
@@ -1103,6 +1109,9 @@ process Augustus2Gff3 {
 	output:
 	file augustus_gff3
 	
+	when:
+	params.augustus != false
+	
 	"""
 	grep -v '#' $augustus2parse | sed 's/transcript/mRNA/' > augustus_clean
 	ruby $GFF3_RUBYscript -i augustus_clean > augustus_gff3
@@ -1123,6 +1132,9 @@ process Augustus2Proteins {
 	
 	output:
 	file '*.aa' into augustus_proteins
+	
+	when:
+	params.augustus != false
 	
 	"""
 	getAnnoFasta.pl $augustus2parse
