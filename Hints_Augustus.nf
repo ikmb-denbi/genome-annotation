@@ -109,6 +109,9 @@ if(params.augCfg == false) {
 	AUG_CONF = params.augCfg
 }
 
+CUR_DIR = "$PWD"
+
+
 // Validate inputs
 if ( params.genome ){
 	Genome = file(params.genome)
@@ -1076,8 +1079,9 @@ process RunAugustus {
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$AllHints $Genome > Augustus_out
 	"""
 	} else {
+	AdditionalHints = "$CUR_DIR" +  "$params.addHints"
 	"""
-	cat $AllHints $params.addHints >> combinedHints
+	cat $AllHints $AdditionalHints >> combinedHints
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=combinedHints $Genome > Augustus_out
 	"""
 	}
