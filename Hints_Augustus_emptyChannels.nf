@@ -1065,8 +1065,6 @@ process runAugustus1 {
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
 	
 	"""
-	#grep '>' $query_fasta_aug | perl -ple 's/>//' > scafs
-	#grep -F -w -f scafs $AllHints > scafs_hints
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$params.AugCfg --hintsfile=$AllHints $Genome > Augustus_out
 	"""
 }
