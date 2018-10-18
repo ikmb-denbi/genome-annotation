@@ -56,7 +56,7 @@ def helpMessage() {
       	--singleEnd             Specifies that the input is single end reads [ true | false (default) ]
       	--outdir                The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
       	--allHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
-      	--addHints				Additional hints file (GFF format) to be concatenated to the resulting hints before running augustus (e.g. from running PASA) [ default = 'false' ]
+      	--addHints				Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
       	-name                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
     """.stripIndent()
 }
@@ -147,7 +147,7 @@ if (params.trinity == true && params.reads == false) {
 
 // Is there already a Hints file from a previous run?
 if(AllHints.exists() ) {
-	exit 1, "$AllHints already exists, please remove it or give a different name for --allHints"
+	exit 1, "$AllHints already exists, please remove it or give a different name with --allHints"
 }
 
 // Has the run name been specified by the user?
@@ -735,7 +735,7 @@ RepeatMasker_hints
 /*
  * STEP RNAseq.1 - FastQC
  */
-process runFastqc {
+process RunFastqc {
     tag "${prefix}"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -761,7 +761,7 @@ process runFastqc {
 /*
  * STEP RNAseq.2 - Trimgalore
  */
-process runTrimgalore {
+process RunTrimgalore {
 
    tag "${prefix}"
    publishDir "${params.outdir}/trimgalore", mode: 'copy',
@@ -910,7 +910,7 @@ if (params.trinity == false) {
 /*
  * STEP RNAseq.6 - Trinity
  */
-process runTrinity {
+process RunTrinity {
 
 	publishDir "${params.outdir}/trinity", mode: 'copy'
 	
@@ -1057,7 +1057,7 @@ Hints_trinity_mapped_gff
 /*
  * STEP Augustus.1 - Genome Annotation
  */
-process runAugustus {
+process RunAugustus {
 
 	input:
 	file a from trigger_prot_exonerate.ifEmpty()
@@ -1091,7 +1091,7 @@ augustus_out_gff
  * STEP Augustus.2 - Get GFF3 file
  */
 
-process Augustus2gff3 {
+process Augustus2Gff3 {
 	
 	input:
 	file augustus2parse from augustus_2gff3
@@ -1112,7 +1112,7 @@ augustus_gff3
  * STEP Augustus.3 - Get Protein Sequences
  */
 
-process Augustus2proteins {
+process Augustus2Proteins {
 	
 	input:
 	file augustus2parse from augustus_2prots
@@ -1131,7 +1131,7 @@ augustus_proteins
 /*
  * Parse software version numbers
  */
-process get_software_versions {
+process Get_software_versions {
 
     output:
     file 'software_versions_mqc.yaml' into software_versions_yaml
@@ -1176,7 +1176,7 @@ multiqc_config = file(params.multiqc_config)
 /*
  * MultiQC
  */
-process multiqc {
+process Multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     input:
