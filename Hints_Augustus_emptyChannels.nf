@@ -1058,7 +1058,7 @@ process runAugustus1 {
 	file d from trigger_RM.ifEmpty()
 	file e from trigger_RNAseq.ifEmpty()
 	file f from trigger_trinity.ifEmpty()
-	file query_fasta_aug from fasta_aug
+//	file query_fasta_aug from fasta_aug
 	
 	
 	output:
