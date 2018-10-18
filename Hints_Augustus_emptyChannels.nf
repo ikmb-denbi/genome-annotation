@@ -1039,9 +1039,9 @@ Hints_trinity_mapped_gff
 
 
 Channel
-		.fromPath(Genome)
-		.splitFasta(by: params.naugustus, file: true)
-		.set {fasta_aug}
+	.fromPath(Genome)
+	.splitFasta(by: params.naugustus, file: true)
+	.set {fasta_aug}
 		
 /*
  * STEP Augustus.1 - Genome Annotation
@@ -1053,12 +1053,12 @@ process runAugustus1 {
 //published only the last chunk. Should be changed
 
 	input:
-	file a from trigger_prot_exonerate.ifEmpty()
-	file b from trigger_prot_gth.ifEmpty()
-	file c from trigger_est_exonerate.ifEmpty()
-	file d from trigger_RM.ifEmpty()
-	file e from trigger_RNAseq.ifEmpty()
-	file f from trigger_trinity.ifEmpty()
+//	file a from trigger_prot_exonerate.ifEmpty()
+//	file b from trigger_prot_gth.ifEmpty()
+//	file c from trigger_est_exonerate.ifEmpty()
+//	file d from trigger_RM.ifEmpty()
+//	file e from trigger_RNAseq.ifEmpty()
+//	file f from trigger_trinity.ifEmpty()
 	file query_fasta_aug from fasta_aug
 	
 	
