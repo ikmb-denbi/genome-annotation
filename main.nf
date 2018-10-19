@@ -13,9 +13,9 @@
 
 
 def helpMessage() {
-	log.info"""
+  log.info"""
   =================================================================
-   IKMB - de.NBI | Genome Annotation | Pipeline v${params.version}
+   IKMB - de.NBI | Genome Annotation Pipeline | v${params.version}
   =================================================================
   Usage:
 
@@ -73,7 +73,6 @@ if (params.help){
 	helpMessage()
 	exit 0
 }
-
 
 
 //Default variables:
@@ -264,9 +263,9 @@ process RunMakeBlastDB {
 }
 
 
-/*
- * Proteins Block
- */
+/*****************
+  Proteins Block
+ *****************/
 
 // Create a channel emitting the query fasta file(s), split it in chunks 
 
@@ -404,6 +403,11 @@ if (params.gth == false) {
 	trigger_prot_gth = Channel.create()
 }
 
+
+/***********************
+  GenomeThreader Block
+ ***********************/
+ 
 /*
  * STEP Proteins.5 - GenomeThreader
  */
@@ -463,9 +467,9 @@ gth_hints
 
 
 
-/*
- * ESTs Block
- */
+/*************
+  ESTs Block
+ *************/
  
 if (params.ESTs) {
 	Channel
@@ -598,9 +602,9 @@ output_gff_ests
 
 
 
-/*
- * RepeatMasker Block
- */
+/*********************
+  RepeatMasker Block
+ *********************/
  
 if (params.RM != false) {
 	Channel
@@ -727,9 +731,9 @@ RepeatMasker_hints
 
 
 
-/*
- * RNAseq block
- */
+/***************
+  RNAseq block
+ ***************/
 
 
 /*
@@ -954,9 +958,9 @@ TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
 
 
 
-/*
- * Trinity Transcriptome (Blast + ) Exonerate Block:
- */
+/*****************
+  Trinity  Block
+ *****************/
  
  
 /*
@@ -1071,9 +1075,9 @@ Hints_trinity_mapped_gff
 	.collectFile(name: "${params.outdir}/Hints/Hints_trinity_mapped.gff")
 
 
-/*
- * Augustus Block:
- */
+/******************
+  Augustus Block
+ ******************/
  
  		
 /*
@@ -1161,10 +1165,9 @@ augustus_proteins
 	.collectFile( name: "${params.outdir}/Augustus_proteins.fa" )
 
 
-/*
- * Functional Annotation Block:
- */
-
+/******************************
+  Functional Annotation Block
+ ******************************/
 
 Channel
 	.fromPath(UNIPROTDB)
@@ -1353,9 +1356,10 @@ process RunFunctionsToGFF {
 annotated_gff
 	.collectFile( name: "${params.outdir}/Augustus_withFunctions.gff3" )
 
-/*
- * Parse software version numbers
- */
+
+/**********************************
+  Parse software version numbers
+ **********************************/
  
 process Get_software_versions {
 
@@ -1399,9 +1403,11 @@ process Get_software_versions {
 params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
 multiqc_config = file(params.multiqc_config)
 
+
 /*
  * MultiQC
  */
+ 
 process Multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
