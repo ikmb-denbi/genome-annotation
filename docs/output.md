@@ -1,11 +1,7 @@
-# NF-hints
-This pipeline produces a Hints file for genome annotation (with Augustus) from proteins/EST evidence and RNA-seq reads.
+# Genome Annotation - Output 
 
-This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
-
-## Pipeline overview
-The pipeline is built using [Nextflow](https://www.nextflow.io/)
-and processes data using the following steps:
+## Output overview
+The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 * [FastQC](#fastqc) - read quality control
 * [MultiQC](#multiqc) - aggregate report, describing results of the whole pipeline
