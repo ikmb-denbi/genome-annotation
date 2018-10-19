@@ -1,4 +1,4 @@
-# NF-hints: Local Configuration
+# Genome Annotation - Local Configuration
 
 If running the pipeline in a local environment, we highly recommend using either Docker or Singularity.
 
