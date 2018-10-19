@@ -1,4 +1,4 @@
-![](images/deNBI_Logo_rgb.jpg) ![](images/ikmb_bfx_logo.png) 
+![](images/deNBI_logo.jpg) ![](images/ikmb_bfx_logo.png) 
 
 # Genome Annotation 
 
