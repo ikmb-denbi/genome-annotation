@@ -10,7 +10,7 @@ This pipeline can be used to annotate a genome *de novo*.
 
 ### Pipeline main steps  
 
-1. Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
+1. Hints file is generated from all available evidences (proteins, EST and/or RNA-seq reads). 
 
 2. Gene models are predicted using Augustus with the hints file as extrinsic evidence. 
 
