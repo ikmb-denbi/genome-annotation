@@ -1,4 +1,4 @@
-# NF-hints Installation
+# Genome Annotation - Installation
 
 ## 1) Install Miniconda2
 
