@@ -1,4 +1,5 @@
-![](images/ikmb_bfx_logo.png)       ![](images/deNBI_Logo_rgb.jpg)
+![](images/deNBI_Logo_rgb.jpg) ![](images/ikmb_bfx_logo.png) 
+
 # Genome Annotation 
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.30.0-brightgreen.svg)](https://www.nextflow.io/)
