@@ -8,11 +8,11 @@ This pipeline can be used to annotate a genome *de novo*.
 
 ### Pipeline main steps  
 
-- First, a Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
+1. Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
 
-- Second, Augustus is used to predict gene models in the genome using the Hints file as extrinsic evidence. 
+2. Gene models are predicted using Augustus with the hints file as extrinsic evidence. 
 
-- Finally, functional annotation can also be run. 
+3. Gene models are functionally annotated using Blast and InterProScan. 
 
 The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirement is at least one type of evidence. 
 
