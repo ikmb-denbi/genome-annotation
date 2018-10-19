@@ -6,13 +6,15 @@
 
 This pipeline can be used to annotate a genome de novo. 
 
-### Introduction 
+### Pipeline main steps  
 
-First, a Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
+- First, a Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
 
-Second, Augustus is used to predict gene models in the genome using the Hints file as extrinsic evidence. 
+- Second, Augustus is used to predict gene models in the genome using the Hints file as extrinsic evidence. 
 
-Finally, functional annotation can also be run. 
+- Finally, functional annotation can also be run. 
+
+The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirement is at least one type of evidence. 
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker / singularity containers making installation trivial and results highly reproducible.
 
