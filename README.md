@@ -4,7 +4,7 @@
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](http://singularity.lbl.gov)
 
-This pipeline can be used to annotate a genome de novo. 
+This pipeline can be used to annotate a genome *de novo*. 
 
 ### Pipeline main steps  
 
