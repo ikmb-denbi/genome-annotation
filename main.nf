@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         NF-Hints-Augustus
+                    IKMB - de.NBI | Genome Annotation Pipeline
 ========================================================================================
- NF-Hints-Augustus Analysis Pipeline. Started 2018-10-17.
+ Genome Annotation Pipeline. Started 2018-10-17.
  #### Homepage / Documentation
  https://git.ikmb.uni-kiel.de/m.torres/NF-hints.git
  #### Authors
@@ -13,56 +13,55 @@
 
 
 def helpMessage() {
-    log.info"""
-    =========================================
-     NF-Hints-Augustus v${params.version}
-    =========================================
-    Usage:
+	log.info"""
+	=================================================================
+	 IKMB - de.NBI | Genome Annotation | Pipeline v${params.version}
+	=================================================================
+	Usage:
 
-    The typical command for running the pipeline is as follows:
+	The typical command for running the pipeline is as follows:
 
-    nextflow run Hints_Augustus.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
+	nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
 
-    Mandatory arguments:
-    --genome                    Genome reference
-    -profile                    Hardware config to use
+	Mandatory arguments:
+	--genome				Genome reference
+	-profile				Hardware config to use
       
-    At least one of:
-    --prots						Proteins from other species
-    --ESTs						ESTs or transcriptome
-    --reads						Path to RNA-seq data (must be surrounded with quotes)
+	At least one of:
+	--prots					Proteins from other species
+	--ESTs					ESTs or transcriptome
+	--reads					Path to RNA-seq data (must be surrounded with quotes)
 
-    Options:
-    
-    	Programs to run:
-	  	--trinity				Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
-	  	--gth					Run GenomeThreader to produce hints from protein file [ true (default) | false ]
-	  	--RM					Run RepeatMasker to produce hints [ true (default) | false ]
-	  	--augustus				Run Augustus to predict genes [ true (default) | false ]
-	  	--funAnnot				Run functional annotation using Annie [ true (default) | false ]
+	Options:
+		Programs to run:
+		--trinity			Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
+		--gth				Run GenomeThreader to produce hints from protein file [ true (default) | false ]
+		--RM				Run RepeatMasker to produce hints [ true (default) | false ]
+		--augustus			Run Augustus to predict genes [ true (default) | false ]
+		--funAnnot			Run functional annotation using Annie [ true (default) | false ]
 	  	
-	  	Programs parameters:
-	  	--species				Species database for RepeatMasker [ default = 'mammal' ]
-	  	--model					Species model for Augustus [ default = 'human' ]
-	  	--UTR					Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
-	  	--isof					Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
-	  	--augCfg				Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
-	  	--uniprot				Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
+		Programs parameters:
+		--species			Species database for RepeatMasker [ default = 'mammal' ]
+		--model				Species model for Augustus [ default = 'human' ]
+		--UTR				Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
+		--isof				Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
+		--augCfg			Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
+		--uniprot			Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
 	  	
-	  	How to split programs:
-      	--nblast				Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
-      	--nexonerate			Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-	  	--nrepeats				Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-	  	--ninterpro				Chunks (# of sequences) to divide InterPro jobs [ default = 50 ]
-	  	--nthreads				Number of cpus for programs that allow multi-threaded mode [default = 1]	
-	  	
-	  	Other options:
-      	--singleEnd             Specifies that the input is single end reads [ true | false (default) ]
-      	--outdir                The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
-      	--allHints				Name of final GFF file with all hints [ default = 'AllHints.gff' ]
-      	--addHints				Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
-      	-name                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-    """.stripIndent()
+		How to split programs:
+		--nblast			Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
+		--nexonerate		Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
+		--nrepeats			Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
+		--ninterpro			Chunks (# of sequences) to divide InterPro jobs [ default = 50 ]
+		--nthreads			Number of cpus for programs that allow multi-threaded mode [default = 1]	
+		
+		Other options:
+		--singleEnd			Specifies that the input is single end reads [ true | false (default) ]
+		--outdir			The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
+		--allHints			Name of final GFF file with all hints [ default = 'AllHints.gff' ]
+		--addHints			Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
+		-name				Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+	""".stripIndent()
 }
 
 /*
@@ -71,8 +70,8 @@ def helpMessage() {
 
 // Show help message
 if (params.help){
-    helpMessage()
-    exit 0
+	helpMessage()
+	exit 0
 }
 
 
@@ -130,7 +129,7 @@ if(params.uniprot == false) {
 // Validate inputs
 if ( params.genome ){
 	Genome = file(params.genome)
-    if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
+	if( !Genome.exists() ) exit 1, "Genome file not found: ${Genome}"
 }
 
 x = 0
@@ -138,15 +137,15 @@ x = 0
 if ( params.prots ){
 	Proteins = file(params.prots)
 	x = x + 1
-    if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
-    println "Will run Exonerate and GenomeThreader on Protein file"
+	if( !Proteins.exists() ) exit 1, "Protein file not found: ${Proteins}"
+	println "Will run Exonerate and GenomeThreader on Protein file"
 }
 
 if ( params.ESTs ){
 	ESTs = file(params.ESTs)
 	x = x + 1
-    if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
-    println "Will run Exonerate on EST/Transcriptome file"
+	if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}"
+	println "Will run Exonerate on EST/Transcriptome file"
 }
 
 if (params.reads){
@@ -169,10 +168,10 @@ if(AllHints.exists() ) {
 }
 
 // Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
+// this has the bonus effect of catching both -name and --name
 custom_runName = params.name
 if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
-  custom_runName = workflow.runName
+	custom_runName = workflow.runName
 }
 
 
@@ -214,15 +213,15 @@ log.info "========================================="
 // Check that Nextflow version is up to date enough
 // try / throw / catch works for NF versions < 0.25 when this was implemented
 try {
-    if( ! nextflow.version.matches(">= $params.nf_required_version") ){
-        throw GroovyException('Nextflow version too old')
-    }
+	if( ! nextflow.version.matches(">= $params.nf_required_version") ){
+		throw GroovyException('Nextflow version too old')
+	}
 } catch (all) {
-    log.error "====================================================\n" +
-              "  Nextflow version $params.nf_required_version required! You are running v$workflow.nextflow.version.\n" +
-              "  Pipeline execution will continue, but things may break.\n" +
-              "  Please run `nextflow self-update` to update Nextflow.\n" +
-              "============================================================"
+	log.error "====================================================\n" +
+			  "  Nextflow version $params.nf_required_version required! You are running v$workflow.nextflow.version.\n" +
+			  "  Pipeline execution will continue, but things may break.\n" +
+			  "  Please run `nextflow self-update` to update Nextflow.\n" +
+			  "============================================================"
 }
 
 
