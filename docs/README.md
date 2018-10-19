@@ -1,4 +1,4 @@
-# NF-hints Documentation
+# Genome Annotation - Documentation
 
 The NF-hints documentation is split into the following files:
 
