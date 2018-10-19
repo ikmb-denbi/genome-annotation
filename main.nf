@@ -217,10 +217,10 @@ try {
 	}
 } catch (all) {
 	log.error "====================================================\n" +
-			  "  Nextflow version $params.nf_required_version required! You are running v$workflow.nextflow.version.\n" +
-			  "  Pipeline execution will continue, but things may break.\n" +
-			  "  Please run `nextflow self-update` to update Nextflow.\n" +
-			  "============================================================"
+		"  Nextflow version $params.nf_required_version required! You are running v$workflow.nextflow.version.\n" +
+		"  Pipeline execution will continue, but things may break.\n" +
+		"  Please run `nextflow self-update` to update Nextflow.\n" +
+		"============================================================"
 }
 
 
@@ -254,7 +254,7 @@ process RunMakeBlastDB {
 
 	target = file(db_nhr)
 	
-    if (!target.exists()) {
+	if (!target.exists()) {
 		"""
 		makeblastdb -in $genome -dbtype nucl -out $dbName
 		"""
@@ -741,10 +741,10 @@ RepeatMasker_hints
  */
  
  if (params.reads) {
-     Channel
-         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
+	Channel
+		.fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
+		.into { read_files_fastqc; read_files_trimming }
 } else {
 	read_files_fastqc = Channel.from(false)
 	read_files_trimming = Channel.from(false)
@@ -757,25 +757,25 @@ RepeatMasker_hints
  * STEP RNAseq.1 - FastQC
  */
 process RunFastqc {
-    tag "${prefix}"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+	tag "${prefix}"
+	publishDir "${params.outdir}/fastqc", mode: 'copy',
+		saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-    input:
-    set val(name), file(reads) from read_files_fastqc
+	input:
+	set val(name), file(reads) from read_files_fastqc
 
-    output:
-    file "*_fastqc.{zip,html}" 
-    //into fastqc_results
+	output:
+	file "*_fastqc.{zip,html}" 
+	//into fastqc_results
 
 	when:
 	params.reads != false
 
-    script:
+	script:
 	prefix = reads[0].toString().split("_R1")[0]
-    """
-    fastqc -q $reads
-    """
+	"""
+	fastqc -q $reads
+	"""
 }
 
 
@@ -784,36 +784,36 @@ process RunFastqc {
  */
 process RunTrimgalore {
 
-   tag "${prefix}"
-   publishDir "${params.outdir}/trimgalore", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
-            else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
-            else if (filename.indexOf(".fq") > 0) "$filename"
-        }
+	tag "${prefix}"
+	publishDir "${params.outdir}/trimgalore", mode: 'copy',
+		saveAs: {filename ->
+			if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+			else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
+			else if (filename.indexOf(".fq") > 0) "$filename"
+		}
 
-   input:
-   set val(name), file(reads) from read_files_trimming
+	input:
+	set val(name), file(reads) from read_files_trimming
 
 	output:
-   file "*_val_{1,2}.fq" into trimmed_reads
-  // file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
-   file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
- 	
+	file "*_val_{1,2}.fq" into trimmed_reads
+	//file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
+	file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
+ 
 	when:
 	params.reads != false
-  
-   script:
-   prefix = reads[0].toString().split("_R1")[0]
-   if (params.singleEnd) {
-        """
-        trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
-        """
-   } else {
-        """
-        trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+
+	script:
+	prefix = reads[0].toString().split("_R1")[0]
+	if (params.singleEnd) {
 		"""
-   }
+		trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+		"""
+	} else {
+		"""
+		trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+		"""
+	}
 
 }
 
@@ -846,7 +846,7 @@ process RunMakeHisatDB {
 	target = file(dbName_1)
 	
 	prefix = dbName
-    if (!target.exists()) {
+	if (!target.exists()) {
 		"""
 		hisat2-build $genome $dbName -p $params.nthreads
 		"""
@@ -882,16 +882,16 @@ process RunHisat2 {
 	
 	
 	if (params.singleEnd) {
-        """
-        hisat2 -x $indexBase -U $reads -S alignment_sam -p $params.nthreads
-        samtools view -Sb alignment_sam > alignment.bam
-        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
-        """
-   } else {
-        """
-        hisat2 -x $indexBase -1 ${reads[0]} -2 ${reads[1]} -S alignment_sam -p $params.nthreads
-        samtools view -Sb alignment_sam > alignment.bam
-        samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+		"""
+		hisat2 -x $indexBase -U $reads -S alignment_sam -p $params.nthreads
+		samtools view -Sb alignment_sam > alignment.bam
+		samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+		"""
+	} else {
+		"""
+		hisat2 -x $indexBase -1 ${reads[0]} -2 ${reads[1]} -S alignment_sam -p $params.nthreads
+		samtools view -Sb alignment_sam > alignment.bam
+		samtools sort alignment.bam > ${prefix}_accepted_hits.bam
 		"""
    }
 }   
@@ -1180,18 +1180,18 @@ Channel
 // We check if the blast db already exists - if not, we create it
 
 process RunMakeBlastDBFunAnno {
-	
+
 	publishDir "${params.outdir}/FunAnnoBlastDB", mode: 'copy'
-	
+
 	input:
 	file(uniprot_fa) from inputMakeblastdb
-	
+
 	output:
 	set file(db_phr),file(db_pin),file(db_psq) into blast_db
-	
+
 	when:
 	params.funAnnot != false
-	
+
 	script:
 	dbName = uniprot_fa.baseName
 	db_phr = dbName + ".phr"
@@ -1200,7 +1200,7 @@ process RunMakeBlastDBFunAnno {
 
 	target = file(db_phr)
 	
-    if (!target.exists()) {
+	if (!target.exists()) {
 		"""
 		makeblastdb -in $uniprot_fa -dbtype prot -out $dbName
 		"""
@@ -1219,12 +1219,13 @@ augustus_prots2annie
 process RunBlastpFunAnno {
 
 	publishDir "${params.outdir}/blast_results_FunnAnno/${chunk_name}", mode: 'copy'
+	
 	input:
-    file fasta from proteinChunkBlast
+	file fasta from proteinChunkBlast
 	set file(blastdb_phr),file(blastdb_pin),file(blastdb_psq) from blast_db.collect()
 
 	output:
-    file blast_result_funAnno
+	file blast_result_funAnno
 
 	when:
 	full == true
@@ -1369,34 +1370,34 @@ process Get_software_versions {
     script:
   
     if (params.gth == true)
-    	"""
-    	fastqc --version > v_fastqc.txt
-    	trim_galore --version &> v_trim_galore.txt
-    	hisat2 --version > v_hisat2.txt
-    	blastn -version > v_blast.txt
-    	#exonerate -v > v_exonerate.txt
-    	gth -version > v_gth.txt
-    	RepeatMasker -v > v_rm.txt
-    	#Trinity --version > v_trinity.txt
-    	echo $params.version > v_pipeline.txt
-    	echo $workflow.nextflow.version > v_nextflow.txt    
-    	multiqc --version > v_multiqc.txt
-    	scrape_software_versions.py > software_versions_mqc.yaml
-    	"""
-    else
-    	"""
-    	fastqc --version > v_fastqc.txt
-    	trim_galore --version &> v_trim_galore.txt
-    	hisat2 --version > v_hisat2.txt
-    	blastn -version > v_blast.txt
-    	#exonerate -v > v_exonerate.txt
-    	RepeatMasker -v > v_rm.txt
-    	#Trinity --version > v_trinity.txt
-    	echo $params.version > v_pipeline.txt
-    	echo $workflow.nextflow.version > v_nextflow.txt    
-    	multiqc --version > v_multiqc.txt
-    	scrape_software_versions.py > software_versions_mqc.yaml
-   	 	"""
+		"""
+		fastqc --version > v_fastqc.txt
+		trim_galore --version &> v_trim_galore.txt
+		hisat2 --version > v_hisat2.txt
+		blastn -version > v_blast.txt
+		#exonerate -v > v_exonerate.txt
+		gth -version > v_gth.txt
+		RepeatMasker -v > v_rm.txt
+		#Trinity --version > v_trinity.txt
+		echo $params.version > v_pipeline.txt
+		echo $workflow.nextflow.version > v_nextflow.txt    
+		multiqc --version > v_multiqc.txt
+		scrape_software_versions.py > software_versions_mqc.yaml
+		"""
+	else
+		"""
+		fastqc --version > v_fastqc.txt
+		trim_galore --version &> v_trim_galore.txt
+		hisat2 --version > v_hisat2.txt
+		blastn -version > v_blast.txt
+		#exonerate -v > v_exonerate.txt
+		RepeatMasker -v > v_rm.txt
+		#Trinity --version > v_trinity.txt
+		echo $params.version > v_pipeline.txt
+		echo $workflow.nextflow.version > v_nextflow.txt    
+		multiqc --version > v_multiqc.txt
+		scrape_software_versions.py > software_versions_mqc.yaml
+		"""
 }
 
 
@@ -1409,29 +1410,29 @@ multiqc_config = file(params.multiqc_config)
  */
  
 process Multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+	publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
-    input:
-    file multiqc_config
-    file ('software_versions/*') from software_versions_yaml
+	input:
+	file multiqc_config
+	file ('software_versions/*') from software_versions_yaml
 
-    output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
+	output:
+	file "*multiqc_report.html" into multiqc_report
+	file "*_data"
 
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
-    """
+	script:
+	rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+	rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+	"""
+	multiqc -f $rtitle $rfilename --config $multiqc_config .
+	"""
 }
 
 
 workflow.onComplete {
 
-    log.info "========================================="
-    log.info "Duration:             $workflow.duration"
-    log.info "========================================="
+	log.info "========================================="
+	log.info "Duration:             $workflow.duration"
+	log.info "========================================="
         
 }
