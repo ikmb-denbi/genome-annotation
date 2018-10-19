@@ -6,20 +6,19 @@
 
 This pipeline can be used to annotate a genome de novo. 
 
+### Introduction 
+
 First, a Hints file is generated from all available evidences (proteins/EST and/or RNA-seq reads). 
 
 Second, Augustus is used to predict gene models in the genome using the Hints file as extrinsic evidence. 
 
-Finally, functional annotation can also be run to generate a final GFF3 file. 
-
-### Introduction
-NF-hints: This pipeline produces a Hints file for genome annotation (with Augustus) from proteins/EST evidence and RNA-seq reads.
+Finally, functional annotation can also be run. 
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker / singularity containers making installation trivial and results highly reproducible.
 
+### Documentation 
 
-### Documentation
-The NF-hints pipeline comes with documentation about the pipeline, found in the `docs/` directory:
+Documentation about the pipeline can be found in the `docs/` directory or under the links below:
 
 1. [Installation](docs/installation.md)
 2. Pipeline configuration
@@ -29,5 +28,6 @@ The NF-hints pipeline comes with documentation about the pipeline, found in the 
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
 
-### Credits
+### Credits 
+
 This pipeline was written by MTorres ([m.torres](https://git.ikmb.uni-kiel.de/m.torres)) at [IKMB](http://www.ikmb.uni-kiel.de).
