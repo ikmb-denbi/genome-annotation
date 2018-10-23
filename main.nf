@@ -52,12 +52,12 @@ def helpMessage() {
     --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
     --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
     --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-    --ninterpro		Chunks (# of sequences) to divide InterPro jobs [ default = 50 ]
+    --ninterpro		Chunks (# of sequences) to divide InterPro jobs [ default = 200 ]
     --nthreads		Number of cpus for programs that allow multi-threaded mode [default = 1]	
 
     Other options:
     --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
-    --outdir		The output directory where the results will be saved [ default = 'Hints_augustus_output' ]
+    --outdir		The output directory where the results will be saved [ default = 'Hints_annotation_output' ]
     --allHints		Name of final GFF file with all hints [ default = 'AllHints.gff' ]
     --addHints		Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
     -name			Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
@@ -75,36 +75,7 @@ if (params.help){
 }
 
 
-//Default variables:
-params.prots = false
-params.ESTs = false
-params.reads = false
-
-params.trinity = true
-params.gth = true
-params.RM = true
-params.augustus = true
-params.funAnnot = true
-
-params.species = "mammal"
-params.model = "human"
-params.UTR = 'off'
-params.isof = 'false'
-params.augCfg = false
-params.uniprot = false
-
-params.nblast = 20
-params.nexonerate = 5
-params.nrepeats = 1
-params.ninterpro = 10
-params.nthreads = 1
-
-params.singleEnd = false
-params.outdir = "Hints_augustus_output"
-params.allHints = "AllHints.gff"
-params.addHints = false
-params.name = false
-
+// Set scripts and files location:
 
 AllHints = file(params.allHints)
 
