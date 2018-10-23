@@ -16,7 +16,7 @@ This pipeline can be used to annotate a genome *de novo*.
 
 3. Gene models are functionally annotated using Blast and InterProScan. 
 
-The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirement is at least one type of evidence. 
+The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirements are a genome file and at least one type of evidence. 
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. Most of the required programs are installed via conda during the execution, making installation trivial and results highly reproducible.
 
