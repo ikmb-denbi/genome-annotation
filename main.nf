@@ -744,9 +744,8 @@ RepeatMasker_hints
 	Channel
 		.fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
 		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-		.into { read_files_fastqc; read_files_trimming }
+		.into {read_files_trimming }
 } else {
-	read_files_fastqc = Channel.from(false)
 	read_files_trimming = Channel.from(false)
 	trigger_RNAseq = Channel.create()
 	
@@ -754,33 +753,7 @@ RepeatMasker_hints
 
 
 /*
- * STEP RNAseq.1 - FastQC
- */
-process RunFastqc {
-	tag "${prefix}"
-	publishDir "${params.outdir}/fastqc", mode: 'copy',
-		saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
-
-	input:
-	set val(name), file(reads) from read_files_fastqc
-
-	output:
-	file "*_fastqc.{zip,html}" 
-	//into fastqc_results
-
-	when:
-	params.reads != false
-
-	script:
-	prefix = reads[0].toString().split("_R1")[0]
-	"""
-	fastqc -q $reads
-	"""
-}
-
-
-/*
- * STEP RNAseq.2 - Trimgalore
+ * STEP RNAseq.1 - Trimgalore
  */
 process RunTrimgalore {
 
@@ -823,7 +796,7 @@ Channel
 	.set { inputMakeHisatdb }
 
 /*
- * STEP RNAseq.3 - Make Hisat2 DB
+ * STEP RNAseq.2 - Make Hisat2 DB
  */
  
 process RunMakeHisatDB {
@@ -856,7 +829,7 @@ process RunMakeHisatDB {
 
 
 /*
- * STEP RNAseq.4 - Hisat2
+ * STEP RNAseq.3 - Hisat2
  */
 
 process RunHisat2 {
@@ -898,7 +871,7 @@ process RunHisat2 {
 
 
 /*
- * STEP RNAseq.5 - Hisat2 into Hints
+ * STEP RNAseq.4 - Hisat2 into Hints
  */
 process Hisat2Hints {
 
@@ -929,7 +902,7 @@ if (params.trinity == false) {
 }
 
 /*
- * STEP RNAseq.6 - Trinity
+ * STEP RNAseq.5 - Trinity
  */
 process RunTrinity {
 
@@ -964,7 +937,7 @@ TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
  
  
 /*
- * STEP RNAseq.7 - Blast
+ * STEP RNAseq.6 - Blast
  */
  
 process RunBlastTrinity {
@@ -993,7 +966,7 @@ process RunBlastTrinity {
 
 
 /*
- * STEP RNAseq.8 - Parse Blast Output
+ * STEP RNAseq.7 - Parse Blast Output
  */
 
 process BlastTrinity2QueryTarget {
@@ -1022,7 +995,7 @@ query2target_trinity_uniq_result
 
 
 /*
- * STEP RNAseq.9 - Exonerate
+ * STEP RNAseq.8 - Exonerate
  */
  
 process RunExonerateTrinity {
@@ -1048,7 +1021,7 @@ process RunExonerateTrinity {
 
 
 /*
- * STEP RNAseq.10 - Exonerate to Hints
+ * STEP RNAseq.9 - Exonerate to Hints
  */
  
 process Exonerate2HintsTrinity {
@@ -1356,77 +1329,6 @@ process RunFunctionsToGFF {
 
 annotated_gff
 	.collectFile( name: "${params.outdir}/Augustus_withFunctions.gff3" )
-
-
-/**********************************
-  Parse software version numbers
- **********************************/
- 
-process Get_software_versions {
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-
-    script:
-  
-    if (params.gth == true)
-		"""
-		fastqc --version > v_fastqc.txt
-		trim_galore --version &> v_trim_galore.txt
-		hisat2 --version > v_hisat2.txt
-		blastn -version > v_blast.txt
-		#exonerate -v > v_exonerate.txt
-		gth -version > v_gth.txt
-		RepeatMasker -v > v_rm.txt
-		#Trinity --version > v_trinity.txt
-		echo $params.version > v_pipeline.txt
-		echo $workflow.nextflow.version > v_nextflow.txt    
-		multiqc --version > v_multiqc.txt
-		scrape_software_versions.py > software_versions_mqc.yaml
-		"""
-	else
-		"""
-		fastqc --version > v_fastqc.txt
-		trim_galore --version &> v_trim_galore.txt
-		hisat2 --version > v_hisat2.txt
-		blastn -version > v_blast.txt
-		#exonerate -v > v_exonerate.txt
-		RepeatMasker -v > v_rm.txt
-		#Trinity --version > v_trinity.txt
-		echo $params.version > v_pipeline.txt
-		echo $workflow.nextflow.version > v_nextflow.txt    
-		multiqc --version > v_multiqc.txt
-		scrape_software_versions.py > software_versions_mqc.yaml
-		"""
-}
-
-
-params.multiqc_config = "$baseDir/conf/multiqc_config.yaml"
-multiqc_config = file(params.multiqc_config)
-
-
-/*
- * MultiQC
- */
- 
-process Multiqc {
-	publishDir "${params.outdir}/MultiQC", mode: 'copy'
-
-	input:
-	file multiqc_config
-	file ('software_versions/*') from software_versions_yaml
-
-	output:
-	file "*multiqc_report.html" into multiqc_report
-	file "*_data"
-
-	script:
-	rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-	rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-	"""
-	multiqc -f $rtitle $rfilename --config $multiqc_config .
-	"""
-}
 
 
 workflow.onComplete {
