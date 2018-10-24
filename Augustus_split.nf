@@ -64,6 +64,8 @@ def helpMessage() {
     """.stripIndent()
 }
 
+params.naugustus = 1
+
 /*
  * SET UP CONFIGURATION VARIABLES
  */
@@ -1020,20 +1022,28 @@ Hints_trinity_mapped_gff
 /******************
   Augustus Block
  ******************/
- 
+
+Channel
+	.fromPath(Genome)
+	.splitFasta(by: params.naugustus, file: true)
+	.set {fasta_aug} 
  		
 /*
  * STEP Augustus.1 - Genome Annotation
  */
 process RunAugustus {
-
+	
+	tag "${chunk_name}"
+	publishDir "${params.outdir}/Augustus/${chunk_name}", mode: 'copy'
+	
 	input:
 	file a from trigger_prot_exonerate.ifEmpty()
 	file b from trigger_prot_gth.ifEmpty()
 	file c from trigger_est_exonerate.ifEmpty()
 	file d from trigger_RM.ifEmpty()
 	file e from trigger_RNAseq.ifEmpty()
-	file f from trigger_trinity.ifEmpty()	
+	file f from trigger_trinity.ifEmpty()
+	file query_aug from fasta_aug	
 	
 	output:
 	file Augustus_out into augustus_out_gff, augustus_2gff3, augustus_2prots
@@ -1042,6 +1052,9 @@ process RunAugustus {
 	params.augustus != false
 	
 	script:
+	
+	chunk_name = query_aug.baseName
+	
 	if (params.addHints == false) {
 	"""
 	augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$AllHints $Genome > Augustus_out
