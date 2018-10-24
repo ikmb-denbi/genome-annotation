@@ -741,8 +741,6 @@ process RunTrimgalore {
 
 	output:
 	file "*_val_{1,2}.fq" into trimmed_reads
-	//file "*trimming_report.txt" into trimgalore_results, trimgalore_logs   
-	file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
  
 	when:
 	params.reads != false
