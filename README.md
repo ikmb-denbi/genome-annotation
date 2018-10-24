@@ -30,7 +30,12 @@ Documentation about the pipeline can be found in the `docs/` directory or under 
     * [Adding your own system](docs/configuration/adding_your_own.md)
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
-5. [Troubleshooting](docs/troubleshooting.md)
+5. [Troubleshooting](docs/troubleshooting.md) 
+
+### Pipeline Scheme 
+
+![](images/genome-annotation_dag.svg) 
+
 
 ### Credits 
 

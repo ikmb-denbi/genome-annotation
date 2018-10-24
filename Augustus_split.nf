@@ -737,7 +737,8 @@ process RunTrimgalore {
 		}
 
 	input:
-	set val(name), file(reads) from read_files_trimming
+	//set val(name), file(reads) from read_files_trimming
+	file(reads) from read_files_trimming
 
 	output:
 	file "*_val_{1,2}.fq" into trimmed_reads
