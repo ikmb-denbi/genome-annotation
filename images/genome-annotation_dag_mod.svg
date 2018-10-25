@@ -593,8 +593,8 @@
 	<text transform="matrix(1 0 0 1 1393.998 -1698.9404)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="21">--ESTs</text>
 	<text transform="matrix(1 0 0 1 1393.998 -1597.3467)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="21">--reads</text>
 	
-		<text transform="matrix(0.2489 0.9685 -0.9685 0.2489 431.6792 -535.7373)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--ninterpro</text>
+		<text transform="matrix(0.2489 0.9685 -0.9685 0.2489 398.7046 -539.7373)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--ninterpro</text>
 	
-		<text transform="matrix(-4.371139e-008 1 -1 -4.371139e-008 677.8784 -513.9971)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
+		<text transform="matrix(0.6535 0.7569 -0.7569 0.6535 628.1367 -550.0166)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
 </g>
 </svg>
