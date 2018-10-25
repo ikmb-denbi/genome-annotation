@@ -18,8 +18,6 @@ This pipeline can be used to annotate a genome *de novo*.
 
 The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirements are a genome file and at least one type of evidence. 
 
-The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. Most of the required programs are installed via conda during the execution, making installation trivial and results highly reproducible.
-
 ### Documentation 
 
 Documentation about the pipeline can be found in the `docs/` directory or under the links below:
