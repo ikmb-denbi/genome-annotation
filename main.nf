@@ -434,7 +434,7 @@ process GenomeThreader2HintsProts {
 }
 
 gth_hints
-	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_genomethreader.gff")
+	.collectFile(name: "${params.outdir}/Hints/Hints_proteins_gth.gff")
 
 
 
@@ -682,7 +682,7 @@ process RepeatMasker2Hints {
 	file RM_2_hints
 	
 	output:
-	file RepeatMasker_gff into RepeatMasker_hints, RepeatMasker_2concatenate
+	file RepeatMasker_gff into RepeatMasker_hints
 	file 'RM_hints.done' into trigger_RM
 	
 	script:
@@ -999,7 +999,7 @@ process Exonerate2HintsTrinity {
 	file exonerate_result_trinity
 	
 	output:
-	file Hints_trinity_gff into Hints_trinity2concatenate, Hints_trinity_mapped_gff
+	file Hints_trinity_gff into Hints_trinity_mapped_gff
 	file 'trinity_hints.done' into trigger_trinity
 	
 	script:
