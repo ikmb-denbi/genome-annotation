@@ -1,7 +1,5 @@
 # Genome Annotation - Documentation
 
-The NF-hints documentation is split into the following files:
-
 1. [Installation and configuration](installation.md)
 2. [Running the pipeline](usage.md)
 3. [Output and how to interpret the results](output.md)
