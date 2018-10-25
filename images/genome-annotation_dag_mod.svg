@@ -542,8 +542,8 @@
 	<rect x="1411.708" y="-668.686" fill="none" stroke="#9F0E51" stroke-width="3" width="197" height="30.999"/>
 	<text transform="matrix(1 0 0 1 114.4766 -196.7031)" font-family="'ArialMT'" font-size="17">Augustus.gff3</text>
 	<rect x="107.428" y="-218.015" fill="none" stroke="#9F0E51" stroke-width="3" width="117" height="31"/>
-	<text transform="matrix(1 0 0 1 496.1914 -470.5078)" font-family="'ArialMT'" font-size="17">Augustus_proteins.fa</text>
-	<rect x="487.96" y="-490.666" fill="none" stroke="#9F0E51" stroke-width="3" width="175" height="31"/>
+	<text transform="matrix(1 0 0 1 487.1914 -470.5078)" font-family="'ArialMT'" font-size="17">Augustus_proteins.fa</text>
+	<rect x="478.96" y="-490.666" fill="none" stroke="#9F0E51" stroke-width="3" width="175" height="31"/>
 	<text transform="matrix(1 0 0 1 709.7686 -489.5078)" font-family="'ArialMT'" font-size="17">Augustus_out.gff</text>
 	<rect x="703.059" y="-510.945" fill="none" stroke="#9F0E51" stroke-width="3" width="142" height="31"/>
 	<path fill="none" stroke="#000000" d="M707.599-573.5c2.537,8.983,9.274,32.85,14.802,52.424"/>
@@ -592,5 +592,9 @@
 	<ellipse fill="#B26FA9" stroke="#000000" cx="1357.307" cy="-1601.401" rx="17.307" ry="16.5"/>
 	<text transform="matrix(1 0 0 1 1393.998 -1698.9404)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="21">--ESTs</text>
 	<text transform="matrix(1 0 0 1 1393.998 -1597.3467)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="21">--reads</text>
+	
+		<text transform="matrix(0.2489 0.9685 -0.9685 0.2489 431.6792 -535.7373)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--ninterpro</text>
+	
+		<text transform="matrix(-4.371139e-008 1 -1 -4.371139e-008 677.8784 -513.9971)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
 </g>
 </svg>
