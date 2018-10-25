@@ -34,7 +34,7 @@ Documentation about the pipeline can be found in the `docs/` directory or under 
 
 ### Pipeline Scheme 
 
-![](images/genome-annotation_dag.svg) 
+![](images/genome-annotation_dag_mod.svg) 
 
 
 ### Credits 
