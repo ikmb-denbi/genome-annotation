@@ -67,3 +67,4 @@ setenv $BSSMDIR         "${HOME}/opt/gth/1.7.1/bin/bssm"
 setenv $GTHDATADIR      "${HOME}/opt/gth/1.7.1/bin/gthdata"
 echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> /environment
 
+# miniconda. maybe already in ubuntu
