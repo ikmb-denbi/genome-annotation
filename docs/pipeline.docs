@@ -26,3 +26,5 @@ Once a file with all possible extrinsic hints is generated, the following steps 
 * **Blast** - 
 * **InterProScan** -
 * **Annie** - 
+
+![](../images/genome-annotation_dag_mod.svg) 
