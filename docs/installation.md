@@ -1,6 +1,6 @@
 # Installation and configuration 
 
-#### Installing Nextflow 
+### Installing Nextflow 
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatics workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
 Therefore the first thing to do is install Nextflow. 
@@ -9,7 +9,7 @@ If you are working in the **IKMB RZ cluster** you can simply load the following 
 
 `module load IKMB Java/1.8.0 Nextflow/0.32.0` 
 
-Otherwise, install you can easily install it yourself. Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
+Otherwise, you can easily install it yourself. Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
 ```
 # Make sure that Java v8+ is installed:
@@ -26,7 +26,7 @@ mv nextflow ~/bin/
 
 **You need NextFlow version >= 0.32 to run this pipeline.** 
 
-#### Cloning the genome-annotation repository 
+### Cloning the genome-annotation repository 
 
 To run the pipeline you first have to check out the code to a location where you have read and write permissions (i.e. $HOME/git/). 
 
