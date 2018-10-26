@@ -126,7 +126,10 @@ Available profiles are:
   * Profile to run in the 'ikmb_a' queue of the **IKMB RZ cluster** using conda packages. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
 * `custom_conda` 
   * Profile to run the pipeline in your cluster system using conda packages. You must modifiy the file [custom.config](../conf/custom.config) to fit your system. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
+* `self_install`
+  * Profile to run the pipeline in your cluster system, where you have already installed all the necessary programs. You must modifiy the file [custom.config](../conf/custom.config) to fit your system. 
 * `local` 
+  * Profile to run the pipeline locally, where you have already installed all the necessary programs.
 * `none`
   * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
 
