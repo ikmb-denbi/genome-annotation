@@ -120,13 +120,15 @@ Use this parameter to choose a configuration profile. Each profile is designed f
 
 Available profiles are:
 
-* `standard`
-    * The default profile, used if `-profile` is not specified at all. Runs in the 'ikmb_a' queue of the **IKMB RZ cluster**. The required modules will be loaded as the pipeline runs. 
-*
-*
-*
+* `standard` 
+  * The default profile, used if `-profile` is not specified at all. Runs in the 'ikmb_a' queue of the **IKMB RZ cluster**. The required modules will be loaded as the pipeline runs. 
+* `conda` 
+  * Profile to run in the 'ikmb_a' queue of the **IKMB RZ cluster** using conda packages. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
+* `custom_conda` 
+  * Profile to run the pipeline in your cluster system using conda packages. You must modifiy the file [custom.config](../conf/custom.config) to fit your system. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
+* `local` 
 * `none`
-    * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
+  * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
 
 ### 6. Nextflow parameters
 
