@@ -28,7 +28,7 @@ mv nextflow ~/bin/
 
 ## Cloning the genome-annotation repository 
 
-To run the pipeline you first have to check out the code to a location where you have read and write permissions (i.e. $HOME/git/). 
+To run the pipeline you first have to check out the code to a location in your system (i.e. $HOME/git/). 
 
 ``` 
 cd $HOME/git/ 
@@ -46,7 +46,23 @@ In the **IKMB RZ cluster**, all these programs are available as modules and will
 
 ### 2. Not in the IKMB? Use Bioconda 
 
-Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. 
+Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. All you need to do is install the corresponding miniconda2 for your system: 
+
+[miniconda2 installer](https://repo.continuum.io/miniconda/) 
+
+In this case, when you run the pipeline add `-profile conda` to your command. 
+
+Nextflow will install the environments with the necessary packages as it runs. 
+
+#### Missing programs: 
+
+Some of the required programs are not available as conda packages yet, so you will have to install them yourself. Some parts of the pipeline will run successfully anyway, but you need to turn off the ones that don't. 
+
+1. GenomeThreader: it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience showed that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. 
+
+You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program you must use `--gth false` on your command call.
+
+2. 
 
 
 
