@@ -6,11 +6,9 @@ The typical command for running the pipeline is as follows:
 nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out'
 ```
 
-This will run all the steps you can see in the workflow: 
+This will run all the steps in the pipeline.
 
-![](../images/genome-annotation_dag_mod.svg) 
-
-You have to especify your own genome and evidence file(s) and you can also decide which parts of the pipeline you want to run and which skip. 
+All you have to indicate are your own genome and evidence file(s). This command will run all the steps in the pipeline, but you can also decide which parts of the pipeline you want to run and which to skip. 
   
 ### 1. Mandatory arguments 
 
