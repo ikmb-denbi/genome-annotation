@@ -2,7 +2,9 @@
 
 The typical command for running the pipeline is as follows:
 
-`nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out'`
+```
+nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out'
+```
 
 This will run all the steps you can see in the workflow: 
 
