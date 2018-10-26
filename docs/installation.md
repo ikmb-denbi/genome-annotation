@@ -50,7 +50,7 @@ Most of the required programs are available as [bioconda packages](https://bioco
 
 [miniconda2 installer](https://repo.continuum.io/miniconda/) 
 
-In this case, when you run the pipeline add `-profile conda` to your command. 
+In this case, when you run the pipeline add `-profile conda` (if in the IKMB) or `-profile conda_custom` (see below) to your command. 
 
 Nextflow will install the environments with the necessary packages as it runs. 
 
@@ -74,7 +74,9 @@ It is entirely possible to run this pipeline on clusters other than the IKMB, bu
 
 > If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. 
 
-If you are the only person to be running this pipeline, you can simply modify the `conf/custom.conf` file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda`. Both profiles automatically use the `custom.conf` file.  
+If you are the only person to be running this pipeline, you can simply modify the `genome-annotation/conf/custom.config` file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the `custom.config` file, so keep the file name! 
+
+If you are familiar with Nextflow, you can add your own profiles by changing the `genome-annotation/nextflow.config` file.
 
 
 ### 3. Install all programs yourself 
