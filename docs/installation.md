@@ -68,7 +68,7 @@ Some of the required programs are not available as conda packages yet, so you wi
 
 *coming soon:* [Singularity]() image with these programs installed. 
 
-#### Configuration for other clusters 
+#### Configuration for other clusters (`conda_custom`)
 
 It is entirely possible to run this pipeline on clusters other than the IKMB, but you will need to set up your own config file so that the pipeline knows how to work with your cluster. 
 
