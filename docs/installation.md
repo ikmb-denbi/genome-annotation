@@ -58,11 +58,11 @@ Nextflow will install the environments with the necessary packages as it runs.
 
 Some of the required programs are not available as conda packages yet, so you will have to install them yourself. Some parts of the pipeline will run successfully anyway, but you need to turn off the ones that don't. 
 
-1. **GenomeThreader:** it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience shows that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program you must use `--gth false` on your command call.
+1. **GenomeThreader:** it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience shows that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program, you must use `--gth false` on your command call.
 
-2. **Annie:** it is used to transfer the functional annotations to your gff3 file. You can download it from [here](http://genomeannotation.github.io/annie/) and extract it in your system. Make sure the executable file `annie.py` is in your path. If you don't want to perform functional annotation use `--funAnnot false`. 
+2. **Annie:** it is used to transfer the functional annotations to your gff3 file. You can download it from [here](http://genomeannotation.github.io/annie/) and extract it in your system. Make sure the executable file `annie.py` is in your path. If you don't want to perform functional annotation, use `--funAnnot false`. 
 
-3. **InterProScan:** it is also necessary during the functional annotation step. It it is used to scan the predicted protein sequences for known protein signatures (functional domains, GO terms, etc) searching in different public databases. You can download it from [here](https://www.ebi.ac.uk/interpro/download.html) and extract it in your system. Make sure the executable `interproscan.sh` is in your path. If you want to run the pipeline without this program use `--funAnnot false`. 
+3. **InterProScan:** it is also necessary during the functional annotation step. It it is used to scan the predicted protein sequences for known protein signatures (functional domains, GO terms, etc) searching in different public databases. You can download it from [here](https://www.ebi.ac.uk/interpro/download.html) and extract it in your system. Make sure the executable `interproscan.sh` is in your path. If you want to run the pipeline without this program, use `--funAnnot false`. 
 
 4. **Bioruby:** to run the functional annotation step you also need to have the bioruby library installed. You can download and install ruby if you haven't done so yet from [here](https://www.ruby-lang.org/en/). Then install bioruby using the RubyGems tool: `gem install bio` 
 
@@ -74,9 +74,9 @@ It is entirely possible to run this pipeline on clusters other than the IKMB, bu
 
 > If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. 
 
-If you are the only person to be running this pipeline, you can simply modify the **_genome-annotation/conf/custom.config_** file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the **_custom.config_** file, so keep the file name! 
+If you are the only person to be running this pipeline, you can simply modify the [custom.config](../conf/custom.config) file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the [custom.config](../conf/custom.config) file, so keep the file name! 
 
-If you are familiar with Nextflow, you can add your own profiles by changing the **_genome-annotation/nextflow.config_** file.
+If you are familiar with Nextflow, you can add your own profiles by changing the [nextflow.config](../nextflow.config) file.
 
 #### Configuration for local execution (`local`)
 
