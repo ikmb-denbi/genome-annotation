@@ -46,7 +46,7 @@ In the **IKMB RZ cluster**, all these programs are available as modules and will
 
 ### 2. Not in the IKMB? Use Bioconda 
 
-Most of the required programs are available as (bioconda packages)[https://bioconda.github.io/recipes.html] for easy installation. 
+Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. 
 
 
 
