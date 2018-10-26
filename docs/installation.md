@@ -64,18 +64,22 @@ Some of the required programs are not available as conda packages yet, so you wi
 
 3. **InterProScan:** it is also necessary during the functional annotation step. It it is used to scan the predicted protein sequences for known protein signatures (functional domains, GO terms, etc) searching in different public databases. You can download it from [here](https://www.ebi.ac.uk/interpro/download.html) and extract it in your system. Make sure the executable `interproscan.sh` is in your path. If you want to run the pipeline without this program use `--funAnnot false`. 
 
-4. **Bioruby:** to run the functional annotation step you also need to have the bioruby library installed. You can download and install ruby if you haven't done so yet from [here](https://www.ruby-lang.org/en/). Then install bioruby using the RubyGems tool: 
-
-`gem install bio` 
-
+4. **Bioruby:** to run the functional annotation step you also need to have the bioruby library installed. You can download and install ruby if you haven't done so yet from [here](https://www.ruby-lang.org/en/). Then install bioruby using the RubyGems tool: `gem install bio` 
 
 *coming soon:* [Singularity]() image with these programs installed. 
 
-#### Configuration for other clusters
+#### Configuration for other clusters 
+
+It is entirely possible to run this pipeline on clusters other than the IKMB, but you will need to set up your own config file so that the pipeline knows how to work with your cluster. 
+
+> If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. 
+
+If you are the only person to be running this pipeline, you can simply modify the `conf/custom.conf` file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda`. Both profiles automatically use the `custom.conf` file.  
+
 
 ### 3. Install all programs yourself 
 
-Here is a list of all the programs necessary to run the complete genome-annotation pipeline (--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true). The pipeline has been tested successfully  with the versions that are here described. 
+Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`). The pipeline has been tested successfully  with the versions that are here described. 
 
 1. Blast+ v2.2.30 
 
