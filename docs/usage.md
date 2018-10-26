@@ -76,19 +76,21 @@ Location of augustus configuration file.
 Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
     
 ### 4. How to split programs 
-One of the greates advantages of using Nextflow is that it allows you to speed up a pipeline by splitting your different input files into chunks to run multiple smaller instances of the programs and at the end correctly puting the results together in a single output. These parameters allow you to decide, for different programs, how many sequences/instances go into each 'chunk':  
+One of the greates advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. When all instances of the program are finished, Nextflow can correctly put together all the results  in a single output for that program. The following parameters allow you to decide, for different programs, how many sequences go into each 'chunk': 
 
 #### `--nblast` [ default = 500 ]
-Chunks (# of sequences) to divide Blast jobs. 
+Number of sequences in each chunk to divide Blast jobs. 
 
 #### `--nexonerate` [ default = 200 ]
-Chunks (# of blast hits) to divide Exonerate jobs.
+Number of blast hits in each chunk to divide Exonerate jobs.
 
 #### `--nrepeats` [ default = 30 ]
-Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs.
+Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustus jobs.
 
 #### `--ninterpro` [ default = 200 ] 
-Chunks (# of sequences) to divide InterPro jobs. 
+Number of sequences in each chunk to divide InterPro jobs. 
+
+Think of how large your input files are (how many sequences they contain) and how busy your cluster is. If your jobs take a long time to start because your cluster is very busy, it is better to make big chunks. Otherwise, if your cluster allow you to start many processes in parallel, you can make smaller chunks. 
 
 ### 5. Other options 
 
@@ -108,10 +110,10 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 The output directory where the results will be saved. 
 
 #### `--allHints` [ default = 'AllHints.gff' ] 
-Name of final GFF file with all hints. 
+Name of final GFF file with all hints. This file will be created in your working directory (not inside the --outdir). When you start the pipeline, a file with this name **CANNOT EXIST**. 
 
 #### `--addHints` [ default = 'false' ]
-Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus. 
+Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. 
 
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
@@ -119,8 +121,10 @@ Use this parameter to choose a configuration profile. Each profile is designed f
 Available profiles are:
 
 * `standard`
-    * The default profile, used if `-profile` is not specified at all. Runs locally and expects all software to be installed and available on the `PATH`.
-    * This profile is mainly designed to be used as a starting point for other configurations and is inherited by most of the other profiles.
+    * The default profile, used if `-profile` is not specified at all. Runs in the 'ikmb_a' queue of the **IKMB RZ cluster**. The required modules will be loaded as the pipeline runs. 
+*
+*
+*
 * `none`
     * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
 
