@@ -5,7 +5,7 @@
 The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatics workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
 Therefore the first thing to do is install Nextflow. 
 
-If you are working in the **IKMB RZ cluster** you can simply load the following modules:
+If you are working in the **IKMB RZ cluster**, you can simply load the following modules:
 
 `module load IKMB Java/1.8.0 Nextflow/0.32.0` 
 
