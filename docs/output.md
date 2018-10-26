@@ -12,7 +12,7 @@
 You can also see the output of each intermediate step, which is saved in specific folders inside the output directory. Of special interest are: 
 
 * `outdir/Hints/` 
-  * Each separate hints file. 
+  * each separate hints file. 
 * `outdir/pipeline_info/` 
   * reports on pipeline performance. 
 
