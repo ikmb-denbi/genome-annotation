@@ -1,4 +1,4 @@
-# Genome Annotation - Output 
+# Output and how to interpret the results 
 
 ## Output overview
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
