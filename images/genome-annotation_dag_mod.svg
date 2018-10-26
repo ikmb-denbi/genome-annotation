@@ -307,7 +307,7 @@
 	<title>p42</title>
 	<ellipse stroke="#000000" cx="829" cy="-1882" rx="3.6" ry="3.6"/>
 	<title>p43</title>
-	<ellipse fill="none" stroke="#000000" cx="829" cy="-1803" rx="82.939" ry="19.092"/>
+	<ellipse fill="#C593BE" cx="829" cy="-1803" rx="82.939" ry="19.092"/>
 	<text transform="matrix(1 0 0 1 764.8931 -1797.9004)" font-family="'Verdana'" font-size="15">RunMakeHisatDB</text>
 	<title>p42-&gt;p43</title>
 	<path fill="none" stroke="#000000" d="M829-1878.19c0,8.22,0,28.27,0,45.6"/>
