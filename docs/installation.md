@@ -78,217 +78,43 @@ If you are the only person to be running this pipeline, you can simply modify th
 
 If you are familiar with Nextflow, you can add your own profiles by changing the `genome-annotation/nextflow.config` file.
 
+#### Configuration for local execution (`local`)
+
+If you don't want to use any cluster management system but rather run the pipeline locally, use `-profile local`. 
 
 ### 3. Install all programs yourself 
 
 Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`).
 
-1. Blast+ v2.2.30 
+1. [Blast+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) v2.2.30 
 
-2. Exonerate v2.2.0 
+2. [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate) v2.2.0 
 
-3. Bioperl 
+3. [Bioperl](https://bioperl.org) 
 
-4. GenomeThreader v1.7.0 
+4. [GenomeThreader](http://genomethreader.org/download.html) v1.7.0 
 
-5. Genometools v1.5.6 
+5. [Genometools](http://genometools.org) v1.5.6 
 
-6. RepeatMasker v.4.0.6 
+6. [RepeatMasker](http://www.repeatmasker.org) v.4.0.6 
 
-7. Trimgalore v0.4.4 
+7. [Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/) v0.4.4 
 
-8. Hisat2 v2.1.0 
+8. [Hisat2](https://ccb.jhu.edu/software/hisat2/manual.shtml) v2.1.0 
 
-9. Samtools v1.5 
+9. [Samtools](http://www.htslib.org/download/) v1.5 
 
-10. Augustus v3.2.1 
+10. [Augustus](http://bioinf.uni-greifswald.de/augustus/) v3.2.1 
 
-11. Trinity v2.5.1 
+11. [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) v2.5.1 
 
-12. Bowtie v2.2.3 
+12. [Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) v2.2.3 
 
-13. Ruby v2.2.2 + bioruby library 
+13. [Ruby](https://www.ruby-lang.org/en/) v2.2.2 + bioruby library 
 
-14. Annie  
+14. [Annie](http://genomeannotation.github.io/annie/)  
 
-15. Interproscan 
+15. [Interproscan](https://www.ebi.ac.uk/interpro/download.html)  
 
 You can use the `-profile self_install` to run the pipeline in this case. Modify the `genome-annotation/conf/custom.config` as necessary for your system. The pipeline has been tested successfully with the versions that are here described. 
 
-
-
-
-
-
-
-
-## Cluster Environment
-By default, pipeline uses the `local` Nextflow executor - in other words, all jobs are run in the login session. If you’re using a simple server, this may be fine. If you’re using a compute cluster, this is bad as all jobs will run on the head node.
-
-To specify your cluster environment, add the following line to your config file:
-
-```nextflow
-process {
-  executor = ‘YOUR_SYSTEM_TYPE’
-}
-```
-
-Many different cluster types are supported by Nextflow. For more information, please see the [Nextflow documentation](https://www.nextflow.io/docs/latest/executor.html).
-
-Note that you may need to specify cluster options, such as a project or queue. To do so, use the `clusterOptions` config option:
-
-```nextflow
-process {
-  executor = ‘SLURM’
-  clusterOptions = ‘-A myproject’
-}
-```
-
-
-## Software Requirements
-To run the pipeline, several software packages are required. How you satisfy these requirements is essentially up to you and depends on your system. If possible, we _highly_ recommend using either Docker or Singularity.
-
-### Docker
-Docker is a great way to run NF-hints, as it manages all software installations and allows the pipeline to be run in an identical software environment across a range of systems.
-
-Nextflow has [excellent integration](https://www.nextflow.io/docs/latest/docker.html) with Docker, and beyond installing the two tools, not much else is required.
-
-First, install docker on your system: [Docker Installation Instructions](https://docs.docker.com/engine/installation/)
-
-Then, simply run the analysis pipeline:
-```bash
-nextflow run NF-hints -profile docker --reads ‘<path to your reads>‘
-```
-
-Nextflow will recognise `NF-hints` and download the pipeline from GitHub. The `-profile docker` configuration lists the [NF-hints](https://hub.docker.com/r/NF-hints/) image that we have created and is hosted at dockerhub, and this is downloaded.
-
-The public docker images are tagged with the same version numbers as the code, which you can use to ensure reproducibility. When running the pipeline, specify the pipeline version with `-r`, for example `-r v1.3`. This uses pipeline code and docker image from this tagged version.
-
-To add docker support to your own config file (instead of using the `docker` profile, which runs locally), add the following:
-
-```nextflow
-docker {
-  enabled = true
-}
-process {
-  container = wf_container
-}
-```
-
-The variable `wf_container` is defined dynamically and automatically specifies the image tag if Nextflow is running with `-r`.
-
-A test suite for docker comes with the pipeline, and can be run by moving to the [`tests` directory](https://github.com/NF-hints/tree/master/tests) and running `./run_test.sh`. This will download a small yeast genome and some data, and attempt to run the pipeline through docker on that small dataset. This is automatically run using [Travis](https://travis-ci.org/NF-hints/) whenever changes are made to the pipeline.
-
-### Singularity image
-Many HPC environments are not able to run Docker due to security issues. [Singularity](http://singularity.lbl.gov/) is a tool designed to run on such HPC systems which is very similar to Docker. Even better, it can use create images directly from dockerhub.
-
-To use the singularity image for a single run, use `-with-singularity ‘docker://NF-hints’`. This will download the docker container from dockerhub and create a singularity image for you dynamically.
-
-To specify singularity usage in your pipeline config file, add the following:
-
-```nextflow
-singularity {
-  enabled = true
-}
-process {
-  container = “docker://$wf_container”
-}
-```
-
-The variable `wf_container` is defined dynamically and automatically specifies the image tag if Nextflow is running with `-r`.
-
-If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you. Instead, you’ll have to do this yourself manually first, transfer the image file and then point to that.
-
-First, pull the image file where you have an internet connection:
-
-```bash
-singularity pull --name NF-hints.img docker://NF-hints
-```
-
-Then transfer this file and run the pipeline with this path:
-
-```bash
-nextflow run /path/to/NF-hints -with-singularity /path/to/NF-hints.img
-```
-
-
-### Manual Installation
-As a last resort, you may need to install the required software manually. We recommend using [Bioconda](https://bioconda.github.io/) to do this. The following instructions are an example only and will not be updated with the pipeline.
-
-#### 1) Install miniconda in your home directory
-``` bash
-cd
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-
-#### 2) Add the bioconda conda channel (and others)
-```bash
-conda config --add channels anaconda
-conda config --add channels conda-forge
-conda config --add channels defaults
-conda config --add channels r
-conda config --add channels bioconda
-conda config --add channels salilab
-```
-
-#### 3) Create a conda environment, with all necessary packages:
-```bash
-conda create --name NF-hints_py2.7 python=2.7
-source activate NF-hints_py2.7
-conda install --yes \
-    fastqc \
-    multiqc
-```
-_(Feel free to adjust versions as required.)_
-
-##### 4) Usage
-Once created, the conda environment can be activated before running the pipeline and deactivated afterwards:
-
-```bash
-source activate NF-hints_py2.7
-# run pipeline
-source deactivate
-```
-
-## General Nextflow info
-Nextflow handles job submissions on SLURM or other environments, and supervises running the jobs. Thus the Nextflow process must run until the pipeline is finished. We recommend that you put the process running in the background through `screen` / `tmux` or similar tool. Alternatively you can run nextflow within a cluster job submitted your job scheduler.
-
-It is recommended to limit the Nextflow Java virtual machines memory. We recommend adding the following line to your environment (typically in `~/.bashrc` or `~./bash_profile`):
-
-```bash
-NXF_OPTS=’-Xms1g -Xmx4g’
-```
-
-
-
-## Running the pipeline
-The typical command for running the pipeline is as follows:
-```bash
-nextflow run NF-hints --reads ‘*_R{1,2}.fastq.gz’ -profile docker
-```
-
-This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
-
-Note that the pipeline will create the following files in your working directory:
-
-```bash
-work            # Directory containing the nextflow working files
-results         # Finished results (configurable, see below)
-.nextflow_log   # Log file from Nextflow
-# Other nextflow hidden files, eg. history of pipeline runs and old logs.
-```
-
-### Updating the pipeline
-When you run the above command, Nextflow automatically pulls the pipeline code from GitHub and stores it as a cached version. When running the pipeline after this, it will always use the cached version if available - even if the pipeline has been updated since. To make sure that you’re running the latest version of the pipeline, make sure that you regularly update the cached version of the pipeline:
-
-```bash
-nextflow pull NF-hints
-```
-
-### Reproducibility
-It’s a good idea to specify a pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you’ll be running the same version of the pipeline, even if there have been changes to the code since.
-
-First, go to the [NF-hints releases page](https://github.com/NF-hints/releases) and find the latest version number - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`.
-
-This version number will be logged in reports when you run the pipeline, so that you’ll know what you used when you look back in the future.
