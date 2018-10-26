@@ -1,6 +1,52 @@
-# Genome Annotation - Installation and configuration
+# Installation and configuration 
+
+#### Installing Nextflow 
+
+The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatics workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
+Therefore the first thing to do is install Nextflow. 
+
+If you are working in the **IKMB RZ cluster** you can simply load the following modules:
+
+`module load IKMB Java/1.8.0 Nextflow/0.32.0` 
+
+Otherwise, install you can easily install it yourself. Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
+
+```
+# Make sure that Java v8+ is installed:
+java -version
+
+# Install Nextflow
+curl -fsSL get.nextflow.io | bash
+
+# Add Nextflow binary to your PATH:
+mv nextflow ~/bin/
+# OR system-wide installation:
+# sudo mv nextflow /usr/local/bin
+```
+
+**You need NextFlow version >= 0.32 to run this pipeline.** 
+
+#### Cloning the genome-annotation repository 
+
+To run the pipeline you first have to check out the code to a location where you have read and write permissions (i.e. $HOME/git/). 
+
+``` 
+cd $HOME/git/ 
+
+git clone git@github.com:ikmb-denbi/genome-annotation.git
+``` 
+ 
+
 
 ## 1. Install Miniconda2
+
+
+
+
+
+
+
+
 
 In the IKMB clusters:  
 
@@ -12,7 +58,7 @@ Otherwise, install the corresponding miniconda2 for your system:
 
 ## 2. Create and load the Hints environment 
 
-The file `environment.yml` in the main directory contains instructions to install all the necessary programs to run the pipeline in a conda environment called "Hints". 
+The file `environment.yml` in the main directory contains instructions to install all the necessary programs to run the pipeline in a conda environment called “Hints”. 
 
 To create this environments type the following command: 
 
@@ -50,7 +96,7 @@ First, install docker on your system: [Docker Installation Instructions](https:/
 
 Then, simply run the analysis pipeline:
 ```bash
-nextflow run NF-hints -profile docker --reads '<path to your reads>'
+nextflow run NF-hints -profile docker --reads ‘<path to your reads>‘
 ```
 
 Nextflow will recognise `NF-hints` and download the pipeline from GitHub. The `-profile docker` configuration lists the [NF-hints](https://hub.docker.com/r/NF-hints/) image that we have created and is hosted at dockerhub, and this is downloaded.
@@ -64,9 +110,9 @@ The public docker images are tagged with the same version numbers as the code, w
 ## Singularity image
 Many HPC environments are not able to run Docker due to security issues. [Singularity](http://singularity.lbl.gov/) is a tool designed to run on such HPC systems which is very similar to Docker. Even better, it can use create images directly from dockerhub.
 
-To use the singularity image for a single run, use `-with-singularity 'docker://NF-hints'`. This will download the docker container from dockerhub and create a singularity image for you dynamically.
+To use the singularity image for a single run, use `-with-singularity ‘docker://NF-hints’`. This will download the docker container from dockerhub and create a singularity image for you dynamically.
 
-If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you. Instead, you'll have to do this yourself manually first, transfer the image file and then point to that.
+If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you. Instead, you’ll have to do this yourself manually first, transfer the image file and then point to that.
 
 First, pull the image file where you have an internet connection:
 
@@ -91,13 +137,13 @@ If you are the only person to be running this pipeline, you can create your conf
 A basic configuration comes with the pipeline, which runs by default (the `standard` config profile - see [`conf/base.config`](../conf/base.config)). This means that you only need to configure the specifics for your system and overwrite any defaults that you want to change.
 
 ## Cluster Environment
-By default, pipeline uses the `local` Nextflow executor - in other words, all jobs are run in the login session. If you're using a simple server, this may be fine. If you're using a compute cluster, this is bad as all jobs will run on the head node.
+By default, pipeline uses the `local` Nextflow executor - in other words, all jobs are run in the login session. If you’re using a simple server, this may be fine. If you’re using a compute cluster, this is bad as all jobs will run on the head node.
 
 To specify your cluster environment, add the following line to your config file:
 
 ```nextflow
 process {
-  executor = 'YOUR_SYSTEM_TYPE'
+  executor = ‘YOUR_SYSTEM_TYPE’
 }
 ```
 
@@ -107,8 +153,8 @@ Note that you may need to specify cluster options, such as a project or queue. T
 
 ```nextflow
 process {
-  executor = 'SLURM'
-  clusterOptions = '-A myproject'
+  executor = ‘SLURM’
+  clusterOptions = ‘-A myproject’
 }
 ```
 
@@ -125,7 +171,7 @@ First, install docker on your system: [Docker Installation Instructions](https:/
 
 Then, simply run the analysis pipeline:
 ```bash
-nextflow run NF-hints -profile docker --reads '<path to your reads>'
+nextflow run NF-hints -profile docker --reads ‘<path to your reads>‘
 ```
 
 Nextflow will recognise `NF-hints` and download the pipeline from GitHub. The `-profile docker` configuration lists the [NF-hints](https://hub.docker.com/r/NF-hints/) image that we have created and is hosted at dockerhub, and this is downloaded.
@@ -150,7 +196,7 @@ A test suite for docker comes with the pipeline, and can be run by moving to the
 ### Singularity image
 Many HPC environments are not able to run Docker due to security issues. [Singularity](http://singularity.lbl.gov/) is a tool designed to run on such HPC systems which is very similar to Docker. Even better, it can use create images directly from dockerhub.
 
-To use the singularity image for a single run, use `-with-singularity 'docker://NF-hints'`. This will download the docker container from dockerhub and create a singularity image for you dynamically.
+To use the singularity image for a single run, use `-with-singularity ‘docker://NF-hints’`. This will download the docker container from dockerhub and create a singularity image for you dynamically.
 
 To specify singularity usage in your pipeline config file, add the following:
 
@@ -159,13 +205,13 @@ singularity {
   enabled = true
 }
 process {
-  container = "docker://$wf_container"
+  container = “docker://$wf_container”
 }
 ```
 
 The variable `wf_container` is defined dynamically and automatically specifies the image tag if Nextflow is running with `-r`.
 
-If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you. Instead, you'll have to do this yourself manually first, transfer the image file and then point to that.
+If you intend to run the pipeline offline, nextflow will not be able to automatically download the singularity image for you. Instead, you’ll have to do this yourself manually first, transfer the image file and then point to that.
 
 First, pull the image file where you have an internet connection:
 
@@ -225,7 +271,7 @@ Nextflow handles job submissions on SLURM or other environments, and supervises 
 It is recommended to limit the Nextflow Java virtual machines memory. We recommend adding the following line to your environment (typically in `~/.bashrc` or `~./bash_profile`):
 
 ```bash
-NXF_OPTS='-Xms1g -Xmx4g'
+NXF_OPTS=’-Xms1g -Xmx4g’
 ```
 
 
@@ -233,7 +279,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 ## Running the pipeline
 The typical command for running the pipeline is as follows:
 ```bash
-nextflow run NF-hints --reads '*_R{1,2}.fastq.gz' -profile docker
+nextflow run NF-hints --reads ‘*_R{1,2}.fastq.gz’ -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -248,15 +294,15 @@ results         # Finished results (configurable, see below)
 ```
 
 ### Updating the pipeline
-When you run the above command, Nextflow automatically pulls the pipeline code from GitHub and stores it as a cached version. When running the pipeline after this, it will always use the cached version if available - even if the pipeline has been updated since. To make sure that you're running the latest version of the pipeline, make sure that you regularly update the cached version of the pipeline:
+When you run the above command, Nextflow automatically pulls the pipeline code from GitHub and stores it as a cached version. When running the pipeline after this, it will always use the cached version if available - even if the pipeline has been updated since. To make sure that you’re running the latest version of the pipeline, make sure that you regularly update the cached version of the pipeline:
 
 ```bash
 nextflow pull NF-hints
 ```
 
 ### Reproducibility
-It's a good idea to specify a pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
+It’s a good idea to specify a pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you’ll be running the same version of the pipeline, even if there have been changes to the code since.
 
 First, go to the [NF-hints releases page](https://github.com/NF-hints/releases) and find the latest version number - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`.
 
-This version number will be logged in reports when you run the pipeline, so that you'll know what you used when you look back in the future.
+This version number will be logged in reports when you run the pipeline, so that you’ll know what you used when you look back in the future.
