@@ -1,6 +1,6 @@
 # Installation and configuration 
 
-### Installing Nextflow 
+## Installing Nextflow 
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatics workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
 Therefore the first thing to do is install Nextflow. 
@@ -26,7 +26,7 @@ mv nextflow ~/bin/
 
 **You need NextFlow version >= 0.32 to run this pipeline.** 
 
-### Cloning the genome-annotation repository 
+## Cloning the genome-annotation repository 
 
 To run the pipeline you first have to check out the code to a location where you have read and write permissions (i.e. $HOME/git/). 
 
@@ -36,9 +36,15 @@ cd $HOME/git/
 git clone git@github.com:ikmb-denbi/genome-annotation.git
 ``` 
  
+## Installing all other software 
 
+This pipeline uses a lot of different bioinformatics software (you can see a full list at the end of this document). How you proceed to install this programs will depend on what system/cluster you are using: 
 
-## 1. Install Miniconda2
+### 1. Working in the IKMB RZ cluster 
+
+In the **IKMB RZ cluster**, all these programs are available as modules and will be loaded automatically as the pipeline runs. You don't need to do anything else, just make sure that you run the pipeline using the parameter `-profile standard`. This is anyway the default profile, so you don't even need to especify it, only don't use any other. 
+
+### 2. Not in the RZ cluster, using bioconda 
 
 
 
