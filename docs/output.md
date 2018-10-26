@@ -16,15 +16,15 @@ By running `genome-annotation/main.nf` you can generate a *de novo* annotation o
 * **Trinity** - 
 * **Exonerate** - 
 
-### `--RM true`:
+#### `--RM true`:
 * **RepeatMasker** - 
 
 Once a file with all possible extrinsic hints is generated, the following steps are run:
 
-### `--augustus true`:
+#### `--augustus true`:
 * **Augustus** - 
 
-### `--funAnnot true`:
+#### `--funAnnot true`:
 * **Blast** - 
 * **InterProScan** -
 * **Annie** - 
