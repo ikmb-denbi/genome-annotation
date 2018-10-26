@@ -58,11 +58,30 @@ Nextflow will install the environments with the necessary packages as it runs.
 
 Some of the required programs are not available as conda packages yet, so you will have to install them yourself. Some parts of the pipeline will run successfully anyway, but you need to turn off the ones that don't. 
 
-1. GenomeThreader: it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience showed that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. 
+1. **GenomeThreader:** it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience shows that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program you must use `--gth false` on your command call.
 
-You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program you must use `--gth false` on your command call.
+2. **Annie:** it is used to transfer the functional annotations to your gff3 file. You can download it from [here](http://genomeannotation.github.io/annie/) and extract it in your system. Make sure the executable file `annie.py` is in your path. If you don't want to perform functional annotation use `--funAnnot false`. 
 
-2. 
+3. **InterProScan:** it is also necessary during the functional annotation step. It it is used to scan the predicted protein sequences for known protein signatures (functional domains, GO terms, etc) searching in different public databases. You can download it from [here](https://www.ebi.ac.uk/interpro/download.html) and extract it in your system. Make sure the executable `interproscan.sh` is in your path. If you want to run the pipeline without this program use `--funAnnot false`. 
+
+4. **Bioruby:** to run the functional annotation step you also need to have the bioruby library installed. You can download and install ruby if you haven't done so yet from [here](https://www.ruby-lang.org/en/). Then install bioruby using the RubyGems tool: 
+
+`gem install bio` 
+
+
+*coming soon:* [Singularity]() image with these programs installed. 
+
+### 3. Install all programs yourself 
+
+Here is a list of all the programs necessary to run the complete genome-annotation pipeline (--prots proteins.fa --ESTs ESTs.fa --reads 'read_R{*}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true). The pipeline has been tested successfully  with the versions that are here described. 
+
+1. Blast+ v2.2.30 
+
+2. Exonerate v2.2.0 
+
+3. Bioperl 
+
+4. GenomeThreader v1.7.0
 
 
 
