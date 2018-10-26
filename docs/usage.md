@@ -2,6 +2,10 @@
 
 ![](../images/genome-annotation_dag_mod.svg) 
 
+The typical command for running the pipeline is as follows:
+
+`nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out` 
+  
 ### 1. Mandatory arguments 
 
 #### `--genome` 
@@ -48,52 +52,64 @@ Run functional annotation using Annie.
 
 ### 5. Parameters for specific programs  
 
-Programs parameters:
-    --species		Species database for RepeatMasker [ default = 'mammal' ]
-    --model			Species model for Augustus [ default = 'human' ]
-    --UTR			Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
-    --isof			Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
-    --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
-    --uniprot		Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
+#### `--species` [ default = 'mammal' ]
+Species database for RepeatMasker. 
+
+#### `--model` [ default = 'human' ]
+Species model for Augustus. 
+
+#### `--UTR` [ 'on' | 'off' (default) ] 
+Allow Augustus to predict UTRs (results are not optimal and takes much longer). 
+
+#### `--isof` [ 'true' | 'false' (default) ] 
+Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer). 
+
+#### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
+Location of augustus configuration file. 
+
+#### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
+Fasta file with Uniprot proteins for functional annotation. 
     
 ### 4. How to split programs 
+#### `--nblast` [ default = 500 ]
+Chunks (# of sequences) to divide Blast jobs. 
 
+#### `--nexonerate` [ default = 200 ]
+Chunks (# of blast hits) to divide Exonerate jobs.
 
-    
- 	
-    How to split programs:
-    --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
-    --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-    --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-    --ninterpro		Chunks (# of sequences) to divide InterPro jobs [ default = 200 ]
-    --nthreads		Number of cpus for programs that allow multi-threaded mode [default = 1]	
+#### `--nrepeats` [ default = 30 ]
+Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs.
+
+#### `--ninterpro` [ default = 200 ] 
+Chunks (# of sequences) to divide InterPro jobs. 
+
+#### `--nthreads` [default = 1] 
+Number of cpus for programs that allow multi-threaded mode. 
 
 ### 5. Other options 
-    Other options:
-    --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
-    --outdir		The output directory where the results will be saved [ default = 'Hints_annotation_output' ]
-    --allHints		Name of final GFF file with all hints [ default = 'AllHints.gff' ]
-    --addHints		Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
-    -name			Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-
-#### `--singleEnd`
+#### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
 ```bash
 --singleEnd --reads '*.fastq'
 ```
 
-It is not possible to run a mixture of single-end and paired-end files in one run.
+It is not possible to run a mixture of single-end and paired-end files in one run. 
+
+#### `--outdir` [ default = 'Hints_annotation_output' ]
+The output directory where the results will be saved. 
+
+#### `--allHints` [ default = 'AllHints.gff' ] 
+Name of final GFF file with all hints. 
+
+#### `--addHints` [ default = 'false' ]
+Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus. 
 
 #### `-profile`
-Use this parameter to choose a configuration profile. Each profile is designed for a different compute environment - follow the links below to see instructions for running on that system. Available profiles are:
+Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/Installation.md)). 
 
-* `docker`
-    * A generic configuration profile to be used with [Docker](http://docker.com/)
-    * Runs using the `local` executor and pulls software from dockerhub: [`NF-hints`](http://hub.docker.com/r/NF-hints/)
-* `aws`
-    * A starter configuration for running the pipeline on Amazon Web Services. Uses docker and Spark.
-    * See [`docs/configuration/aws.md`](configuration/aws.md)
+Available profiles are:
+
 * `standard`
     * The default profile, used if `-profile` is not specified at all. Runs locally and expects all software to be installed and available on the `PATH`.
     * This profile is mainly designed to be used as a starting point for other configurations and is inherited by most of the other profiles.
@@ -131,49 +147,3 @@ Each step in the pipeline has a default set of requirements for number of CPUs, 
 
 #### Custom resource requests
 Wherever process-specific requirements are set in the pipeline, the default value can be changed by creating a custom config file. See the files in [`conf`](../conf) for examples. 
-
-## All the commands at a glance 
-```
-The typical command for running the pipeline is as follows:
-
-  nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c config/slurm.config --nthreads 3
-
-  Mandatory arguments:
-  --genome		Genome reference
-  -profile		Hardware config to use
-      
-  At least one of:
-  --prots		Proteins from other species
-  --ESTs		ESTs or transcriptome
-  --reads		Path to RNA-seq data (must be surrounded with quotes)
-
-  Options:
-    Programs to run:
-    --trinity		Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
-    --gth			Run GenomeThreader to produce hints from protein file [ true (default) | false ]
-    --RM			Run RepeatMasker to produce hints [ true (default) | false ]
-    --augustus		Run Augustus to predict genes [ true (default) | false ]
-    --funAnnot		Run functional annotation using Annie [ true (default) | false ]
- 	
-    Programs parameters:
-    --species		Species database for RepeatMasker [ default = 'mammal' ]
-    --model			Species model for Augustus [ default = 'human' ]
-    --UTR			Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
-    --isof			Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
-    --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
-    --uniprot		Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
- 	
-    How to split programs:
-    --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
-    --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-    --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-    --ninterpro		Chunks (# of sequences) to divide InterPro jobs [ default = 200 ]
-    --nthreads		Number of cpus for programs that allow multi-threaded mode [default = 1]	
-
-    Other options:
-    --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
-    --outdir		The output directory where the results will be saved [ default = 'Hints_annotation_output' ]
-    --allHints		Name of final GFF file with all hints [ default = 'AllHints.gff' ]
-    --addHints		Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
-    -name			Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-```
