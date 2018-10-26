@@ -6,14 +6,14 @@
 
 ## Main Arguments 
 
-### 1. MANDATORY ARGUMENTS: 
+### 1. Mandatory arguments 
 
-### `--genome` 
+#### `--genome` 
 Location of the genome you want to annotate. It must be in FASTA format. 
 
-### 2. EVIDENCES. AT LEAST ONE OF:
+### 2. Evidences. At least one of:
 
-### `--reads` 
+#### `--reads` 
 Location of your input FastQ files. For example:
 
 ```bash
@@ -26,28 +26,28 @@ Please note the following requirements:
 2. The path must have at least one `*` wildcard character
 3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
 
-### `--ESTs` 
+#### `--ESTs` 
 Location of a single FASTA file with all EST sequences or assembled transcriptome(s) from the species of interest. If you have multiple files, concatenate them before into a single file. 
 
-### `--prots` 
+#### `--prots` 
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
 
-### 3. PROGRAMS TO RUN 
+### 3. Programs to run 
 By default, the complete pipeline you see above will run. You can skip some steps if you already have created hints files (see `--addHints`), if you already have assembled a transcriptome, if you don't want to run gene prediction and/or functional annotation, if you don't want to install some of the required programs or if you want the pipeline to finish faster. 
 
-### `--trinity` [ true (default) | false ] 
+#### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
 
-### `--gth` [ true (default) | false ] 
+#### `--gth` [ true (default) | false ] 
 Run GenomeThreader to produce hints from protein file.  
 
-### `--RM` [ true (default) | false ] 
+#### `--RM` [ true (default) | false ] 
 Run RepeatMasker to produce hints. 
 
-### `--augustus` [ true (default) | false ] 
+#### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  
 
-### `--funAnnot` [ true (default) | false ] 
+#### `--funAnnot` [ true (default) | false ] 
 Run functional annotation using Annie. 
 
 
@@ -74,7 +74,7 @@ Run functional annotation using Annie.
     --addHints		Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
     -name			Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
-### `--singleEnd`
+#### `--singleEnd`
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
 ```bash
@@ -83,7 +83,7 @@ By default, the pipeline expects paired-end data. If you have single-end data, y
 
 It is not possible to run a mixture of single-end and paired-end files in one run.
 
-### `-profile`
+#### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different compute environment - follow the links below to see instructions for running on that system. Available profiles are:
 
 * `docker`
@@ -98,32 +98,28 @@ Use this parameter to choose a configuration profile. Each profile is designed f
 * `none`
     * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
     
-## Job Resources
-### Automatic resubmission
+### Job Resources
+#### Automatic resubmission
 Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
 
-### Custom resource requests
+#### Custom resource requests
 Wherever process-specific requirements are set in the pipeline, the default value can be changed by creating a custom config file. See the files in [`conf`](../conf) for examples.
 
-## Other command line parameters
-### `--outdir`
-The output directory where the results will be saved.
+### Nextflow parameters
 
-### `-name`
+#### `-name`
 Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-
-This is used in the MultiQC report (if not default) and in the summary HTML / e-mail (always).
 
 **NB:** Single hyphen (core Nextflow option)
 
-### `-resume`
+#### `-resume`
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
 
 You can also supply a run name to resume a specific run: `-resume [run-name]`. Use the `nextflow log` command to show previous run names.
 
 **NB:** Single hyphen (core Nextflow option)
 
-### `-c`
+#### `-c`
 Specify the path to a specific config file (this is a core NextFlow command).
 
 **NB:** Single hyphen (core Nextflow option)
@@ -134,23 +130,14 @@ Note - you can use this to override defaults. For example, you can specify a con
 process.$multiqc.module = []
 ```
 
-### `--max_memory`
+#### `--max_memory`
 Use to set a top-limit for the default memory requirement for each process.
-Should be a string in the format integer-unit. eg. `--max_memory '8.GB'``
+Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
-### `--max_time`
+#### `--max_time`
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
-### `--max_cpus`
+#### `--max_cpus`
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
-
-### `--plaintext_email`
-Set to receive plain-text e-mails instead of HTML formatted.
-
-### `--sampleLevel`
-Used to turn of the edgeR MDS and heatmap. Set automatically when running on fewer than 3 samples.
-
-### `--multiqc_config`
-If you would like to supply a custom config file to MultiQC, you can specify a path with `--multiqc_config`. This is used instead of the config file specific to the pipeline.
