@@ -1,15 +1,26 @@
 # Output and how to interpret the results 
 
-## Output overview
-The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
+## What happens in this pipeline?
+By running `genome-annotation/main.nf` you can generate a *de novo* annotation of the eukaryotic genome of your choice, using different kinds of evidences as extrinsic hints to make the annotation more accurate. The full pipeline processes data using the following steps for each data type: 
 
-* [Exonerate](#exonerate) - 
-* [GenomeThreader](#genomethreader) - 
-* [](#genomethreader) - 
-* [](#genomethreader) - 
-* [](#genomethreader) - 
-* [](#genomethreader) - 
-* [](#genomethreader) - 
+#### Proteins:
+* **Exonerate** - 
+* **GenomeThreader** - 
+
+#### ESTs and transcriptome: 
+* **Exonerate** - 
+
+#### RNA-seq reads: 
+* **Trimmgalore** - 
+* **Hisat2** - 
+* **Trinity** - 
+* **Exonerate** - 
+
+Once a file with all possible extrinsic hints is generated, the following steps are run:
+* **Augustus** - 
+* **Blast** - 
+* **InterProScan** -
+* **Annie** - 
 
 ## Main output files
 
@@ -25,17 +36,11 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
   * 
   
 ## Additional directories
-The output of each intermediate step is also saved in specific folders inside the output directory: 
+You can also see the output of each intermediate step, which is saved in specific folders inside the output directory. Of special interest are: 
 
-* `outdir/annie/` 
-  * `blastp.annie` 
-  * `interpro.annie`
-* `outdir/Augustus/` 
-  * 
-* `outdir/blast2targets/` 
-  * 
-* `outdir/BlastDB/` 
-  * 
-* `outdir/blast_results/`
-  * 
+* `outdir/Hints/` 
+  * Each separate hints file. 
+* `outdir/pipeline_info/` 
+  * reports on pipeline performance. 
+
 
