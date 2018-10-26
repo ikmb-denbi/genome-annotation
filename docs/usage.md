@@ -39,7 +39,7 @@ Location of a single FASTA file with all EST sequences or assembled transcriptom
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
 
 ### 3. Programs to run 
-By default, the complete pipeline you see above will run. You can skip some steps if you already have created hints files (see `--addHints`), if you already have assembled a transcriptome, if you don't want to run gene prediction and/or functional annotation, if you don't want to install some of the required programs or if you want the pipeline to finish faster. 
+By default, the complete pipeline you see above will run. You can skip some steps if you want. For example, if you already have created hints files (see `--addHints`) for a especific type of evidence, if you already have assembled a transcriptome, if you don't want to run gene prediction and/or functional annotation, if you don't want to install some of the required programs or if you want the pipeline to finish faster. 
 
 #### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
@@ -57,7 +57,7 @@ Run Augustus to predict genes.
 Run functional annotation using Annie. 
 
 ### 5. Parameters for specific programs 
-To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check that is the proper one for your organism and for the output you expect. 
+To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
 
 #### `--species` [ default = 'mammal' ]
 Species database for RepeatMasker. 
@@ -72,7 +72,7 @@ Allow Augustus to predict UTRs (results are not optimal and takes much longer).
 Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of augustus configuration file. 
+Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints. 
 
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
 Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
@@ -115,7 +115,7 @@ The output directory where the results will be saved.
 Name of final GFF file with all hints. This file will be created in your working directory (not inside the --outdir). When you start the pipeline, a file with this name **CANNOT EXIST**. 
 
 #### `--addHints` [ default = 'false' ]
-Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. 
+Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. Check the documentation of Augustus to see how hints file should look like. 
 
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
