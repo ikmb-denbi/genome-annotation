@@ -40,11 +40,11 @@ git clone git@github.com:ikmb-denbi/genome-annotation.git
 
 This pipeline uses a lot of different bioinformatics software (you can see a full list at the end of this document). How you proceed to install these programs will depend on what system/cluster you are using: 
 
-### 1. Working in the IKMB RZ cluster 
+### A. Working in the IKMB RZ cluster 
 
 In the **IKMB RZ cluster**, all these programs are available as modules and will be loaded automatically as the pipeline runs. You don't need to do anything else, just make sure that you run the pipeline using the parameter `-profile standard`. This is anyway the default profile, so you don't even need to especify it, only don't use any other. 
 
-### 2. Not in the IKMB? Use Bioconda 
+### B. Not in the IKMB? Use Bioconda 
 
 Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. All you need to do is install the corresponding miniconda2 for your system: 
 
@@ -82,7 +82,7 @@ If you are familiar with Nextflow, you can add your own profiles by changing the
 
 If you don't want to use any cluster management system but rather run the pipeline locally, use `-profile local`. 
 
-### 3. Install all programs yourself 
+### C. Install all programs yourself 
 
 Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`).
 
