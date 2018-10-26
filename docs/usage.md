@@ -1,10 +1,14 @@
 # How to run the pipeline 
 
-![](../images/genome-annotation_dag_mod.svg) 
-
 The typical command for running the pipeline is as follows:
 
-`nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out` 
+`nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out`
+
+This will run all the steps you can see in the workflow: 
+
+![](../images/genome-annotation_dag_mod.svg) 
+
+You have to especify your own genome and evidence file(s) and you can also decide which parts of the pipeline you want to run and which skip. 
   
 ### 1. Mandatory arguments 
 
@@ -50,7 +54,8 @@ Run Augustus to predict genes.
 #### `--funAnnot` [ true (default) | false ] 
 Run functional annotation using Annie. 
 
-### 5. Parameters for specific programs  
+### 5. Parameters for specific programs 
+To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check that is the proper one for your organism and for the output you expect. 
 
 #### `--species` [ default = 'mammal' ]
 Species database for RepeatMasker. 
@@ -68,9 +73,11 @@ Allow Augustus to predict multiple isoforms  (results are not optimal and takes 
 Location of augustus configuration file. 
 
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
-Fasta file with Uniprot proteins for functional annotation. 
+Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
     
 ### 4. How to split programs 
+One of the greates advantages of using Nextflow is that it allows you to speed up a pipeline by splitting your different input files into chunks to run multiple smaller instances of the programs and at the end correctly puting the results together in a single output. These parameters allow you to decide, for different programs, how many sequences/instances go into each 'chunk':  
+
 #### `--nblast` [ default = 500 ]
 Chunks (# of sequences) to divide Blast jobs. 
 
@@ -96,7 +103,7 @@ By default, the pipeline expects paired-end data. If you have single-end data, y
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
 
-#### `--outdir` [ default = 'Hints_annotation_output' ]
+#### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
 
 #### `--allHints` [ default = 'AllHints.gff' ] 
