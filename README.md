@@ -22,10 +22,11 @@ The pipeline runs these three steps by default, but each step can also be skippe
 
 Documentation about the pipeline can be found in the `docs/` directory or under the links below:
 
-1. [Installation and configuration](docs/installation.md)
-2. [Running the pipeline](docs/usage.md)
-3. [Output and how to interpret the results](docs/output.md)
-4. [Troubleshooting](docs/troubleshooting.md)
+1. [What happens in this pipeline?](docs/pipeline.md)
+2. [Installation and configuration](docs/installation.md)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](docs/troubleshooting.md)
 
 ### Pipeline Scheme 
 
