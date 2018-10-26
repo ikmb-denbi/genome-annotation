@@ -114,7 +114,7 @@ Name of final GFF file with all hints.
 Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus. 
 
 #### `-profile`
-Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/Installation.md)). 
+Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../installation.md)). 
 
 Available profiles are:
 
