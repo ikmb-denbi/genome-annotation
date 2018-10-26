@@ -38,13 +38,15 @@ git clone git@github.com:ikmb-denbi/genome-annotation.git
  
 ## Installing all other software 
 
-This pipeline uses a lot of different bioinformatics software (you can see a full list at the end of this document). How you proceed to install this programs will depend on what system/cluster you are using: 
+This pipeline uses a lot of different bioinformatics software (you can see a full list at the end of this document). How you proceed to install these programs will depend on what system/cluster you are using: 
 
 ### 1. Working in the IKMB RZ cluster 
 
 In the **IKMB RZ cluster**, all these programs are available as modules and will be loaded automatically as the pipeline runs. You don't need to do anything else, just make sure that you run the pipeline using the parameter `-profile standard`. This is anyway the default profile, so you don't even need to especify it, only don't use any other. 
 
-### 2. Not in the RZ cluster, using bioconda 
+### 2. Not in the IKMB? Use Bioconda 
+
+
 
 
 
