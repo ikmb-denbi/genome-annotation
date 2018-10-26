@@ -81,7 +81,7 @@ If you are familiar with Nextflow, you can add your own profiles by changing the
 
 ### 3. Install all programs yourself 
 
-Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`). The pipeline has been tested successfully  with the versions that are here described. 
+Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`).
 
 1. Blast+ v2.2.30 
 
@@ -113,6 +113,7 @@ Here is a list of all the programs necessary to run the complete genome-annotati
 
 15. Interproscan 
 
+You can use the `-profile self_install` to run the pipeline in this case. Modify the `genome-annotation/conf/custom.config` as necessary for your system. The pipeline has been tested successfully with the versions that are here described. 
 
 
 
@@ -120,18 +121,6 @@ Here is a list of all the programs necessary to run the complete genome-annotati
 
 
 
-
-
-
-# genome-annotation: Configuration for other clusters
-
-It is entirely possible to run this pipeline on other clusters, though you will need to set up your own config file so that the pipeline knows how to work with your cluster.
-
-> If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline.
-
-If you are the only person to be running this pipeline, you can create your config file as `~/.nextflow/config` and it will be applied every time you run Nextflow. Alternatively, save the file anywhere and reference it when running the pipeline with `-c path/to/config` (see the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for more).
-
-A basic configuration comes with the pipeline, which runs by default (the `standard` config profile - see [`conf/base.config`](../conf/base.config)). This means that you only need to configure the specifics for your system and overwrite any defaults that you want to change.
 
 ## Cluster Environment
 By default, pipeline uses the `local` Nextflow executor - in other words, all jobs are run in the login session. If you’re using a simple server, this may be fine. If you’re using a compute cluster, this is bad as all jobs will run on the head node.
