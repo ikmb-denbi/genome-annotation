@@ -90,10 +90,11 @@ Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs.
 #### `--ninterpro` [ default = 200 ] 
 Chunks (# of sequences) to divide InterPro jobs. 
 
+### 5. Other options 
+
 #### `--nthreads` [default = 1] 
 Number of cpus for programs that allow multi-threaded mode. 
 
-### 5. Other options 
 #### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
