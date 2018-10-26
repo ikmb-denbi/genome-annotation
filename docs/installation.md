@@ -74,9 +74,9 @@ It is entirely possible to run this pipeline on clusters other than the IKMB, bu
 
 > If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. 
 
-If you are the only person to be running this pipeline, you can simply modify the `genome-annotation/conf/custom.config` file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the `custom.config` file, so keep the file name! 
+If you are the only person to be running this pipeline, you can simply modify the **_genome-annotation/conf/custom.config_** file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the **_custom.config_** file, so keep the file name! 
 
-If you are familiar with Nextflow, you can add your own profiles by changing the `genome-annotation/nextflow.config` file.
+If you are familiar with Nextflow, you can add your own profiles by changing the **_genome-annotation/nextflow.config_** file.
 
 #### Configuration for local execution (`local`)
 
@@ -116,5 +116,5 @@ Here is a list of all the programs necessary to run the complete genome-annotati
 
 15. [Interproscan](https://www.ebi.ac.uk/interpro/download.html)  
 
-You can use the `-profile self_install` to run the pipeline in this case. Modify the `genome-annotation/conf/custom.config` as necessary for your system. The pipeline has been tested successfully with the versions that are here described. 
+You can use the `-profile self_install` to run the pipeline in this case. Modify the **_genome-annotation/conf/custom.config_** as necessary for your system. The pipeline has been tested successfully with the versions that are here described. 
 
