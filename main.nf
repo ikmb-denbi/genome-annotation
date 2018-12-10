@@ -57,6 +57,7 @@ def helpMessage() {
 
     Other options:
     --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
+    --rnaseq_stranded	Whether the RNAseq reads were sequenced using a strand-specific method (dUTP) [ true | false (default) ]
     --outdir		The output directory where the results will be saved [ default = 'Hints_annotation_output' ]
     --allHints		Name of final GFF file with all hints [ default = 'AllHints.gff' ]
     --addHints		Additional hints file (in GFF format), to be concatenated to the resulting hints before running augustus [ default = 'false' ]
@@ -726,6 +727,7 @@ RepeatMasker_hints
 /*
  * STEP RNAseq.1 - Trimgalore
  */
+
 process RunTrimgalore {
 
 	tag "${prefix}"
@@ -740,7 +742,7 @@ process RunTrimgalore {
 	set val(name), file(reads) from read_files_trimming
 
 	output:
-	file "*_val_{1,2}.fq" into trimmed_reads
+	file "*_val_{1,2}.fq.gz" into trimmed_reads
  
 	when:
 	params.reads != false
@@ -758,7 +760,6 @@ process RunTrimgalore {
 	}
 
 }
-
 
 Channel
 	.fromPath(Genome)
@@ -806,6 +807,8 @@ process RunHisat2 {
 	tag "${prefix}"
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
+	scratch true
+
 	input:
 	file reads from trimmed_reads
 	file hs2_indices from hs2_indices.collect()	
@@ -822,18 +825,13 @@ process RunHisat2 {
 
 	prefix = ReadsBase
 	
-	
 	if (params.singleEnd) {
 		"""
-		hisat2 -x $indexBase -U $reads -S alignment_sam -p $params.nthreads
-		samtools view -Sb alignment_sam > alignment.bam
-		samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+		hisat2 -x $indexBase -U $reads -p $params.nthreads | samtools view -bS - | samtools sort -m 2G -@ 4 - > ${prefix}_accepted_hits.bam
 		"""
 	} else {
 		"""
-		hisat2 -x $indexBase -1 ${reads[0]} -2 ${reads[1]} -S alignment_sam -p $params.nthreads
-		samtools view -Sb alignment_sam > alignment.bam
-		samtools sort alignment.bam > ${prefix}_accepted_hits.bam
+		hisat2 -x $indexBase -1 ${reads[0]} -2 ${reads[1]} -p $params.nthreads | samtools view -bS - | samtools sort -m 2G -@4 - > ${prefix}_accepted_hits.bam
 		"""
    }
 }   
@@ -873,32 +871,41 @@ if (params.trinity == false) {
 /*
  * STEP RNAseq.5 - Trinity
  */
+
 process RunTrinity {
 
 	publishDir "${params.outdir}/trinity", mode: 'copy'
+
+	scratch true 
 	
 	input:
 	file hisathits from accepted_hits2trinity.collect()
 	
 	output:
-	file "trinity_out_dir/Transcripts_trinity.fasta" into trinity_transcripts, trinity_transcripts_2exonerate
+	file(trinity_fasta) into (trinity_transcripts, trinity_transcripts_2exonerate)	
 	
 	when:
 	params.reads != false && params.trinity == true
 	
 	script:
-	
+
+	trinity_fasta = "transcriptome.Trinity.fasta"
+	avail_ram_per_core = (task.memory/params.nthreads).toGiga()
+	trinity_option = ( params.rnaseq_stranded == true ) ? "--SS_lib_type RF" : ""
+
 	"""
-	samtools merge merged.bam $hisathits
-	samtools sort merged.bam > sorted.bam
-	Trinity --genome_guided_bam sorted.bam --genome_guided_max_intron 10000 --CPU $params.nthreads --max_memory 20G
-	mv trinity_out_dir/Trinity-GG.fasta trinity_out_dir/Transcripts_trinity.fasta
+	samtools merge - $hisathits | samtools sort -@ ${params.nthreads} -m${avail_ram_per_core}G - > sorted.bam
+	Trinity --genome_guided_bam sorted.bam \
+		--genome_guided_max_intron 10000 \
+		--CPU ${params.nthreads} \
+		--max_memory ${task.memory.toGiga()}G \
+		--full_cleanup \
+		--outdir transcriptome \
+		$trinity_option
 	"""
 }
 
 TrinityChannel = trinity_transcripts.splitFasta(by: params.nblast, file: true)
-
-
 
 /*****************
   Trinity  Block
