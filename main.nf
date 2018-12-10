@@ -807,6 +807,8 @@ process RunHisat2 {
 	tag "${prefix}"
 	publishDir "${params.outdir}/Hisat2", mode: 'copy'
 	
+	scratch true
+
 	input:
 	file reads from trimmed_reads
 	file hs2_indices from hs2_indices.collect()	
@@ -874,6 +876,8 @@ process RunTrinity {
 
 	publishDir "${params.outdir}/trinity", mode: 'copy'
 
+	scratch true 
+	
 	input:
 	file hisathits from accepted_hits2trinity.collect()
 	
@@ -886,14 +890,14 @@ process RunTrinity {
 	script:
 
 	trinity_fasta = "transcriptome.Trinity.fasta"
-	def avail_ram_per_core = (task.memory.toGiga()-1)/${params.nthreads}
-	def trinity_option = params.rnaseq_stranded == true ? "--SS_lib_type RF" : ""
+	avail_ram_per_core = (task.memory/params.nthreads).toGiga()
+	trinity_option = ( params.rnaseq_stranded == true ) ? "--SS_lib_type RF" : ""
 
 	"""
-	samtools merge - $hisathits | samtools sort -@${params.nthreads} -m ${avail_ram_per_core}G - > sorted.bam
+	samtools merge - $hisathits | samtools sort -@ ${params.nthreads} -m${avail_ram_per_core}G - > sorted.bam
 	Trinity --genome_guided_bam sorted.bam \
 		--genome_guided_max_intron 10000 \
-		--CPU $params.nthreads \
+		--CPU ${params.nthreads} \
 		--max_memory ${task.memory.toGiga()}G \
 		--full_cleanup \
 		--outdir transcriptome \
