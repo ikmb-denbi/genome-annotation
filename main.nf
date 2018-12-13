@@ -728,34 +728,36 @@ RepeatMasker_hints
  * STEP RNAseq.1 - Trimgalore
  */
 
-process RunTrimgalore {
+process RunFastp {
 
 	tag "${prefix}"
-	publishDir "${params.outdir}/trimgalore", mode: 'copy',
-		saveAs: {filename ->
-			if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
-			else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
-			else if (filename.indexOf(".fq") > 0) "$filename"
-		}
+	publishDir "${params.outdir}/fastp", mode: 'copy'
 
 	input:
 	set val(name), file(reads) from read_files_trimming
 
 	output:
-	file "*_val_{1,2}.fq.gz" into trimmed_reads
- 
+	file("*_trimmed.fastq.gz") into trimmed_reads
+	set file(json),file(html) into trimmed_reads_qc
+
 	when:
 	params.reads != false
 
 	script:
 	prefix = reads[0].toString().split("_R1")[0]
+	json = file(reads[0]).getBaseName() + ".fastp.json"
+	html = file(reads[0]).getBaseName() + ".fastp.html"
+
 	if (params.singleEnd) {
+		left = file(reads[0]).getBaseName() + "_trimmed.fastq.gz"
 		"""
-		trim_galore --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
-		"""
+                        fastp -i ${reads[0]} --out1 ${left} -w ${task.cpus} -j $json -h $html
+                """
 	} else {
+		left = file(reads[0]).getBaseName() + "_trimmed.fastq.gz"
+		right = file(reads[1]).getBaseName() + "_trimmed.fastq.gz"
 		"""
-		trim_galore --paired --retain_unpaired --fastqc --length 36 -q 35 --stringency 1 -e 0.1 $reads
+			fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $left --out2 $right -w ${task.cpus} -j $json -h $html
 		"""
 	}
 
@@ -889,8 +891,8 @@ process RunTrinity {
 	
 	script:
 
-	trinity_fasta = "transcriptome.Trinity.fasta"
-	avail_ram_per_core = (task.memory/params.nthreads).toGiga()
+	trinity_fasta = "transcriptome_trinity.Trinity.fasta"
+	avail_ram_per_core = (task.memory/params.nthreads).toGiga()-1
 	trinity_option = ( params.rnaseq_stranded == true ) ? "--SS_lib_type RF" : ""
 
 	"""
@@ -898,9 +900,9 @@ process RunTrinity {
 	Trinity --genome_guided_bam sorted.bam \
 		--genome_guided_max_intron 10000 \
 		--CPU ${params.nthreads} \
-		--max_memory ${task.memory.toGiga()}G \
+		--max_memory ${task.memory.toGiga()-1}G \
 		--full_cleanup \
-		--outdir transcriptome \
+		--output transcriptome_trinity \
 		$trinity_option
 	"""
 }
