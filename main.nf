@@ -613,7 +613,7 @@ process RunRepeatMasker {
 	genome_tag = Genome.baseName
 	
 	"""
-	RepeatMasker -species $params.species -pa $params.nthreads $query_fa_rep 
+	RepeatMasker -species $params.species -q -pa $params.nthreads $query_fa_rep 
 	"""
 }
 
