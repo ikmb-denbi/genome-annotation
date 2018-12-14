@@ -884,14 +884,14 @@ process RunTrinity {
 	file hisathits from accepted_hits2trinity.collect()
 	
 	output:
-	file(trinity_fasta) into (trinity_transcripts, trinity_transcripts_2exonerate)	
+	file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate	
 	
 	when:
 	params.reads != false && params.trinity == true
 	
 	script:
 
-	trinity_fasta = "transcriptome_trinity.Trinity.fasta"
+	//trinity_fasta = "transcriptome_trinity.Trinity.fasta"
 	avail_ram_per_core = (task.memory/params.nthreads).toGiga()-1
 	trinity_option = ( params.rnaseq_stranded == true ) ? "--SS_lib_type RF" : ""
 
