@@ -816,7 +816,7 @@ process RunHisat2 {
 	file hs2_indices from hs2_indices.collect()	
 	
 	output:
-	file "*accepted_hits.bam" into accepted_hits2hints, accepted_hits2trinity 
+	file "*accepted_hits.bam" into accepted_hits2hints, accepted_hits2merge 
 	
 	when:
 	params.reads != false
@@ -874,6 +874,28 @@ if (params.trinity == false) {
  * STEP RNAseq.5 - Trinity
  */
 
+process mergeHisatBams {
+
+	publishDir "${params.outdir}/Hisat2/merged", mode: 'copy'
+
+	input:
+	file hisat_bams from accepted_hits2merge.collect()
+
+	output:
+	file(bam) into accepted_hits2trinity
+
+	when:
+	params.reads != false && params.trinity == true
+
+	script:
+	bam = "hisat2.merged.bam"
+	avail_ram_per_core = (task.memory/params.nthreads).toGiga()-1
+
+	"""
+		samtools merge - $hisat_bams | samtools sort -@ ${params.nthreads} -m${avail_ram_per_core}G - > $bam
+	"""
+}
+
 process RunTrinity {
 
 	publishDir "${params.outdir}/trinity", mode: 'copy'
@@ -881,23 +903,17 @@ process RunTrinity {
 	scratch true 
 	
 	input:
-	file hisathits from accepted_hits2trinity.collect()
+	file hisat_bam from accepted_hits2trinity.collect()
 	
 	output:
 	file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate	
 	
-	when:
-	params.reads != false && params.trinity == true
-	
 	script:
 
-	//trinity_fasta = "transcriptome_trinity.Trinity.fasta"
-	avail_ram_per_core = (task.memory/params.nthreads).toGiga()-1
 	trinity_option = ( params.rnaseq_stranded == true ) ? "--SS_lib_type RF" : ""
 
 	"""
-	samtools merge - $hisathits | samtools sort -@ ${params.nthreads} -m${avail_ram_per_core}G - > sorted.bam
-	Trinity --genome_guided_bam sorted.bam \
+	Trinity --genome_guided_bam $hisat_bam \
 		--genome_guided_max_intron 10000 \
 		--CPU ${params.nthreads} \
 		--max_memory ${task.memory.toGiga()-1}G \
