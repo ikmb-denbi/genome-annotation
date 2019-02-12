@@ -6,19 +6,8 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - conda-forge::openjdk=8.0.144 
- - nextflow=0.32.0 
  - repeatmasker=4.0.7 
  - exonerate=2.4.0 
  - blast=2.5.0 
  - perl-bioperl=1.6.924  
  - genometools-genometools=1.5.10 
- - fastqc=0.11.7 
- - fastp=0.19.5
- - bowtie2=2.3.4.1 
- - trinity=2.5.1 
- - augustus=3.2.3 
- - hisat2=2.1.0 
- - r-base=3.4.1
- - multiqc=1.6
- - ruby-2.2.3
