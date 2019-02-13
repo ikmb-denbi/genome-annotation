@@ -1,0 +1,23 @@
+{
+  proteins: false,
+  ESTs: false,
+  reads: false,
+  trinity: false,
+  gth: false,
+  augustus: true,
+  funAnnot: true,
+  species: "mammal",
+  model: "human",
+  UTR: "off",
+  isof: false,
+  augCfg: false,
+  uniprot: false,
+  nblast: 500,
+  nexonerate: 200,
+  nrepeats: 20,
+  ninterpro: 200,
+  singleEnd: false,
+  rnaseq_stranded: false,
+  outdir: "output",
+  name: false
+}
