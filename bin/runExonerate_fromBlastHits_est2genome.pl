@@ -4,7 +4,6 @@
 
 use strict;
 use warnings;
-use Bio::SeqIO;
 
 my $num_args               = $#ARGV + 1;
 if ($num_args != 3)
@@ -79,22 +78,19 @@ while (<MATCHES>){
 	chomp $line;
 	@temp = split(/\t+/,$line);
 	$query = $temp[0];
-    $target = $temp[1];
+    	$target = $temp[1];
 	
-	# MAKE A FILE FOR THE SEQUENCE OF THIS QUERY:
-	$seqio_obj = Bio::SeqIO->new('-file' => $queries_fasta, '-format' => 'fasta' );	
-	while ($seq_obj = $seqio_obj->next_seq ) {
-    	if ($seq_obj->display_id() eq $query) {
-    	# CREATE THE FASTA FILE FOR THIS QUERY:
-    	$seqout = Bio::SeqIO->new(-file => ">$query.fa", -format => "fasta");
-    	# PRINT THE QUERY SEQUENCE:
-    	print $seqout->write_seq($seq_obj);
-    	}
+	my $query_clean = $query;
+	$query_clean =~ s/\|/_/g ;
+
+	my $fa_clean = $query_clean + ".fa" ;
+
+	unless (-e $fa_clean) {
+		system("cdbyank $queries_fasta -a '$query' > $fa_clean");
 	}
-	print "Exonerating $query against $target ...\n";
-	#system("echo \"$query\" | cdbyank $cdb_prot_index > $query.fa");
-	system("exonerate --model est2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $query.fa $genome_basename/$target.fasta >> exonerate.out");
-	system("rm $query.fa");
+
+	printf "exonerate --model est2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $genome_basename/$target.fasta\n";
+
 }
 
 close MATCHES;

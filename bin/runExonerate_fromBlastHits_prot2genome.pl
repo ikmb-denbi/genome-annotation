@@ -20,7 +20,7 @@ if ($num_args != 3)
 
 my $blast_output_parsed = $ARGV[0];	# FILE WITH UNIQUE QUERY - SCAFFOLD COMBINATIONS
 my $queries_fasta = $ARGV[1];		# FASTA FILE WITH ALL QUERIES
-my $genome_file = $ARGV[2];			# GENOME FILE
+my $genome_file = $ARGV[2];		# GENOME FILE
 my $genome;							# GENOME FILE BASENAME
 my $line;
 my @temp;
@@ -38,14 +38,12 @@ open(GENOME, "<$genome_file") || die "ERROR: cannot open $genome_file";
 
 $genome_basename = $genome_file;
 $genome_basename =~ s/\..*$//;
-print STDOUT "$genome_basename\n";
 
 # CREATE DIRECTORY WITH ONE FILE PER SCAFFOLD
 if (-e $genome_basename and -d $genome_basename) {
-	print STDOUT "Directory $genome_basename already exists\n";
+
 } else {
 	system("mkdir $genome_basename");
-	print STDOUT "Created directory $genome_basename\n";
 
 	while (<GENOME>) {
 		$line = $_;
@@ -79,22 +77,17 @@ while (<MATCHES>){
 	chomp $line;
 	@temp = split(/\t+/,$line);
 	$query = $temp[0];
-    $target = $temp[1];
+    	$target = $temp[1];
+
+	my $query_clean = $query;
+	$query_clean =~ s/\|/_/g ; # Strip characters that will break bash
+	my $fa_file = "$query_clean.fa" ;
 	
-	# MAKE A FILE FOR THE SEQUENCE OF THIS QUERY:
-	$seqio_obj = Bio::SeqIO->new('-file' => $queries_fasta, '-format' => 'fasta' );	
-	while ($seq_obj = $seqio_obj->next_seq ) {
-    	if ($seq_obj->display_id() eq $query) {
-    	# CREATE THE FASTA FILE FOR THIS QUERY:
-    	$seqout = Bio::SeqIO->new(-file => ">$query.fa", -format => "fasta");
-    	# PRINT THE QUERY SEQUENCE:
-    	print $seqout->write_seq($seq_obj);
-    	}
-	}
-	print "Exonerating $query against $target ...\n";
-	#system("echo \"$query\" | cdbyank $cdb_prot_index > $query.fa");
-	system("exonerate --model protein2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $query.fa $genome_basename/$target.fasta >> exonerate.out");
-	system("rm $query.fa");
+	#printf "cdbyank $queries_fasta -a '$query' > $fa_file \n"; 
+	
+	system("cdbyank $queries_fasta -a '$query' > $fa_file");
+
+	printf "exonerate --model protein2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_file $genome_basename/$target.fasta >> $query_clean.exonerate.out\n";
 }
 
 close MATCHES;

@@ -24,7 +24,7 @@ mv nextflow ~/bin/
 # sudo mv nextflow /usr/local/bin
 ```
 
-**You need NextFlow version >= 0.32 to run this pipeline.** 
+**You need NextFlow version >= 18.01.0 to run this pipeline.** 
 
 ## Cloning the genome-annotation repository 
 
