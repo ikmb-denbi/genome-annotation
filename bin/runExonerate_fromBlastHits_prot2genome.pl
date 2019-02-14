@@ -44,7 +44,7 @@ while (<MATCHES>){
 		system("cdbyank $queries_fasta -a '$query' > $fa_file");
 	}
 
-	printf "exonerate --model protein2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_file $genome_basename/$target.fasta >> $query_clean.exonerate.out\n";
+	printf "exonerate --model protein2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 50000  --showalignment false --showtargetgff true $fa_file $genome_basename/$target.fa >> $query_clean.exonerate.out\n";
 }
 
 close MATCHES;

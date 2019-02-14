@@ -4,10 +4,10 @@ From:nfcore/base
 %labels
     MAINTAINER Marc Hoeppner <m.hoeppner@ikmb.uni-kiel.de>
     DESCRIPTION Singularity image containing all requirements for the annotation pipeline
-    VERSION 1.0
+    VERSION 0.1
 
 %environment
-    PATH=/opt/conda/envs/genome-annotation-1.0/bin:$PATH
+    PATH=/opt/conda/envs/genome-annotation-0.1/bin:$PATH
     export PATH
 
 %files
@@ -20,29 +20,16 @@ From:nfcore/base
 apt-get -y update
 locale-gen en_US en_US.UTF-8 de_DE.UTF-8 de_DE
 
-# Annie
-# Requires Python 3!
-echo "Installing Annie"
-cd /opt
-mkdir -p /opt/annie
-cd /opt/annie
-wget https://github.com/genomeannotation/Annie/tarball/master/genomeannotation-annie.tar.gz
-tar -zxvf genomeannotation-annie.tar.gz
-rm genomeannotation-annie.tar.gz
-mv genomeannotation-annie 0.0
-echo 'export PATH=$PATH:/opt/annie/0.0/' >> /environment
-cd
-
 # InterProScan
 echo "Installing InterProScan"
 cd /opt
 mkdir -p /opt/interproscan
 cd /opt/interproscan
-wget ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.31-70.0/interproscan-5.31-70.0-64-bit.tar.gz
-tar -pzxvf interproscan-5.31-70.0-64-bit.tar.gz
-rm interproscan-5.31-70.0-64-bit.tar.gz
-mv interproscan-5.31-70.0 5.31-70.0
-echo 'export PATH=$PATH:/opt/interproscan/5.31-70.0/' >> /environment
+wget ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.33-72.0/interproscan-5.33-72.0-64-bit.tar.gz
+tar -pzxvf interproscan-5.33-72.0-64-bit.tar.gz
+rm interproscan-5.3*.tar.gz
+mv interproscan-5.33-72.0 5.33-72.0
+echo 'export PATH=$PATH:/opt/interproscan/5.33-72.0/' >> /environment
 cd
 
 # GenomeThreader
