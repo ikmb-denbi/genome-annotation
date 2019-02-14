@@ -10,3 +10,4 @@ dependencies:
  - cdbtools
  - exonerate=2.4.0 
  - genometools-genometools=1.5.10 
+ - trinity=2.8.4
