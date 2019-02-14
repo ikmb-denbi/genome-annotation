@@ -19,58 +19,16 @@ if ($num_args != 3)
 
 my $blast_output_parsed = $ARGV[0];	# FILE WITH UNIQUE QUERY - SCAFFOLD COMBINATIONS
 my $queries_fasta = $ARGV[1];		# FASTA FILE WITH ALL QUERIES
-my $genome_file = $ARGV[2];			# GENOME FILE
+my $genome_base = $ARGV[2];			# GENOME FILE
 my $genome;							# GENOME FILE BASENAME
 my $line;
 my @temp;
 my $query;							# PROTEIN QUERY OF THAT HIT
 my $target;							# TARGET SCAFFOLD OF THAT HIT
-my $scaffold;						# THAT SCAFFOLD NAME
-my $seqs;							# THAT SCAFFOLD SEQUENCE
-my $genome_basename;
-my $seqio_obj;						# SEQIO OBJECT WITH ALL QUERIES
-my $seq_obj;						# SEQIO SEQUENCE OBJECT WITH THAT QUERY
-my $seqout;						# SEQIO OUTFILE OBJECT
 
-
-open(GENOME, "<$genome_file") || die "ERROR: cannot open $genome_file";
-
-$genome_basename = $genome_file;
-$genome_basename =~ s/\..*$//;
-print STDOUT "$genome_basename\n";
-
-# CREATE DIRECTORY WITH ONE FILE PER SCAFFOLD
-if (-e $genome_basename and -d $genome_basename) {
-	print STDOUT "Directory $genome_basename already exists\n";
-} else {
-	system("mkdir $genome_basename");
-	print STDOUT "Created directory $genome_basename\n";
-
-	while (<GENOME>) {
-		$line = $_;
-		chomp $line;
-		
-    	# WRITE THE HEADER:
-   		if ($line=~/^>/){
-			($scaffold) = ($line=~ /^>(\S+)/);
-			open (SCFILE, ">$genome_basename/$scaffold.fasta");
-			print STDOUT "Created file $scaffold.fasta in directory $genome_basename\n";
-			print SCFILE ">$scaffold\n";
-			next;
-			
-		# WRITE THE SEQUENCE:
-		} else {
-			$seqs = $line;
-			print SCFILE "$seqs\n";
-		}
-		next;
-	}
-	close GENOME;
-}
 
 # RUN EXONERATE FOR EACH PROTEIN-SCAFFOLD MATCH:
 open(MATCHES, "<$blast_output_parsed") || die "ERROR: cannot open $blast_output_parsed";
-
 
 # READ EACH HIT ENTRY: 
 while (<MATCHES>){
@@ -89,7 +47,7 @@ while (<MATCHES>){
 		system("cdbyank $queries_fasta -a '$query' > $fa_clean");
 	}
 
-	printf "exonerate --model est2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $genome_basename/$target.fasta\n";
+	printf "exonerate --model est2genome --softmaskquery yes --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $genome_basename/$target.fasta > $fa_clean.exonerate.out\n";
 
 }
 

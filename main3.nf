@@ -216,12 +216,26 @@ if (params.reads) {
 		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
 		.into {read_files_trimming }
 } else {
-	read_files_trimming = Channel.from(false)
+	// this channel should emmit two items...
+	read_files_trimming = Channel.from(false).map{ it -> it,it }
 	inputMakeHisatdb = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
-	// dummy hint channel here
 }
 
+// Header log info
+log.info "========================================="
+log.info "IKMB Genome Annotation Pipeline v${workflow.manifest.version}"
+log.info "Nextflow Version:		$workflow.nextflow.version"
+log.info "Genome assembly: 		${params.genome}"
+log.info "-----------------------------------------"
+log.info "Evidences:"
+log.info "Proteins:			${params.proteins}"
+log.info "ESTs:				${params.ESTs}"
+log.info "RNA-seq:			${params.reads}"
+log.info "-----------------------------------------"
+log.info "Command Line:			$workflow.commandLine"
+log.info "Run name: 			${params.run_name}"
+log.info "========================================="
 
 // ---------------------------
 // RUN REPEATMASKER
@@ -263,7 +277,7 @@ process runMergeRMGenome {
 	file(genome_chunks) from RMFastaChunks.collect()
 
 	output:
-	file(masked_genome) into RMtoBlastDB
+	file(masked_genome) into (RMtoBlastDB, RMtoSplit)
 
 	script:
 	
@@ -273,6 +287,27 @@ process runMergeRMGenome {
 		fastasort -f merged.fa > $masked_genome
 		rm merged.fa
 	"""	
+}
+
+// Split repeat-masked genome into individual sequences for efficient exonerate alignments
+process runExplodeGenome {
+
+	tag "ALL"
+	publishDir "${OUTDIR}/databases/cdbtools/genome", mode: 'copy'
+
+	input:
+	file(genome_fa) from RMtoSplit
+
+	output:
+	file(genome_chunk_dir) into (GenomeChunksProtein,GenomeChunksEst,GenomeChunksTrinity)
+
+	script:
+	genome_chunk_dir = "genome"
+
+	"""
+		mkdir -p $genome_chunk_dir
+		fastaexplode -f $genome_fa -d $genome_chunk_dir
+	"""
 }
 
 // Turn genome into a masked blast database
@@ -308,7 +343,7 @@ process runMakeBlastDB {
 // ----------------------------
 
 // create a cdbtools compatible  index
-
+// we need this to do very focused exonerate searches later
 process runIndexProteinDB {
 
 	tag "ALL"
@@ -332,6 +367,7 @@ process runIndexProteinDB {
 }
 
 // Blast each protein chunk against the soft-masked genome
+// This is used to define targets for exhaustive exonerate alignments
 process runBlastProteins {
 
 	tag "Chunk ${chunk_name}"
@@ -391,16 +427,17 @@ process runExonerateProts {
 	
 	input:
 	set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
+	file(genome_root) from GenomeChunksProtein
 	
 	output:
 	file(exonerate_chunk) into exonerate_result_prots
 	
 	script:
-	query_tag = Proteins.baseName
+	query_tag = protein_db.baseName
 	exonerate_chunk = "${hits_chunk.baseName}.${query_tag}.exonerate.out"
 	
 	"""
-		runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $protein_db_index $Genome >> commands.txt
+		runExonerate_fromBlastHits_prot2genome.pl $hits_chunk $protein_db_index $genome_root >> commands.txt
 		parallel -j ${task.cpus} < commands.txt
 		cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > $exonerate_chunk
 	"""
@@ -507,11 +544,11 @@ process GenomeThreaderMergeHints {
 //-------------------
 // --------------------------
 
-// create a cdbtools compatible 
+// create a cdbtools compatible database for ESTs
 process runIndexESTDB {
 
 	tag "ALL"
-	publishDir "${OUTDIR}/databases/ESTs", mode: 'copy'
+	publishDir "${OUTDIR}/databases/cdbtools/ESTs", mode: 'copy'
 
 	input:
 	file (est_fa) from ests_index
@@ -582,8 +619,11 @@ process Blast2QueryTargetEST {
 
 }
 
+// Split EST targets and intersect with the Cdbtools index for fast target retrieval
 query2target_uniq_result_ests
-	.splitText(by: params.nexonerate, file: true).set{query2target_chunk_ests}	
+	.splitText(by: params.nexonerate, file: true)
+	.combine(EstDB)
+	.set{query2target_chunk_ests}
 
 // Run exonerate on the EST Blast chunks
 process runExonerateEST {
@@ -592,8 +632,9 @@ process runExonerateEST {
 	publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
 	
 	input:
-	file(hits_chunk) from query2target_chunk_ests
-	
+	set file(hits_chunk),file(est_fa),file(est_db_index) from query2target_chunk_ests
+	file(genome_base_dir) from GenomeChunksEst	
+
 	output:
 	file(results) into exonerate_result_ests
 	
@@ -603,8 +644,9 @@ process runExonerateEST {
 	results = "${hits_chunk.getName()}.${query_tag}.exonerate.out"
 	
 	"""
-	runExonerate_fromBlastHits_est2genome.pl $hits_chunk $ESTs $Genome
-	mv exonerate.out $results
+		runExonerate_fromBlastHits_est2genome.pl $hits_chunk $est_db_index $genome_base_dir >> commands.txt
+		parallel -j ${task.cpus} < commands.txt
+		cat *.exonerate.out >> $results
 	"""
 }
 
@@ -634,7 +676,6 @@ process Exonerate2HintsEST {
 // ++++++++++++++++++
 // RNA-seq PROCESSING
 // ++++++++++++++++++
-
 
 /*
  * Create a channel for input read files
@@ -802,7 +843,6 @@ if (params.reads != false) {
 			--genome_guided_max_intron 10000 \
 			--CPU ${task.cpus} \
 			--max_memory ${task.memory.toGiga()-1}G \
-			--full_cleanup \
 			--output transcriptome_trinity \
 			$trinity_option
 		"""
@@ -856,7 +896,9 @@ if (params.reads != false) {
 	} 	
 
 	query2target_trinity_uniq_result
-		.splitText(by: params.nexonerate, file: true).set{query2target_trinity_chunk}	
+		.splitText(by: params.nexonerate, file: true)
+		.combine()	
+		.set{query2target_trinity_chunk}	
 
 	/*
 	 * STEP RNAseq.8 - Exonerate
@@ -868,8 +910,8 @@ if (params.reads != false) {
 		publishDir "${OUTDIR}/RNAseq/trinity/exonerate/chunks", mode: 'copy'
 	
 		input:
-		file(hits_trinity_chunk) from query2target_trinity_chunk
-		file trinity_transcripts_2exonerate
+		set file(hits_trinity_chunk),file(transcript_fa),file(transcript_db_index) from query2target_trinity_chunk
+		file(genome_base_dir) from GenomeChunksTrinity
 	
 		output:
 		file(exonerate_out) into exonerate_result_trinity
@@ -879,8 +921,9 @@ if (params.reads != false) {
 		exonerate_out = "RNAseq.Trinity.exonerate.${chunk_name}.out"
 		
 		"""
-		runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $trinity_transcripts_2exonerate $Genome
-		mv exonerate.out $exonerate_out
+			runExonerate_fromBlastHits_est2genome.pl $hits_trinity_chunk $transcript_db_index $genome_base_dir >> commands.txt
+			parallel -j ${task.cpus} < cat commands.txt
+			cat *.exonerate.out >> $exonerate_out
 		"""
 	}
 
@@ -900,9 +943,10 @@ if (params.reads != false) {
 		file(trinity_hints) into trinity_hints_gff
 	
 		script:
+		trinity_hints = "RNAseq.trinity.hints.gff"
 		"""
-			grep -v '#' $exonerate_result | grep 'exonerate:est2genome' > exonerate_gff_lines
-			Exonerate2GFF_trinity.pl exonerate_gff_lines trinity_hints
+			cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > exonerate_gff_lines
+			Exonerate2GFF_trinity.pl exonerate_gff_lines $trinity_hints
 		"""
 	}
 }
