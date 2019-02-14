@@ -9,5 +9,4 @@ dependencies:
  - repeatmasker=4.0.7
  - cdbtools
  - exonerate=2.4.0 
- - perl-bioperl=1.6.924  
  - genometools-genometools=1.5.10 
