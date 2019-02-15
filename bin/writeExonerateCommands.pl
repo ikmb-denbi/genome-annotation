@@ -1,4 +1,4 @@
-#!/bin/wnv perl
+#!/bin/env perl
 
 use strict;
 use Getopt::Long;
@@ -26,16 +26,14 @@ my $matches = undef;
 my $db = undef;
 my $target_root = undef;
 my $source = undef;
-my %source_keys = (
-	"proteins" => "protein2genome",
-	"transcripts" => "est2genome"	
-)
+my %source_keys = ( "proteins" => "protein2genome","transcripts" => "transcript2genome", "est" => "est2genome" );
 
 my $help;
 
 GetOptions(
     "help" => \$help,
     "matches=s" => \$matches,
+    "source=s" => \$source,
     "db=s" => \$db,
     "target_root=s" => \$target_root,
     "outfile=s" => \$outfile);
@@ -54,25 +52,25 @@ if (!$source) {
 	exit 1; "Must provide a source name (proteins or transcripts)\n" ;
 }
 
-open (my $QUERIES, '<', $queries) or die "FATAL: Can't open file: $queries for reading.\n$!\n";
+open (my $QUERIES, '<', $matches) or die "FATAL: Can't open file: $matches for reading.\n$!\n";
 
 my $analysis = $source_keys{$source};
 
-while (<$QUERIES) {
+while (<$QUERIES>) {
 
-	$line = $_;
+	my $line = $_;
 	chomp $line;
 
-	@temp = split(/\t+/,$line);
-	$query = $temp[0];
-    	$target = $temp[1];
+	my @temp = split(/\t+/,$line);
+	my $query = $temp[0];
+    	my $target = $temp[1];
 	
 	my $query_clean = $query;
 	$query_clean =~ s/\|/_/g ;
 
-	my $fa_clean = $query_clean + ".fa" ;
+	my $fa_clean = "$query_clean.fa" ;
 
-	printf "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $genome_basename/$target.fa > $fa_clean.exonerate.out\n";
+	printf "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $target_root/$target.fa > $fa_clean.exonerate.out\n";
 }
 
 
