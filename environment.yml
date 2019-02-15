@@ -6,8 +6,14 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
+ - parallel
  - repeatmasker=4.0.7
  - cdbtools
  - exonerate=2.4.0 
  - genometools-genometools=1.5.10 
  - trinity=2.8.4
+ - fastqc=0.11.7
+ - fastp=0.19.5
+ - augustus=3.2.3
+ - hisat2=2.1.0
+ - multiqc=1.6
