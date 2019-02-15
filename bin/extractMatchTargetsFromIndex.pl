@@ -17,6 +17,7 @@ perl my_script.pl
 };
 
 my $matches = undef;
+my $outfile = undef;
 my $db = undef;
 my $help;
 
@@ -38,20 +39,22 @@ if ($outfile) {
 
 open (my $IN, '<', $matches) or die "FATAL: Can't open file: $matches for reading.\n$!\n";
 
-while (<$IN) {
-	$line = $_;
+while (<$IN>) {
+	my $line = $_;
 	chomp $line;
 
-	@temp = split(/\t+/,$line);
-	$query = $temp[0];
-	$target = $temp[1];
+	my @temp = split(/\t+/,$line);
+	my $query = $temp[0];
+	my $target = $temp[1];
 
 	my $query_clean = $query;
 	$query_clean =~ s/\|/_/g ;
-
-	my $fa_clean = $query_clean + ".fa" ;
+	
+	
+	my $fa_clean = "$query_clean.fa" ;
+	printf "Will try to extract $query to $fa_clean\n";
 
 	unless (-e $fa_clean) {
-		system("cdbyank $db -a '$query' > $fa_clean");
+		system("cdbyank $db -a \"${query}\" > $fa_clean");
 	}
 }
