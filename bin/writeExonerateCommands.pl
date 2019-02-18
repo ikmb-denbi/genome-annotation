@@ -25,6 +25,7 @@ my $outfile = undef;
 my $matches = undef;
 my $db = undef;
 my $target_root = undef;
+my $max_intron_size = 20000;
 my $source = undef;
 my %source_keys = ( "proteins" => "protein2genome","transcripts" => "transcript2genome", "est" => "est2genome" );
 
@@ -34,6 +35,7 @@ GetOptions(
     "help" => \$help,
     "matches=s" => \$matches,
     "source=s" => \$source,
+    "max_intron_size=i" => \$max_intron_size,
     "db=s" => \$db,
     "target_root=s" => \$target_root,
     "outfile=s" => \$outfile);
@@ -70,7 +72,7 @@ while (<$QUERIES>) {
 
 	my $fa_clean = "$query_clean.fa" ;
 
-	printf "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000  --showalignment false --showtargetgff true $fa_clean $target_root/$target.fa > $fa_clean.exonerate.out\n";
+	printf "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron $max_intron_size  --showalignment false --showtargetgff true $fa_clean $target_root/$target.fa > $fa_clean.$target.exonerate.out\n";
 }
 
 

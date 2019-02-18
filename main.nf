@@ -60,6 +60,7 @@ def helpMessage() {
     --iso		Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --uniprot		Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
+    --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
  	
     How to split programs:
     --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
@@ -159,37 +160,53 @@ Channel
 
 // if proteins are provided
 if (params.proteins) {
+
+	// goes to blasting of proteins
         Channel
         .fromPath(Proteins)
         .splitFasta(by: params.nblast, file: true)
         .set { fasta_prots }
 
+	// create a cdbtools index for the protein file
 	Channel
 	.fromPath(Proteins)
 	.set { index_prots }
+} else {
+	prot_exonerate_hints = Channel.from(false)
 }
 
 // if ESTs are provided
 if (params.ESTs) {
+
+	// goes to blasting the ESTs
         Channel
                 .fromPath(ESTs)
                 .splitFasta(by: params.nblast, file: true)
                 .set {fasta_ests}
+
+	// create a cdbtools index for the EST file
 	Channel
 		.fromPath(ESTs)
 		.set { ests_index }
+} else {
+	est_exonerate_hints = Channel.from(false)
 }
 
 // if GenomeThreader should be run
 if (params.gth != false ) {
+
+	// goes to aligning proteins with GTH
         Channel
         .fromPath(Proteins)
         .splitFasta(by: params.nblast, file: true)
         .set {fasta_prots_gth}
+} else {
+	gth_protein_hints = Channel.from(false)
 }
 
 // if RNAseq reads are provided
 if (params.reads) {
+
 	// Make a HiSat index
 	Channel
 	        .fromPath(Genome)
@@ -200,6 +217,9 @@ if (params.reads) {
 		.fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
 		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
 		.into {read_files_trimming }
+} else {
+	trinity_exonerate_hints = Channel.from(false)
+	rnaseq_hints = Channel.from(false)
 }
 
 // Header log info
@@ -325,9 +345,7 @@ process runMakeBlastDB {
 // ---------------------
 // PROTEIN DATA PROCESSING
 // ---------------------
-if (params.proteins == false ) {
-        prot_exonerate_hints = Channel.from(false)
-} else {
+if (params.proteins != false ) {
 	// ----------------------------
 	// Protein BLAST against genome
 	// ----------------------------
@@ -338,9 +356,6 @@ if (params.proteins == false ) {
 
 		tag "ALL"
 		publishDir "${OUTDIR}/databases/cdbtools/proteins"
-
-                when:
-                params.proteins != false
 
 		input:
 		file(fasta) from index_prots
@@ -361,7 +376,7 @@ if (params.proteins == false ) {
 	// has to run single-threaded due to bug in blast+ 2.5.0
 	process runBlastProteins {
 
-		tag "Chunk ${chunk_name}/${params.nblast}"
+		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks"
 
 		input:
@@ -430,7 +445,7 @@ if (params.proteins == false ) {
 
 		"""
 			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
-			writeExonerateCommands.pl --source proteins --matches $hits_chunk --target_root $genome_root > commands.txt
+			writeExonerateCommands.pl --max_intron_size ${params.max_intron_size} --source proteins --matches $hits_chunk --target_root $genome_root > commands.txt
 			parallel -j ${task.cpus} < commands.txt
 			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > $exonerate_chunk
 		"""
@@ -460,9 +475,7 @@ if (params.proteins == false ) {
 	// ------------------------------------
         // GenomeThreader hints generation
         // ------------------------------------
-	if (params.gth == false ) {
-		gth_protein_hints = Channel.from(false)
-	} else {
+	if (params.gth != false ) {
 
 		// Run genome threader for protein chunks if requested
 		process runGenomeThreaderProteins {
@@ -499,7 +512,7 @@ if (params.proteins == false ) {
 	
 			script:
 			gth_hints = not_clean_gth.baseName + ".clean.gth"
-			chunk_name = not_clean_gth.getName().tokenize('.')[-2]
+			chunk_name = not_clean_gth.getName().tokenize('.')[-3]
 
 			"""
 				gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
@@ -541,9 +554,7 @@ if (params.proteins == false ) {
 //-------------------
 // --------------------------
 
-if (params.ESTs == false ) {
-	est_exonerate_hints = Channel.from(false)
-} else {
+if (params.ESTs != false ) {
 
 	// create a cdbtools compatible database for ESTs
 	process runIndexESTDB {
@@ -574,9 +585,6 @@ if (params.ESTs == false ) {
 
 		tag "Chunk: #{chunk_name}"
 		publishDir "${OUTDIR}/evidence/EST/blast/chunks"
-
-                when:
-                params.ESTs != false
 
 		input:
 		file(est_chunk) from fasta_ests
@@ -643,7 +651,7 @@ if (params.ESTs == false ) {
 	
 		"""
                         extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $est_db_index
-			writeExonerateCommands.pl --source est --matches $hits_chunk --target_root $genome_base_dir > commands.txt
+			writeExonerateCommands.pl --max_intron_size ${params.max_intron_size} --source est --matches $hits_chunk --target_root $genome_base_dir > commands.txt
 			parallel -j ${task.cpus} < commands.txt
 			cat *.exonerate.out >> $results
 		"""
@@ -676,9 +684,7 @@ if (params.ESTs == false ) {
 // ++++++++++++++++++
 // RNA-seq PROCESSING
 // ++++++++++++++++++
-if (params.reads == false ) {
-	rnaseq_hints = Channel.from(false)
-} else {
+if (params.reads != false ) {
 	// ++++++++++++++++++
 	// RNA-seq PROCESSING
 	// ++++++++++++++++++
@@ -782,6 +788,7 @@ if (params.reads == false ) {
    		}
 	}
 
+	// Combine all BAM files for hint generation
 	process mergeHisatBams {
 
 		publishDir "${OUTDIR}/evidence/ranseq/Hisat2", mode: 'copy'
@@ -821,7 +828,7 @@ if (params.reads == false ) {
 		hisat_hints = "rnaseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=${hisat_hints_}
+			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=$hisat_hints
 		"""
 	}
 
@@ -880,7 +887,7 @@ if (params.reads == false ) {
 			blast_report = "trinity.${chunk_name}.blast"
 
 			"""
-				blastn -db $db_name -query $query_fa -db_soft_mask 40 -max_target_seqs 1 -outfmt 6 > blast_report
+				blastn -db $db_name -query $query_fa -db_soft_mask 40 -max_target_seqs 1 -outfmt 6 -num_threads ${task.cpus} > blast_report
 			"""
 		}
 
@@ -954,8 +961,8 @@ if (params.reads == false ) {
 			exonerate_out = "RNAseq.Trinity.exonerate.${chunk_name}.out"
 			
 			"""
-				extractMatchTargetsFromIndex.pl --matches $hits_trinits_chunk --db $transcript_db_index
-				writeExonerateCommands.pl --source transcripts --matches $hits_trinits_chunk --target_root $genome_base_dir > commands.txt
+				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
+				writeExonerateCommands.pl --max_intron_size ${params.max_intron_size} --source transcripts --matches $hits_trinity_chunk --target_root $genome_base_dir > commands.txt
 				parallel -j ${task.cpus} < cat commands.txt
 				cat *.exonerate.out >> $exonerate_out
 			"""
