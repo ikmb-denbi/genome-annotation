@@ -33,7 +33,7 @@ Please note the following requirements:
 #### `--ESTs` 
 Location of a single FASTA file with all EST sequences or assembled transcriptome(s) from the species of interest. If you have multiple files, concatenate them before into a single file. 
 
-#### `--prots` 
+#### `--proteins` 
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
 
 ### 3. Programs to run 
@@ -94,11 +94,11 @@ Think of how large your input files are (how many sequences they contain) and ho
 
 ### 5. Other options 
 
-#### `--nthreads` [default = 1] 
-Number of cpus for programs that allow multi-threaded mode. 
-
 #### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
+
+### `--rm_lib`[ fasta file | true ]
+By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is advisable to provide complementary repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial). 
 
 ```bash
 --singleEnd --reads '*.fastq'
@@ -108,9 +108,6 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
-
-#### `--allHints` [ default = 'AllHints.gff' ] 
-Name of final GFF file with all hints. This file will be created in your working directory (not inside the --outdir). When you start the pipeline, a file with this name **CANNOT EXIST**. 
 
 #### `--addHints` [ default = 'false' ]
 Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. Check the documentation of Augustus to see how hints file should look like. 
