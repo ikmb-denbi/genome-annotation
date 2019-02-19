@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Long;
 
+
 my $usage = qq{
 perl my_script.pl
   Getting help:
@@ -23,25 +24,26 @@ my $outfile = undef;
 my $infile = undef;
 my $source = undef;
 my $GeneID = undef;
+my $help;
 
 my %source_keys = (
-	"est" => (
+	"est" => {
 		"src" => "T",
 		"pri" => 4,
 		"source" => "est2genome"
-	),
-	"protein" => (
+	},
+	"protein" => {
 		"src" => "P",
 		"pri" => 3,
 		"source" => "protein2genome"
 		
-	),
-	"trinity" => (
+	},
+	"trinity" => {
 		"src" => "T",
 		"pri" => 4,
 		"source" => "trinity2genome"
-	)
-)
+	}
+) ;
 my $help;
 
 GetOptions(
@@ -61,7 +63,9 @@ if ($outfile) {
 }
 
 # make sure the source is valid
-unless ( grep( /^$source$/, @{ keys %source_keys} ) ) {
+my @sources = keys %source_keys;
+
+unless ( grep( /^$source$/, @sources ) ) {
   exit 1, "Did not provide a valid source (${join(',', @{ keys %source_keys })})\n";
 }
 
@@ -74,16 +78,16 @@ my $method = $source_keys{$source}{"source"};
 
 while (<$IN>) {
 	
-	$line = $_;
+	my $line = $_;
 	chomp $line;
 
-	my ($Chrom,$met,$feature,$start,$end,$score,$strand,$frame,$commend) = split(/\t+/,$line);
+	my ($Chrom,$met,$feature,$start,$end,$score,$strand,$frame,$comment) = split(/\t+/,$line);
 
 	if ($feature eq "gene") {
 		($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
 	} elsif ($feature eq "exon") {
 		printf $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;src=$pri\n";
-	elsif ($feature eq "cds") {
+	} elsif ($feature eq "cds") {
 		printf $Chrom."\t".$method."\tCDSpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
 	} elsif ($feature eq "intron") {
 		printf $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;src=$pri\n";
