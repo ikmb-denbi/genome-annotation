@@ -19,5 +19,6 @@
   singleEnd: false,
   rnaseq_stranded: false,
   outdir: "output",
-  name: false
+  name: false,
+  max_intron_size: 20000
 }
