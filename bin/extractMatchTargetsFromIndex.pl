@@ -45,7 +45,6 @@ while (<$IN>) {
 
 	my @temp = split(/\t+/,$line);
 	my $query = $temp[0];
-	my $target = $temp[1];
 
 	my $query_clean = $query;
 	$query_clean =~ s/\|/_/g ;
