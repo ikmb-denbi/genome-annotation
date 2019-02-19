@@ -94,14 +94,14 @@ Think of how large your input files are (how many sequences they contain) and ho
 #### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
-### `--rm_lib`[ fasta file | true ]
-By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is advisable to provide complementary repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial). 
-
 ```bash
 --singleEnd --reads '*.fastq'
 ```
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
+
+### `--rm_lib`[ fasta file | false ]
+By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial).
 
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
