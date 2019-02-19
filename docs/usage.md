@@ -106,11 +106,8 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
 
-### 6. Using a Config file
-
-All the above options can be passed from either the command line or through a configuration file. A suitable template is included under conf/template.json. 
-
 #### `-params-file my_config.json`
+All the above options can be passed from either the command line or through a configuration file. A suitable template is included under conf/template.json.
 
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
