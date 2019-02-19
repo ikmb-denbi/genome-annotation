@@ -45,9 +45,6 @@ Run transcriptome assembly with Trinity and produce hints from the transcripts.
 #### `--gth` [ true (default) | false ] 
 Run GenomeThreader to produce hints from protein file.  
 
-#### `--RM` [ true (default) | false ] 
-Run RepeatMasker to produce hints. 
-
 #### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  
 

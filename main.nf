@@ -5,7 +5,7 @@
 ========================================================================================
  Genome Annotation Pipeline. Started 2018-10-17.
  #### Homepage / Documentation
- https://git.ikmb.uni-kiel.de/m.torres/NF-hints.git
+ https://github.com/ikmb-denbi/genome-annotation/
  #### Authors
  MTorres m.torres <m.torres@ikmb.uni-kiel.de> - https://git.ikmb.uni-kiel.de/m.torres>
  MHoeppner m.hoeppner <m.hoeppner@ikmb.uni-kiel.de> 
@@ -827,9 +827,7 @@ if (params.reads != false ) {
 	// run trinity de-novo assembly
 	// ----------------------------
 
-	if (params.trinity == false ) {
-		trinity_exonerate_hints = Channel.from(false)
-	} else {
+	if (params.trinity != false ) {
 
 		process runTrinity {
 	
