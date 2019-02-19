@@ -55,7 +55,10 @@ Run functional annotation using Annie.
 To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
 
 #### `--species` [ default = 'mammal' ]
-Species database for RepeatMasker. 
+Species database for RepeatMasker.  
+
+#### `--rm_lib`[ fasta file | false ]
+By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial).
 
 #### `--model` [ default = 'human' ]
 Species model for Augustus. 
@@ -100,14 +103,14 @@ By default, the pipeline expects paired-end data. If you have single-end data, y
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
 
-### `--rm_lib`[ fasta file | false ]
-By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial).
-
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
 
-#### `--addHints` [ default = 'false' ]
-Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. Check the documentation of Augustus to see how hints file should look like. 
+### 6. Using a Config file
+
+All the above options can be passed from either the command line or through a configuration file. A suitable template is included under conf/template.json. 
+
+#### `-params-file my_config.json`
 
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
