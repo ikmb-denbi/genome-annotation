@@ -13,6 +13,7 @@
   augCfg: false,
   uniprot: false,
   nblast: 500,
+  blast_evalue: 0.001,
   nexonerate: 1000,
   nrepeats: 20,
   ninterpro: 200,
