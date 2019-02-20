@@ -124,6 +124,13 @@ if (params.trinity == true && params.reads == false) {
 	exit 1, "Cannot run Trinity de-novo assembly without RNA-seq reads (specify both --reads and --trinity)"
 }
 
+// Use a default config file for Augustus if none is provided
+if (params.augustus != false && params.augCfg == false ) {
+	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
+} else if (params.augustus != false) {
+	AUG_CONF = params.augCfg
+}
+
 // give this run a name
 params.run_name = false
 run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
@@ -237,7 +244,12 @@ log.info "Proteins:			${params.proteins}"
 log.info "ESTs:				${params.ESTs}"
 log.info "RNA-seq:			${params.reads}"
 if (params.augustus) {
-	log.info "Running Augustus		${params.model}"
+	log.info "Augustus profile		${params.model}"
+}
+if (params.augCfg) {
+log.info "Augustus config file		custom"
+} else {
+	log.info "Augustus config file		default"
 }
 log.info "-----------------------------------------"
 log.info "Nextflow Version:             $workflow.nextflow.version"
@@ -361,7 +373,7 @@ if (params.proteins != false ) {
 
 	// Blast each protein chunk against the soft-masked genome
 	// This is used to define targets for exhaustive exonerate alignments
-	// has to run single-threaded due to bug in blast+ 2.5.0
+	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
 	process runBlastProteins {
 
 		tag "Chunk ${chunk_name}"
@@ -601,7 +613,7 @@ if (params.ESTs != false ) {
         	publishDir "${OUTDIR}/evidence/EST/blast", mode: 'copy'
 
 		input:
-		file(blast_report) from ESTBlastReport.collectFile()
+		file(blast_report) from ESTBlastReport.collect()
 
 		output:
 		file(targets) into est_blast_targets
@@ -611,15 +623,17 @@ if (params.ESTs != false ) {
 		targets = "EST.blast.targets.txt"
 
 		"""
-			blast2exonerate_targets.pl --infile $blast_report --max_intron_size $params.max_intron_size > $targets
+			cat $blast_report >> merged.out
+			blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
 		"""
 
 	}
 
 	// Split EST targets and intersect with the Cdbtools index for fast target retrieval
 	est_blast_targets
-		.splitText(by: params.nexonerate, file: true)
-		.set{query2target_chunk_ests}
+		.splitText( by: params.nexonerate , file: true )
+		.combine(EstDB)
+		.set { est_exonerate_chunk }
 
 	// Run exonerate on the EST Blast chunks
 	process runExonerateEST {
@@ -628,21 +642,19 @@ if (params.ESTs != false ) {
 		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
 	
 		input:
-		file(hits_chunk) from query2target_chunk_ests
-		set file(est_fa),file(est_db_index) from EstDB
+		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
 		set file(genome),file(genome_index) from RMGenomeIndexEST	
 
 		output:
 		file(results) into exonerate_result_ests
 	
 		script:	
-		query_tag = ESTs.baseName
-		chunk_name = hits_chunk.getName().tokenize('.')[-2]
-		results = "${hits_chunk.getName()}.${query_tag}.exonerate.out"	
+		chunk_name = est_hits_chunk.getName().tokenize('.')[-2]
+		results = "EST.${chunk_name}.exonerate.out"	
 
 		"""
-			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $est_db_index
-                        exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
+			extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
+                        exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
                         parallel -j ${task.cpus} < commands.txt
                         cat *.exonerate.out |  grep "exonerate:est2genome" > merged_exonerate.out
                         exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
@@ -652,21 +664,21 @@ if (params.ESTs != false ) {
 	// Combine exonerate hits and generate hints
 	process Exonerate2HintsEST {
 
-		tag "${query_tag}"
+		tag "ALL"
 		publishDir "${OUTDIR}/evidence/EST/exonerate/", mode: 'copy'
 	
 		input:
-		file(exonerate_result) from exonerate_result_ests.collectFile()
+		file(exonerate_result) from exonerate_result_ests.collect()
 	
 		output:
 		file(exonerate_hints) into est_exonerate_hints
 	
 		script:
-		query_tag = ESTs.baseName
-		exonerate_hints = "ESTs.exonerate.${query_tag}.hints.gff"
+		exonerate_hints = "ESTs.exonerate.hints.gff"
 			
 		"""
-			exonerate2gff.pl --infile $exonerate_result --source est --outfile $exonerate_hints
+			cat $exonerate_result >> merged.out
+			exonerate2gff.pl --infile merged.out --source est --outfile $exonerate_hints
 		"""
 	}
 
@@ -680,14 +692,7 @@ if (params.reads != false ) {
 	// RNA-seq PROCESSING
 	// ++++++++++++++++++
 
-	/*
-	 * Create a channel for input read files
-	 */
- 
-	/*
-	 * STEP RNAseq.1 - Trimgalore
-	 */
-
+	// trim reads
 	process runFastp {
 
 		tag "${prefix}"
@@ -847,7 +852,7 @@ if (params.reads != false ) {
 
 			"""
 				Trinity --genome_guided_bam $hisat_bam \
-				--genome_guided_max_intron 10000 \
+				--genome_guided_max_intron ${params.max_intron_size} \
 				--CPU ${task.cpus} \
 				--max_memory ${task.memory.toGiga()-1}G \
 				--output transcriptome_trinity \
@@ -1039,14 +1044,9 @@ process runAugustus {
 	script:
 	chunk_name = genome_chunk.getName().tokenize(".")[-2]
 	augustus_result = "augustus.${chunk_name}.out.gff"
-	options = ""
-	if (params.augCfg != false) {
-		options = "--extrinsicCfgFile=${AUG_CONF}"
-	}
-
 
 	"""
-		augustus --species=$params.model --UTR=$params.UTR --alternatives-from-evidence=$params.isof $options --hintsfile=$hints $Genome > $augustus_result
+		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $Genome > $augustus_result
 	"""
 }
 

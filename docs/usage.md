@@ -70,7 +70,7 @@ Allow Augustus to predict UTRs (results are not optimal and takes much longer).
 Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints. 
+Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints.
 
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
 Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
