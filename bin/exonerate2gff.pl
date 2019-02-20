@@ -28,7 +28,7 @@ my $help;
 
 my %source_keys = (
 	"est" => {
-		"src" => "T",
+		"src" => "E",
 		"pri" => 4,
 		"source" => "est2genome"
 	},

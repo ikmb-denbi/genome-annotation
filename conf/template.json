@@ -13,7 +13,7 @@
   augCfg: false,
   uniprot: false,
   nblast: 500,
-  nexonerate: 200,
+  nexonerate: 1000,
   nrepeats: 20,
   ninterpro: 200,
   singleEnd: false,
