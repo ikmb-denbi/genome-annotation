@@ -390,9 +390,8 @@ if (params.proteins != false ) {
 		db_name = blastdb_files[0].baseName
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
-		blast_options = "6 qseqid sseqid sstart send slen pident qlen length mismatch gapopen evalue bitscore"
 		"""
-			tblastn -db $db_name -query $protein_chunk -db_soft_mask 40 -max_target_seqs 1 -outfmt "${blast_options}" > $protein_blast_report
+			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -db_soft_mask 40 -outfmt "${params.blast_options}" > $protein_blast_report
 		"""
 	}
 
@@ -599,11 +598,10 @@ if (params.ESTs != false ) {
 		script:
 		db_name = blastdb_files[0].baseName
 		chunk_name = est_chunk.getName().tokenize('.')[-2]
-                blast_options = "6 qseqid sseqid sstart send slen pident qlen length mismatch gapopen evalue bitscore"
 		blast_report = "${est_chunk.baseName}.${db_name}.est.blast"
 
 		"""
-			blastn -db $db_name -db_soft_mask 40 -query $est_chunk -max_target_seqs 1 -outfmt "${blast_options}" -num_threads ${task.cpus} > $blast_report
+			blastn -db $db_name -evalue $params.blast_evalue -db_soft_mask 40 -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
 		"""
 	}
 
@@ -879,10 +877,9 @@ if (params.reads != false ) {
 			db_name = blastdb_nhr.baseName
 			chunk_name = query_fa.getName().tokenize('-')[-2]
 			blast_report = "trinity.${chunk_name}.blast"
-	                blast_options = "6 qseqid sseqid sstart send slen pident qlen length mismatch gapopen evalue bitscore"
 
 			"""
-				blastn -db $db_name -query $query_fa -db_soft_mask 40 -max_target_seqs 1 -outfmt "${blast_options}" -num_threads ${task.cpus} > blast_report
+				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -db_soft_mask 40  -outfmt "${params.blast_options}" -num_threads ${task.cpus} > blast_report
 			"""
 		}
 
