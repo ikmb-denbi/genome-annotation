@@ -113,6 +113,9 @@ if (params.reads){
 if (params.rm_lib) {
 	RM_LIB = file(params.rm_lib)
 	if (!RM_LIB.exists() ) exit 1, "Repeatmask library does not exist (--rm_lib)!"
+	if (params.species) {
+		println "Provided both a custom repeatmask library (--rm_lib) AND a species/taxonomic group for RM - will only use the library!"
+	}
 }
 
 // Make it fail if basic requirements are unmet
@@ -127,6 +130,7 @@ if (params.trinity == true && params.reads == false) {
 // Use a default config file for Augustus if none is provided
 if (params.augustus != false && params.augCfg == false ) {
 	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
+	println "Using Augustus config bundled with this pipeline..."
 } else if (params.augustus != false) {
 	AUG_CONF = params.augCfg
 }
@@ -247,9 +251,7 @@ if (params.augustus) {
 	log.info "Augustus profile		${params.model}"
 }
 if (params.augCfg) {
-log.info "Augustus config file		custom"
-} else {
-	log.info "Augustus config file		default"
+	log.info "Augustus config file		${AUG_CONF}"
 }
 log.info "-----------------------------------------"
 log.info "Nextflow Version:             $workflow.nextflow.version"
@@ -355,7 +357,7 @@ if (params.proteins != false ) {
 	process runIndexProteinDB {
 
 		tag "ALL"
-		publishDir "${OUTDIR}/databases/cdbtools/proteins"
+		publishDir "${OUTDIR}/databases/cdbtools/proteins", mode: 'copy'
 
 		input:
 		file(fasta) from index_prots
@@ -377,7 +379,7 @@ if (params.proteins != false ) {
 	process runBlastProteins {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks"
+		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
 		file(protein_chunk) from fasta_prots
@@ -399,7 +401,7 @@ if (params.proteins != false ) {
 	process Blast2QueryTargetProts {
 
 		tag "ALL"
-	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunk/s"
+	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
 		file(blast_reports) from ProteinBlastReport.collect()
@@ -427,7 +429,9 @@ if (params.proteins != false ) {
 	process runExonerateProts {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks"
+		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+
+		scratch true
 	
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
@@ -435,6 +439,7 @@ if (params.proteins != false ) {
 	
 		output:
 		file(exonerate_chunk) into exonerate_result_prots
+		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
 	
 		script:
 		query_tag = protein_db.baseName
@@ -448,13 +453,13 @@ if (params.proteins != false ) {
 			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
 			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
 			parallel -j ${task.cpus} < commands.txt
-			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged_exonerate.out
-			exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_chunk
+			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
+			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
 		"""
 	}
 
 	// merge the exonerate hits and create the hints
-	process runMergeExonerateHints {
+	process Exonerate2HintsProtein {
 
 		tag "ALL"
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/", mode: 'copy'
@@ -638,6 +643,8 @@ if (params.ESTs != false ) {
 
 		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
+
+		scratch true
 	
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
