@@ -48,8 +48,8 @@ while (<$IN>) {
 		my @info = split(/[:,-]/,$target);
 		my $offset = @info[1] ;
 		my $target_base = @info[0];
-		my $adjusted_start = $start+$offset;
-		my $adjusted_stop =$stop+$offset ;
+		my $adjusted_start = $start+$offset-1;
+		my $adjusted_stop =$stop+$offset-1 ;
 		printf "$target_base\t$method\t$feature\t$adjusted_start\t$adjusted_stop\t$score\t$strand\t$frame\t$attributes\n";
 	}
 }
