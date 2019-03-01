@@ -33,7 +33,7 @@ Please note the following requirements:
 #### `--ESTs` 
 Location of a single FASTA file with all EST sequences or assembled transcriptome(s) from the species of interest. If you have multiple files, concatenate them before into a single file. 
 
-#### `--prots` 
+#### `--proteins` 
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
 
 ### 3. Programs to run 
@@ -45,9 +45,6 @@ Run transcriptome assembly with Trinity and produce hints from the transcripts.
 #### `--gth` [ true (default) | false ] 
 Run GenomeThreader to produce hints from protein file.  
 
-#### `--RM` [ true (default) | false ] 
-Run RepeatMasker to produce hints. 
-
 #### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  
 
@@ -58,7 +55,10 @@ Run functional annotation using Annie.
 To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
 
 #### `--species` [ default = 'mammal' ]
-Species database for RepeatMasker. 
+Species database for RepeatMasker.  
+
+#### `--rm_lib`[ fasta file | false ]
+By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial).
 
 #### `--model` [ default = 'human' ]
 Species model for Augustus. 
@@ -70,7 +70,7 @@ Allow Augustus to predict UTRs (results are not optimal and takes much longer).
 Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints. 
+Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints.
 
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
 Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
@@ -94,9 +94,6 @@ Think of how large your input files are (how many sequences they contain) and ho
 
 ### 5. Other options 
 
-#### `--nthreads` [default = 1] 
-Number of cpus for programs that allow multi-threaded mode. 
-
 #### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
@@ -109,11 +106,8 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
 
-#### `--allHints` [ default = 'AllHints.gff' ] 
-Name of final GFF file with all hints. This file will be created in your working directory (not inside the --outdir). When you start the pipeline, a file with this name **CANNOT EXIST**. 
-
-#### `--addHints` [ default = 'false' ]
-Additional hints file (in GFF format), to be concatenated to the resulting hints before running Augustus. Check the documentation of Augustus to see how hints file should look like. 
+#### `-params-file my_config.json`
+All the above options can be passed from either the command line or through a configuration file. A suitable template is included under conf/template.json.
 
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
