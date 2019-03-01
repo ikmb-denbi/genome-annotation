@@ -35,4 +35,4 @@ Documentation about the pipeline can be found in the `docs/` directory or under 
 
 ### Credits 
 
-This pipeline was written by Dr. Montserrat Torres ([m.torres](https://git.ikmb.uni-kiel.de/m.torres)) at [IKMB](http://www.ikmb.uni-kiel.de).
+This pipeline was written by Dr. Montserrat Torres ([m.torres](https://git.ikmb.uni-kiel.de/m.torres)) and Dr. Marc Höppner ([m.hoeppnerat](https://www.ikmb.uni-kiel.de/people/scientists/marc-hoppner)) at [IKMB](http://www.ikmb.uni-kiel.de).
