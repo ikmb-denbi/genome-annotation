@@ -1050,7 +1050,7 @@ process runAugustus {
 	augustus_result = "augustus.${chunk_name}.out.gff"
 
 	"""
-		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $Genome > $augustus_result
+		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $genome_chunk > $augustus_result
 	"""
 }
 
