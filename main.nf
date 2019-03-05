@@ -274,6 +274,7 @@ process runRepeatMasker {
 
 	output:
 	file(genome_rm) into RMFastaChunks
+	file(rm_gff) into RMGffChunks
 
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
@@ -286,6 +287,7 @@ process runRepeatMasker {
 		options = "-species ${params.species}"
 	}
 	genome_rm = genome_fa + ".masked"
+	rm_gff = genome_fa + ".masked.gff3"
 	
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
