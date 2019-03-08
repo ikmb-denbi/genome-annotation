@@ -274,8 +274,7 @@ process runRepeatMasker {
 
 	output:
 	file(genome_rm) into RMFastaChunks
-	file(rm_gff) into RMGffChunks
-
+	file(rm_gff) into RMGFF
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
 	// provide a custom repeat mask database
@@ -287,8 +286,7 @@ process runRepeatMasker {
 		options = "-species ${params.species}"
 	}
 	genome_rm = genome_fa + ".masked"
-	rm_gff = genome_fa + ".masked.gff3"
-	
+	rm_gff = genome_fa + ".out.gff"	
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
 	"""
