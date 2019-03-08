@@ -642,10 +642,8 @@ if (params.ESTs != false ) {
 	process runExonerateEST {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
+		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
 		set file(genome),file(genome_index) from RMGenomeIndexEST	
