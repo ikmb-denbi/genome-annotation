@@ -431,8 +431,6 @@ if (params.proteins != false ) {
 		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein

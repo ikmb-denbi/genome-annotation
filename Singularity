@@ -17,21 +17,6 @@ From:continuumio/anaconda
     /opt/conda/bin/conda env create -f /environment.yml
     /opt/conda/bin/conda clean -a
 
-apt-get -y update
-locale-gen en_US en_US.UTF-8 de_DE.UTF-8 de_DE
-
-# InterProScan
-echo "Installing InterProScan"
-cd /opt
-mkdir -p /opt/interproscan
-cd /opt/interproscan
-wget ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.33-72.0/interproscan-5.33-72.0-64-bit.tar.gz
-tar -pzxvf interproscan-5.33-72.0-64-bit.tar.gz
-rm interproscan-5.3*.tar.gz
-mv interproscan-5.33-72.0 5.33-72.0
-echo 'export PATH=$PATH:/opt/interproscan/5.33-72.0/' >> /environment
-cd
-
 # GenomeThreader
 echo "Installing GenomeThreader"
 cd /opt
