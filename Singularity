@@ -23,9 +23,9 @@ cd /opt
 mkdir -p /opt/gth
 cd /opt/gth
 wget http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz
-tar -zxvf gth-1.7.1-Linux_x86_64-64bit.tar.gz 
-cd gth-1.7.1-Linux_x86_64-64bit
+tar -xvf gth-1.7.1-Linux_x86_64-64bit.tar.gz
 mv gth-1.7.1-Linux_x86_64-64bit 1.7.1
-setenv $BSSMDIR         "${HOME}/opt/gth/1.7.1/bin/bssm"
-setenv $GTHDATADIR      "${HOME}/opt/gth/1.7.1/bin/gthdata"
+rm gth-1.7.1-Linux_x86_64-64bit.tar.gz
+echo 'export BSSMDIR=/opt/home/gth/1.7.1/bin/bssm' >> /environment
+echo 'export GTHDATADIR=/opt/home/gth/1.7.1/bin/gthdata' >> /environment
 echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> /environment
