@@ -86,13 +86,13 @@ while (<$IN>) {
 	if ($feature eq "gene") {
 		($GeneID) =($comment =~/gene_id\s\w+\s;\ssequence\s(\S+)\s;\s/);
 	} elsif ($feature eq "exon") {
-		printf $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;src=$pri\n";
+		printf $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
 	} elsif ($feature eq "cds") {
 		printf $Chrom."\t".$method."\tCDSpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
 	} elsif ($feature eq "intron") {
-		printf $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;src=$pri\n";
+		printf $Chrom."\t".$method."\tintronpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
 	} elsif ($feature eq "utr5" || $feature eq "utr3") {
-		printf $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;src=$pri\n";
+		printf $Chrom."\t".$method."\tUTRpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
 	} else {
 		next;
 	}
