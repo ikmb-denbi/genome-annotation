@@ -1012,11 +1012,26 @@ process runMergeAllHints {
 	file(merged_hints) into mergedHints
 
 	script:
-
+	def file_list = ""
+	if (protein_exonerate_hint != false ) {
+		file_list += " ${protein_exonerate_hint}"
+	}
+	if (rnaseq_hint  != false ) {
+		file_list += " ${rnaseq_hint}"
+	}
+	if (protein_gth_hint != false) {
+		file_list += " ${protein_gth_hint}"
+	}
+	if (est_exonerate_hint != false ) {
+		file_list += " ${est_exonerate_hint}"
+	}
+	if (trinity_exonerate_hint != false) {
+		file_list += " ${trinity_exonerate_hint}"
+	}
 	merged_hints = "merged.hints.gff"
 	
 	"""
-		cat $rnaseq_hint $protein_exonerate_hint $protein_gth_hint $est_exonerate_hint $trinity_exonerate_hint >> $merged_hints
+		cat $file_list >> $merged_hints
 	"""
 }
 
