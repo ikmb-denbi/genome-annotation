@@ -29,3 +29,6 @@ rm gth-1.7.1-Linux_x86_64-64bit.tar.gz
 echo 'export BSSMDIR=/opt/home/gth/1.7.1/bin/bssm' >> /environment
 echo 'export GTHDATADIR=/opt/home/gth/1.7.1/bin/gthdata' >> /environment
 echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> /environment
+
+# To be able to mount on RZcluster
+mkdir -p /ifs
