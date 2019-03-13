@@ -282,6 +282,9 @@ process createRMLib {
 		mkdir -p $lib_path
 		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
 		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat > $lib_path/taxonomy.dat
+	"""
+
+}
 
 // ---------------------------
 // RUN REPEATMASKER
@@ -299,6 +302,7 @@ process runRepeatMasker {
 	output:
 	file(genome_rm) into RMFastaChunks
 	file(rm_gff) into RMGFF
+
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
 	// provide a custom repeat mask database
@@ -313,8 +317,8 @@ process runRepeatMasker {
 
 	genome_rm = genome_fa + ".masked"
 	rm_gff = genome_fa + ".out.gff"	
+	
 	"""
-		echo \$REPEATMASKER_LIB_DIR
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
 	"""
 }
@@ -442,7 +446,7 @@ if (params.proteins != false ) {
 	
 		"""
 			cat $blast_reports > merged.txt
-			blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+			perl blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 		"""
 	}
 
@@ -462,151 +466,6 @@ if (params.proteins != false ) {
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
-=======
-// Merge the repeat-masked assembly chunks
-process runMergeRMGenome {
-
-	tag "ALL"
-        publishDir "${OUTDIR}/repeatmasker", mode: 'copy'
-
-	input:
-	file(genome_chunks) from RMFastaChunks.collect()
-
-	output:
-	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity
-
-	script:
-	
-	masked_genome = "${Genome.baseName}.rm.fa"
-	masked_genome_index = masked_genome + ".fai"
-
-	"""
-		cat $genome_chunks >> merged.fa
-		fastasort -f merged.fa > $masked_genome
-		samtools faidx $masked_genome
-		rm merged.fa
-	"""	
-}
-GenomeChunksAugustus = RMtoPartition
-	.splitFasta(by: params.nrepeats, file: true)
-
-// Turn genome into a masked blast database
-// Generates a dust mask from softmasked genome sequence
-process runMakeBlastDB {
-	
-	tag "ALL"
-	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
-
-	input:
-	file(genome_fa) from RMtoBlastDB
-
-	output:
-	file("${dbName}.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
-	file(db_mask) into BlastDBMask
-
-	script:
-	dbName = genome_fa.baseName
-	db_mask = "${dbName}.asnb"
-	
-	"""
-		convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat -masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin -out $db_mask
-		makeblastdb -in $genome_fa -parse_seqids -mask_data $db_mask -dbtype nucl -out $dbName 
-	"""
-}
-
-// ---------------------
-// PROTEIN DATA PROCESSING
-// ---------------------
-if (params.proteins != false ) {
-	// ----------------------------
-	// Protein BLAST against genome
-	// ----------------------------
-
-	// create a cdbtools compatible  index
-	// we need this to do very focused exonerate searches later
-	process runIndexProteinDB {
-
-		tag "ALL"
-		publishDir "${OUTDIR}/databases/cdbtools/proteins", mode: 'copy'
-
-		input:
-		file(fasta) from index_prots
-
-		output:
-		set file(fasta),file(protein_index) into ProteinDB
-
-		script:
-		protein_index = fasta.getName()+ ".cidx"
-
-		"""
-			cdbfasta $fasta 
-		"""
-	}
-
-	// Blast each protein chunk against the soft-masked genome
-	// This is used to define targets for exhaustive exonerate alignments
-	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
-	process runBlastProteins {
-
-		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
-
-		input:
-		file(protein_chunk) from fasta_prots
-		file(blastdb_files) from blast_db_prots
-
-		output:
-		file(protein_blast_report) into ProteinBlastReport
-
-		script:
-		db_name = blastdb_files[0].baseName
-		chunk_name = protein_chunk.getName().tokenize('.')[-2]
-		protein_blast_report = "${protein_chunk.baseName}.blast"
-		"""
-			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -db_soft_mask 40 -outfmt "${params.blast_options}" > $protein_blast_report
-		"""
-	}
-
-	// Parse Protein Blast output for exonerate processing
-	process Blast2QueryTargetProts {
-
-		tag "ALL"
-	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
-
-		input:
-		file(blast_reports) from ProteinBlastReport.collect()
-
-		output:
-		file(query2target_result_uniq_targets) into query2target_uniq_result_prots
-	
-		script:
-		query_tag = Proteins.baseName
-		query2target_result_uniq_targets = "${query_tag}.targets"
-	
-		"""
-			cat $blast_reports > merged.txt
-			blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
-		"""
-	}
-
-	// split Blast hits for parallel processing in exonerate
-	query2target_uniq_result_prots
-		.splitText(by: params.nexonerate, file: true)
-		.combine(ProteinDB)
-		.set{ query2target_chunk_prots }
-
-	// Run Exonerate on the blast regions
-	process runExonerateProts {
-
-		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
-
-		input:
-		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
-		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
-	
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
 		output:
 		file(exonerate_chunk) into exonerate_result_prots
 		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
@@ -620,11 +479,11 @@ if (params.proteins != false ) {
 		// merge it all down to one file and translate back to genomic coordinates
 
 		"""
-			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
-			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
+			perl extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
+			perl exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
 			parallel -j ${task.cpus} < commands.txt
 			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
-			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
+			perl exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
 		"""
 	}
 
@@ -639,7 +498,6 @@ if (params.proteins != false ) {
 
 		output:
 		file(exonerate_gff) into prot_exonerate_hints
-<<<<<<< HEAD
 
 		script:
 		query_tag = Proteins.baseName
@@ -746,114 +604,6 @@ if (params.ESTs != false ) {
 		output:
 		set file(est_fa),file(est_index) into EstDB
 
-=======
-
-		script:
-		query_tag = Proteins.baseName
-		exonerate_gff = "proteins.exonerate.${query_tag}.hints.gff"
-		"""
-			cat $chunks > all_chunks.out
-			exonerate2gff.pl --infile all_chunks.out --source protein --outfile $exonerate_gff
-		"""
-	}
-
-	// ------------------------------------
-        // GenomeThreader hints generation
-        // ------------------------------------
-	if (params.gth != false ) {
-
-		// Run genome threader for protein chunks if requested
-		process runGenomeThreaderProteins {
-
-			tag "Chunk ${chunk_name}"
-			publishDir "${OUTDIR}/evidence/proteins/gth/chunks/"
-
-			input:
-			file(protein_chunk) from fasta_prots_gth
-
-			output:
-			file(gth_chunk) into ProteinGTHChunk
-	
-			script:
-			chunk_name = protein_chunk.getName().tokenize('.')[-2]
-			gth_chunk = "${protein_chunk.getName()}.gth"
-
-			"""
-				gth -genomic $Genome -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
-			"""	
-		}
-
-		// convert gth hits into hints
-		process GenomeThreader2HintsProts {
-
-			tag "Chunk ${chunk_name}"
-		        publishDir "${OUTDIR}/evidence/proteins/gth/chunks"
-
-			input:
-			file(not_clean_gth) from ProteinGTHChunk
-	
-			output:
-			file(gth_hints) into ProteinGTHChunkHint
-	
-			script:
-			gth_hints = not_clean_gth.baseName + ".clean.gth"
-			chunk_name = not_clean_gth.getName().tokenize('.')[-3]
-
-			"""
-				gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
-				grep -v '#' not_clean_gth_wIntrons > no_hash_gth
-				GTH_rename_splitoutput.pl no_hash_gth > clean_gth
-				grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > $gth_hints
-		
-			"""
-		}
-
-		// merge gth hints
-		process GenomeThreaderMergeHints {
-
-			tag "ALL"
-	        	publishDir "${OUTDIR}/evidence/proteins/gth/", mode: 'copy'
-		
-			input:
-			file(gth_hint_chunks) from ProteinGTHChunkHint.collect()
-
-			output:
-			file(merged_gth_hint) into gth_protein_hints
-
-			script:
-	        	query_tag = Proteins.baseName
-			merged_gth_hint = "proteins.gth.${query_tag}.hints.gff"
-
-			"""
-				cat $gth_hint_chunks >> $merged_gth_hint
-			"""
-		}
-
-	} // close gth loop
-
-} // close protein loop
-
-// --------------------------
-// -------------------
-// EST DATA PROCESSING
-//-------------------
-// --------------------------
-
-if (params.ESTs != false ) {
-
-	// create a cdbtools compatible database for ESTs
-	process runIndexESTDB {
-
-		tag "ALL"
-		publishDir "${OUTDIR}/databases/cdbtools/ESTs", mode: 'copy'
-
-		input:
-		file (est_fa) from ests_index
-
-		output:
-		set file(est_fa),file(est_index) into EstDB
-
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
 		script:
 		est_index = est_fa.getName() + ".cidx"
 
@@ -906,7 +656,7 @@ if (params.ESTs != false ) {
 
 		"""
 			cat $blast_report >> merged.out
-			blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
+			perl blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
 		"""
 
 	}
@@ -935,24 +685,17 @@ if (params.ESTs != false ) {
 		results = "EST.${chunk_name}.exonerate.out"	
 
 		"""
-			extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
-                        exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
+			perl extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
+                        perl exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
                         parallel -j ${task.cpus} < commands.txt
                         cat *.exonerate.out |  grep "exonerate:est2genome" > merged_exonerate.out
-                        exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
+                        perl exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
 		"""
 	}
-<<<<<<< HEAD
 
 	// Combine exonerate hits and generate hints
 	process Exonerate2HintsEST {
 
-=======
-
-	// Combine exonerate hits and generate hints
-	process Exonerate2HintsEST {
-
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
 		tag "ALL"
 		publishDir "${OUTDIR}/evidence/EST/exonerate/", mode: 'copy'
 	
@@ -1015,8 +758,7 @@ if (params.reads != false ) {
 
 	// Generate an alignment index from the genome sequence
 	process runMakeHisatDB {
-<<<<<<< HEAD
-	
+
 		tag "${prefix}"
 		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
 
@@ -1026,18 +768,6 @@ if (params.reads != false ) {
 		output:
 		file "${dbName}.*.ht2" into hs2_indices
 	
-=======
-	
-		tag "${prefix}"
-		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
-
-		input:
-		file(genome) from inputMakeHisatdb
-	
-		output:
-		file "${dbName}.*.ht2" into hs2_indices
-	
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
 		script:
 		dbName = genome.baseName
 		dbName_1 = dbName + ".1.ht2"
@@ -1186,19 +916,11 @@ if (params.reads != false ) {
 				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -db_soft_mask 40  -outfmt "${params.blast_options}" -num_threads ${task.cpus} > blast_report
 			"""
 		}
-<<<<<<< HEAD
 
 		/*
 		 * STEP RNAseq.7 - Parse Blast Output
 		 */
 
-=======
-
-		/*
-		 * STEP RNAseq.7 - Parse Blast Output
-		 */
-
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
 		process BlastTrinity2QueryTarget {
 	
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate", mode: 'copy'
@@ -1212,7 +934,7 @@ if (params.reads != false ) {
 			script:
 			trinity_targets = "trinity.all.targets.txt"
 			"""
-	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+	                        perl blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 			"""
 		} 	
 
@@ -1264,11 +986,11 @@ if (params.reads != false ) {
 			exonerate_out = "RNAseq.Trinity.exonerate.${chunk_name}.out"
 			
 			"""
-				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
-	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
+				perl extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
+	                        perl exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
         	                parallel -j ${task.cpus} < commands.txt
                 	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome:local' > merged_exonerate.out
-                        	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
+                        	perl exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
 
 			"""
 		}
@@ -1350,17 +1072,10 @@ process runMergeAllHints {
  */
 // Run against each repeatmasked chunk of the assembly
 process runAugustus {
-<<<<<<< HEAD
 
 	tag "Chunk ${chunk_name}"
 	publishDir "${OUTDIR}/annotation/augustus/chunks"
 
-=======
-
-	tag "Chunk ${chunk_name}"
-	publishDir "${OUTDIR}/annotation/augustus/chunks"
-
->>>>>>> 927d2eb3f8673d10cd110489678cc05c47944ff0
         when:
         params.augustus != false
 
