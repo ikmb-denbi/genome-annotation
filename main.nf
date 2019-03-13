@@ -281,7 +281,7 @@ process createRMLib {
 	"""
 		mkdir -p $lib_path
 		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
-		cp ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat $lib_path/
+		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat > $lib_path/taxonomy.dat
 	"""
 
 }
