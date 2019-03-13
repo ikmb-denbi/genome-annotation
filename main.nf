@@ -263,6 +263,29 @@ log.info "========================================="
 // RUN REPEATMASKER
 //----------------------------
 
+// RepeatMasker library needs ot be writable. Need to do this so we can work with locked Singularity containers
+process createRMLib {
+
+	tag "ALL"
+	publishDir "${OUTDIR}/repeatmasker/"
+
+	input:
+	file(genome_fa) from FastaRM
+
+	output:
+	set file(genome_fa),file(lib_path) into RMLibPath
+
+	script:
+	lib_path = "Library"
+
+	"""
+		mkdir -p $lib_path
+		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
+		cp ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat $lib_path/
+	"""
+
+}
+
 // generate a soft-masked sequence for each assembly chunk
 process runRepeatMasker {
 
@@ -270,7 +293,7 @@ process runRepeatMasker {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(genome_fa) from FastaRM
+	set file(genome_fa),env(REPEATMASKER_LIB_DIR) from RMLibPath
 
 	output:
 	file(genome_rm) into RMFastaChunks
@@ -280,14 +303,17 @@ process runRepeatMasker {
 	// provide a custom repeat mask database
 	// mutually exclusive with --rm_lib
 	options = ""
+
 	if (params.rm_lib) {
 		options = "-lib ${RM_LIB}"
 	} else {
 		options = "-species ${params.species}"
 	}
+
 	genome_rm = genome_fa + ".masked"
 	rm_gff = genome_fa + ".out.gff"	
 	"""
+		echo \$REPEATMASKER_LIB_DIR
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
 	"""
 }
