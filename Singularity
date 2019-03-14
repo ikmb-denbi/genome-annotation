@@ -17,10 +17,10 @@ From:continuumio/anaconda
     /opt/conda/bin/conda env create -f /environment.yml
     /opt/conda/bin/conda clean -a
 
-apt-get install --reinstall procps
+# Prereqs for Nextflow
+apt-get -y install procps 
 
 # GenomeThreader
-echo "Installing GenomeThreader"
 mkdir -p /opt/gth
 cd /opt/gth
 wget http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz
