@@ -7,7 +7,7 @@ From:continuumio/anaconda
     VERSION 0.1
 
 %environment
-    PATH=/opt/conda/envs/genome-annotation-1.0/bin:$PATH
+    PATH=$PATH:/opt/conda/envs/genome-annotation-1.0/bin
     export PATH
 
 %files
@@ -17,18 +17,19 @@ From:continuumio/anaconda
     /opt/conda/bin/conda env create -f /environment.yml
     /opt/conda/bin/conda clean -a
 
+apt-get install --reinstall procps
+
 # GenomeThreader
 echo "Installing GenomeThreader"
-cd /opt
 mkdir -p /opt/gth
 cd /opt/gth
 wget http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz
 tar -xvf gth-1.7.1-Linux_x86_64-64bit.tar.gz
 mv gth-1.7.1-Linux_x86_64-64bit 1.7.1
 rm gth-1.7.1-Linux_x86_64-64bit.tar.gz
-echo 'export BSSMDIR=/opt/home/gth/1.7.1/bin/bssm' >> /environment
-echo 'export GTHDATADIR=/opt/home/gth/1.7.1/bin/gthdata' >> /environment
-echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> /environment
+echo 'export BSSMDIR=/opt/home/gth/1.7.1/bin/bssm' >> $SINGULARITY_ENVIRONMENT
+echo 'export GTHDATADIR=/opt/home/gth/1.7.1/bin/gthdata' >> $SINGULARITY_ENVIRONMENT
+echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> $SINGULARITY_ENVIRONMENT
 
 # To be able to mount on RZcluster
 mkdir -p /ifs

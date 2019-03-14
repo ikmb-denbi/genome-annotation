@@ -446,7 +446,7 @@ if (params.proteins != false ) {
 	
 		"""
 			cat $blast_reports > merged.txt
-			perl blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+			blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 		"""
 	}
 
@@ -479,11 +479,11 @@ if (params.proteins != false ) {
 		// merge it all down to one file and translate back to genomic coordinates
 
 		"""
-			perl extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
-			perl exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
+			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
+			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
 			parallel -j ${task.cpus} < commands.txt
 			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
-			perl exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
+			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
 		"""
 	}
 
@@ -656,7 +656,7 @@ if (params.ESTs != false ) {
 
 		"""
 			cat $blast_report >> merged.out
-			perl blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
+			blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
 		"""
 
 	}
@@ -685,11 +685,11 @@ if (params.ESTs != false ) {
 		results = "EST.${chunk_name}.exonerate.out"	
 
 		"""
-			perl extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
-                        perl exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
+			extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
+                        exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
                         parallel -j ${task.cpus} < commands.txt
                         cat *.exonerate.out |  grep "exonerate:est2genome" > merged_exonerate.out
-                        perl exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
+                        exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
 		"""
 	}
 
@@ -934,7 +934,7 @@ if (params.reads != false ) {
 			script:
 			trinity_targets = "trinity.all.targets.txt"
 			"""
-	                        perl blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 			"""
 		} 	
 
@@ -986,11 +986,11 @@ if (params.reads != false ) {
 			exonerate_out = "RNAseq.Trinity.exonerate.${chunk_name}.out"
 			
 			"""
-				perl extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
-	                        perl exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
+				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
+	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
         	                parallel -j ${task.cpus} < commands.txt
                 	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome:local' > merged_exonerate.out
-                        	perl exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
+                        	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
 
 			"""
 		}
