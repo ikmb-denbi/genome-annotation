@@ -8,6 +8,7 @@ channels:
 dependencies:
  - parallel
  - samtools=1.9
+ - perl-text-soundex
  - repeatmasker=4.0.7
  - cdbtools
  - exonerate=2.4.0 

@@ -7,7 +7,7 @@ From:continuumio/anaconda
     VERSION 0.1
 
 %environment
-    PATH=$PATH:/opt/conda/envs/genome-annotation-1.0/bin
+    PATH=/opt/conda/envs/genome-annotation-1.0/bin:$PATH
     export PATH
 
 %files
