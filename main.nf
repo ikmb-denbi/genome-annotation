@@ -14,7 +14,7 @@
 
 // Make sure the Nextflow version is current enough
 try {
-    if( ! nextflow.version.matches(">= $workflow.manifest.nextflowVersion") ){
+    if( ! nextflow.version.replaceFirst(/\-edge/, '').matches(">= $workflow.manifest.nextflowVersion") ){
         throw GroovyException('Nextflow version too old')
     }
 } catch (all) {
