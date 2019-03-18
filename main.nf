@@ -281,7 +281,7 @@ process createRMLib {
 	"""
 		mkdir -p $lib_path
 		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
-		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat > $lib_path/taxonomy.dat
+		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat.gz > $lib_path/taxonomy.dat
 	"""
 
 }
@@ -1044,19 +1044,19 @@ process runMergeAllHints {
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != false ) {
+	if (protein_exonerate_hint != "false" ) {
 		file_list += " ${protein_exonerate_hint}"
 	}
-	if (rnaseq_hint  != false ) {
+	if (rnaseq_hint  != "false" ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (protein_gth_hint != false) {
+	if (protein_gth_hint != "false") {
 		file_list += " ${protein_gth_hint}"
 	}
-	if (est_exonerate_hint != false ) {
+	if (est_exonerate_hint != "false" ) {
 		file_list += " ${est_exonerate_hint}"
 	}
-	if (trinity_exonerate_hint != false) {
+	if (trinity_exonerate_hint != "false") {
 		file_list += " ${trinity_exonerate_hint}"
 	}
 	merged_hints = "merged.hints.gff"
