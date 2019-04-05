@@ -58,7 +58,16 @@ To run some of the programs, additional information is required. There is always
 Species database for RepeatMasker.  
 
 #### `--rm_lib`[ fasta file | false ]
-By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources inlcude self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial).
+By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources include self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial). 
+If you have a copy of the complete Repeatmasker library, you can download the repeat annotation from a species like this: 
+```
+# Get the Tree of all available species: 
+perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
+
+# Select the name of the species (e.g. "Ostreoida") from the output tree and do:
+perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -species Ostreoida > RMdb_Ostreoida.fa
+``` 
+Then run the pipeline with the option "--rm_lib RMdb_Ostreoida.fa". 
 
 #### `--model` [ default = 'human' ]
 Species model for Augustus. 

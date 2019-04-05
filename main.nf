@@ -14,7 +14,7 @@
 
 // Make sure the Nextflow version is current enough
 try {
-    if( ! nextflow.version.matches(">= $workflow.manifest.nextflowVersion") ){
+    if( ! nextflow.version.replaceFirst(/\-edge/, '').matches(">= $workflow.manifest.nextflowVersion") ){
         throw GroovyException('Nextflow version too old')
     }
 } catch (all) {
@@ -263,6 +263,33 @@ log.info "========================================="
 // RUN REPEATMASKER
 //----------------------------
 
+// RepeatMasker library needs ot be writable. Need to do this so we can work with locked Singularity containers
+process createRMLib {
+
+	tag "ALL"
+	publishDir "${OUTDIR}/repeatmasker/"
+
+	input:
+	file(genome_fa) from FastaRM
+
+	output:
+	set file(genome_fa),file(lib_path) into RMLibPath
+
+	script:
+	lib_path = "Library"
+
+	"""
+		mkdir -p $lib_path
+		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
+		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat.gz > $lib_path/taxonomy.dat
+	"""
+
+}
+
+// ---------------------------
+// RUN REPEATMASKER
+//----------------------------
+
 // generate a soft-masked sequence for each assembly chunk
 process runRepeatMasker {
 
@@ -270,22 +297,26 @@ process runRepeatMasker {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(genome_fa) from FastaRM
+	set file(genome_fa),env(REPEATMASKER_LIB_DIR) from RMLibPath
 
 	output:
 	file(genome_rm) into RMFastaChunks
+	file(rm_gff) into RMGFF
 
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
 	// provide a custom repeat mask database
 	// mutually exclusive with --rm_lib
 	options = ""
+
 	if (params.rm_lib) {
 		options = "-lib ${RM_LIB}"
 	} else {
 		options = "-species ${params.species}"
 	}
+
 	genome_rm = genome_fa + ".masked"
+	rm_gff = genome_fa + ".out.gff"	
 	
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
@@ -431,8 +462,6 @@ if (params.proteins != false ) {
 		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
@@ -642,10 +671,8 @@ if (params.ESTs != false ) {
 	process runExonerateEST {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
+		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
 		set file(genome),file(genome_index) from RMGenomeIndexEST	
@@ -731,7 +758,7 @@ if (params.reads != false ) {
 
 	// Generate an alignment index from the genome sequence
 	process runMakeHisatDB {
-	
+
 		tag "${prefix}"
 		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
 
@@ -1016,11 +1043,26 @@ process runMergeAllHints {
 	file(merged_hints) into mergedHints
 
 	script:
-
+	def file_list = ""
+	if (protein_exonerate_hint != "false" ) {
+		file_list += " ${protein_exonerate_hint}"
+	}
+	if (rnaseq_hint  != "false" ) {
+		file_list += " ${rnaseq_hint}"
+	}
+	if (protein_gth_hint != "false") {
+		file_list += " ${protein_gth_hint}"
+	}
+	if (est_exonerate_hint != "false" ) {
+		file_list += " ${est_exonerate_hint}"
+	}
+	if (trinity_exonerate_hint != "false") {
+		file_list += " ${trinity_exonerate_hint}"
+	}
 	merged_hints = "merged.hints.gff"
 	
 	"""
-		cat $rnaseq_hint $protein_exonerate_hint $protein_gth_hint $est_exonerate_hint $trinity_exonerate_hint >> $merged_hints
+		cat $file_list >> $merged_hints
 	"""
 }
 
@@ -1050,7 +1092,7 @@ process runAugustus {
 	augustus_result = "augustus.${chunk_name}.out.gff"
 
 	"""
-		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $Genome > $augustus_result
+		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $genome_chunk > $augustus_result
 	"""
 }
 
