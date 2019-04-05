@@ -254,6 +254,11 @@ if (params.augCfg) {
 	log.info "Augustus config file		${AUG_CONF}"
 }
 log.info "-----------------------------------------"
+log.info "Parallelization settings"
+log.info "Chunk size for Blast:			${params.nblast}"
+log.info "Chunk size for Exonerate:		${params.nexonerate}"
+log.info "Chunk size for RepeatMasker:		${params.nrepeats}"
+log.info "-----------------------------------------"
 log.info "Nextflow Version:             $workflow.nextflow.version"
 log.info "Command Line:			$workflow.commandLine"
 log.info "Run name: 			${params.run_name}"
@@ -304,11 +309,10 @@ process runRepeatMasker {
 
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
-	// provide a custom repeat mask database
-	// mutually exclusive with --rm_lib
+
 	def options = ""
 
-	if (params.rm_lib) {
+	if (params.rm_lib != false ) {
 		options = "-lib ${RM_LIB}"
 	} else {
 		options = "-species ${params.species}"
