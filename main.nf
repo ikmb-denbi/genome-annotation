@@ -301,13 +301,12 @@ process runRepeatMasker {
 
 	output:
 	file(genome_rm) into RMFastaChunks
-	file(rm_gff) into RMGFF
 
 	script:
 	chunk_name = genome_fa.getName().tokenize('.')[-2]
 	// provide a custom repeat mask database
 	// mutually exclusive with --rm_lib
-	options = ""
+	def options = ""
 
 	if (params.rm_lib) {
 		options = "-lib ${RM_LIB}"
@@ -316,7 +315,6 @@ process runRepeatMasker {
 	}
 
 	genome_rm = genome_fa + ".masked"
-	rm_gff = genome_fa + ".out.gff"	
 	
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
@@ -362,16 +360,13 @@ process runMakeBlastDB {
 	file(genome_fa) from RMtoBlastDB
 
 	output:
-	file("${dbName}.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
-	file(db_mask) into BlastDBMask
+	file("${dbName}*.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
 
 	script:
 	dbName = genome_fa.baseName
-	db_mask = "${dbName}.asnb"
 	
 	"""
-		convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat -masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin -out $db_mask
-		makeblastdb -in $genome_fa -parse_seqids -mask_data $db_mask -dbtype nucl -out $dbName 
+		makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -out $dbName 
 	"""
 }
 
@@ -424,7 +419,7 @@ if (params.proteins != false ) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -db_soft_mask 40 -outfmt "${params.blast_options}" > $protein_blast_report
+			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -outfmt "${params.blast_options}" > $protein_blast_report
 		"""
 	}
 
@@ -635,7 +630,7 @@ if (params.ESTs != false ) {
 		blast_report = "${est_chunk.baseName}.${db_name}.est.blast"
 
 		"""
-			blastn -db $db_name -evalue $params.blast_evalue -db_soft_mask 40 -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
+			blastn -db $db_name -evalue $params.blast_evalue -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
 		"""
 	}
 
