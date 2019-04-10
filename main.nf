@@ -280,19 +280,15 @@ process createRMLib {
 	tag "ALL"
 	publishDir "${OUTDIR}/repeatmasker/"
 
-	input:
-	file(genome_fa) from FastaRM
-
 	output:
-	set file(genome_fa),file(lib_path) into RMLibPath
+	file("Library") into RMLibPath
 
 	script:
-	lib_path = "Library"
 
 	"""
 		mkdir -p $lib_path
-		cp ${workflow.projectDir}/assets/repeatmasker/DfamConsensus.embl $lib_path/ 
-		gunzip -c ${workflow.projectDir}/assets/repeatmasker/taxonomy.dat.gz > $lib_path/taxonomy.dat
+		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
+		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
 
 }
@@ -307,7 +303,8 @@ process runRepeatMasker {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	set file(genome_fa),env(REPEATMASKER_LIB_DIR) from RMLibPath
+	file(genome_fa) from FastaRM
+	env(REPEATMASKER_LIB_DIR) from RMLibPath
 
 	output:
 	file(genome_rm) into RMFastaChunks
@@ -824,7 +821,7 @@ if (params.reads != false ) {
 	// Combine all BAM files for hint generation
 	process mergeHisatBams {
 
-		publishDir "${OUTDIR}/evidence/ranseq/Hisat2", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/rnaseq/Hisat2", mode: 'copy'
 
 		scratch true 
 
