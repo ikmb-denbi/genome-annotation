@@ -227,7 +227,13 @@ if (params.reads) {
 	Channel
 		.fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
 		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-		.into {read_files_trimming }
+		.set {read_files_trimming }
+
+	// can use reads without wanting to run a de-novo transcriptome assembly
+	if (params.trinity == false) {
+	        trinity_exonerate_hints = Channel.from(false)
+	}
+
 } else {
 	trinity_exonerate_hints = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
@@ -298,7 +304,6 @@ process createRMLib {
 // generate a soft-masked sequence for each assembly chunk
 process runRepeatMasker {
 
-	tag "Chunk ${chunk_name}"
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
@@ -306,20 +311,21 @@ process runRepeatMasker {
 
 	output:
 	file(genome_rm) into RMFastaChunks
+	file(rm_gff) into RMGFF
 
 	script:
-	chunk_name = genome_fa.getName().tokenize('.')[-2]
 
-	def options = ""
+	options = ""
 
 	if (params.rm_lib != false ) {
-		options = "-lib ${RM_LIB}"
+		options = "-lib $params.rm_lib"
 	} else {
-		options = "-species ${params.species}"
+		options = "-species $params.species"
 	}
 
-	genome_rm = genome_fa + ".masked"
-	
+	genome_rm = "${genome_fa.getName()}.masked"
+	rm_gff = "${genome_fa.getName()}.out.gff"
+
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
 	"""
@@ -830,10 +836,10 @@ if (params.reads != false ) {
 
 		script:
 		bam = "hisat2.merged.bam"
-		avail_ram_per_core = (task.memory/${task.cpus}).toGiga()-1
+		avail_ram_per_core = (task.memory/task.cpus).toGiga()-1
 	
 		"""
-			samtools merge - $hisat_bams | samtools sort -@ ${task.cputs} -m${avail_ram_per_core}G - > $bam
+			samtools merge - $hisat_bams | samtools sort -@ ${task.cpus} -m${avail_ram_per_core}G - > $bam
 		"""
 	}
 
@@ -855,7 +861,7 @@ if (params.reads != false ) {
 		hisat_hints = "rnaseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=$hisat_hints
+			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$bam --out=$hisat_hints
 		"""
 	}
 
@@ -869,7 +875,7 @@ if (params.reads != false ) {
 	
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
 
-			scratch true 
+			//scratch true 
 	
 			input:
 			file(hisat_bam) from bam2trinity.collect()
@@ -907,12 +913,12 @@ if (params.reads != false ) {
 	
 			script: 
 
-			db_name = blastdb_nhr.baseName
+			db_name = blastdb[0].baseName
 			chunk_name = query_fa.getName().tokenize('-')[-2]
 			blast_report = "trinity.${chunk_name}.blast"
 
 			"""
-				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -db_soft_mask 40  -outfmt "${params.blast_options}" -num_threads ${task.cpus} > blast_report
+				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
 			"""
 		}
 
@@ -933,7 +939,7 @@ if (params.reads != false ) {
 			script:
 			trinity_targets = "trinity.all.targets.txt"
 			"""
-	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $trinity_targets
 			"""
 		} 	
 
@@ -950,10 +956,10 @@ if (params.reads != false ) {
 			set file(trinity_fa),file(trinity_db_index) into TrinityDBIndex
 
 			script:
-			trinity_db_index = trinity_fa.getName() + ".cdix"
+			trinity_db_index = trinity_fa.getName() + ".cidx"
 		
 			"""
-				cdbtools $trinity_fa
+				cdbfasta $trinity_fa
 			"""
 	
 		}
@@ -986,9 +992,9 @@ if (params.reads != false ) {
 			
 			"""
 				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
-	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
+	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $transcript_db_index --analysis est2genome --outfile commands.txt
         	                parallel -j ${task.cpus} < commands.txt
-                	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome:local' > merged_exonerate.out
+                	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
                         	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
 
 			"""
@@ -1012,8 +1018,8 @@ if (params.reads != false ) {
 			script:
 			trinity_hints = "RNAseq.trinity.hints.gff"
 			"""
-				cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > exonerate_gff_lines
-				Exonerate2GFF_trinity.pl exonerate_gff_lines $trinity_hints
+				cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > all_chunks.out
+	                        exonerate2gff.pl --infile all_chunks.out --source trinity --outfile $trinity_hints
 			"""
 		}
 
@@ -1043,19 +1049,19 @@ process runMergeAllHints {
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != "false" ) {
+	if (protein_exonerate_hint != false ) {
 		file_list += " ${protein_exonerate_hint}"
 	}
-	if (rnaseq_hint  != "false" ) {
+	if (rnaseq_hint  != false ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (protein_gth_hint != "false") {
+	if (protein_gth_hint != false) {
 		file_list += " ${protein_gth_hint}"
 	}
-	if (est_exonerate_hint != "false" ) {
+	if (est_exonerate_hint != false ) {
 		file_list += " ${est_exonerate_hint}"
 	}
-	if (trinity_exonerate_hint != "false") {
+	if (trinity_exonerate_hint != false) {
 		file_list += " ${trinity_exonerate_hint}"
 	}
 	merged_hints = "merged.hints.gff"
