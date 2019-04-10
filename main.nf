@@ -286,7 +286,7 @@ process createRMLib {
 	script:
 
 	"""
-		mkdir -p $lib_path
+		mkdir -p Library
 		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
 		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
