@@ -278,7 +278,7 @@ log.info "========================================="
 process createRMLib {
 
 	tag "ALL"
-	publishDir "${OUTDIR}/repeatmasker/"
+	publishDir "${OUTDIR}/repeatmasker/", mode: 'copy'
 
 	output:
 	file("Library") into RMLibPath
@@ -313,7 +313,6 @@ process runRepeatMasker {
 	script:
 
 	options = ""
-
 	if (params.rm_lib != false ) {
 		options = "-lib $params.rm_lib"
 	} else {
@@ -324,7 +323,7 @@ process runRepeatMasker {
 	rm_gff = "${genome_fa.getName()}.out.gff"
 
 	"""
-		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
+		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa &>/dev/null
 	"""
 }
 
