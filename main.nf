@@ -298,13 +298,14 @@ process createRMLib {
 //----------------------------
 
 // generate a soft-masked sequence for each assembly chunk
+// toString is needed because RM modifies the library each time it touches it.
 process runRepeatMasker {
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
 	file(genome_fa) from FastaRM
-	env(REPEATMASKER_LIB_DIR) from RMLibPath
+	env(REPEATMASKER_LIB_DIR) from RMLibPath.map { it.toString() } 
 
 	output:
 	file(genome_rm) into RMFastaChunks
