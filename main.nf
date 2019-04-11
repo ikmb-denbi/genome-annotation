@@ -339,7 +339,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity
+	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, genome_to_gth
 
 	script:
 	
@@ -523,6 +523,7 @@ if (params.proteins != false ) {
 
 			input:
 			file(protein_chunk) from fasta_prots_gth
+			set file(genome_fa),file(genome_fai) from genome_to_gth.collect()
 
 			output:
 			file(gth_chunk) into ProteinGTHChunk
@@ -532,7 +533,7 @@ if (params.proteins != false ) {
 			gth_chunk = "${protein_chunk.getName()}.gth"
 
 			"""
-				gth -genomic $Genome -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
+				gth -genomic $genome_fa -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
 			"""	
 		}
 
