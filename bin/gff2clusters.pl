@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/env perl
 
 use strict;
 use Getopt::Long;
@@ -60,7 +60,7 @@ while (<$IN>) {
 
 	$this_start = $start;
 
-	if (!defined %this_block->{'seq_name'}) {
+	if (!defined $this_block{'seq_name'}) {
 		#printf "Starting a new block\n";
                 %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
 

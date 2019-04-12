@@ -1046,19 +1046,19 @@ process runMergeAllHints {
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != false ) {
+	if (protein_exonerate_hint != "false" ) {
 		file_list += " ${protein_exonerate_hint}"
 	}
-	if (rnaseq_hint  != false ) {
+	if (rnaseq_hint  != "false" ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (protein_gth_hint != false) {
+	if (protein_gth_hint != "false") {
 		file_list += " ${protein_gth_hint}"
 	}
-	if (est_exonerate_hint != false ) {
+	if (est_exonerate_hint != "false" ) {
 		file_list += " ${est_exonerate_hint}"
 	}
-	if (trinity_exonerate_hint != false) {
+	if (trinity_exonerate_hint != "false") {
 		file_list += " ${trinity_exonerate_hint}"
 	}
 	merged_hints = "merged.hints.gff"
@@ -1081,7 +1081,7 @@ process runHintsToBed {
 	bed = "regions.bed"
 
 	"""
-                grep -v "#" $hints | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
+                grep -v "#" $hints | grep -v "false" | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
 		gff2clusters.pl --infile hints.sorted --max_intron $params.max_intron_size > $bed
 	"""
 }
@@ -1115,7 +1115,7 @@ process runAugustus {
 	"""
 		samtools faidx $genome_chunk
 		fastaexplode -f $genome_chunk -d . 
-		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr $params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
 		parallel -j ${task.cpus} < commands.txt
 		cat *.gff > $augustus_result
 	"""
