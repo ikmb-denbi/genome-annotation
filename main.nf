@@ -1042,7 +1042,7 @@ process runMergeAllHints {
         file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty()
 
 	output:
-	file(merged_hints) into mergedHints
+	file(merged_hints) into (mergedHints,mergedHintsSort)
 
 	script:
 	def file_list = ""
@@ -1068,6 +1068,24 @@ process runMergeAllHints {
 	"""
 }
 
+process runHintsToBed {
+
+	input:
+	file(hints) from mergedHintsSort
+
+	output:
+	file(bed) into HintRegions
+
+	script:
+
+	bed = "regions.bed"
+
+	"""
+                grep -v "#" $hints | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
+		gff2clusters.pl --infile hints.sorted --max_intron $params.max_intron_size > $bed
+	"""
+}
+
 // execute Augustus
 /*
  * STEP Augustus.1 - Genome Annotation
@@ -1082,7 +1100,7 @@ process runAugustus {
         params.augustus != false
 
 	input:
-
+	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints
 	file(genome_chunk) from GenomeChunksAugustus
 
@@ -1092,9 +1110,14 @@ process runAugustus {
 	script:
 	chunk_name = genome_chunk.getName().tokenize(".")[-2]
 	augustus_result = "augustus.${chunk_name}.out.gff"
+	genome_fai = genome_chunk.getName() + ".fai"
 
 	"""
-		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $genome_chunk > $augustus_result
+		samtools faidx $genome_chunk
+		fastaexplode -f $genome_chunk -d . 
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
+		parallel -j ${task.cpus} < commands.txt
+		cat *.gff > $augustus_result
 	"""
 }
 
@@ -1112,8 +1135,9 @@ process runMergeAugustusGff {
 	script:
 	augustus_merged_gff = "augustus.merged.out.gff"
 	
-	"""
-		cat $augustus_gffs > $augustus_merged_gff
+	"""	
+		cat $augustus_gffs >> merged.gff
+		create_gff_ids.pl --gff merged.gff > $augustus_merged_gff
 	"""
 }
 
