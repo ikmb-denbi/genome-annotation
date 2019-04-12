@@ -846,7 +846,6 @@ if (params.reads != false ) {
 	 */	
 	process Hisat2Hints {
 	
-		tag "${prefix}"
 		publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
 
 		input:
