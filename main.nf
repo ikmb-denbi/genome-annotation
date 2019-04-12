@@ -299,6 +299,7 @@ process createRMLib {
 
 // generate a soft-masked sequence for each assembly chunk
 // toString is needed because RM modifies the library each time it touches it.
+// if nothing was masked, return the original genome sequence instead. 
 process runRepeatMasker {
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
@@ -322,9 +323,13 @@ process runRepeatMasker {
 
 	genome_rm = "${genome_fa.getName()}.masked"
 	rm_gff = "${genome_fa.getName()}.out.gff"
-
+	
 	"""
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa &>/dev/null
+
+		if [ ! -f $genome_rm ]; then
+			cp $genome_fa $genome_rm
+		fi
 	"""
 }
 

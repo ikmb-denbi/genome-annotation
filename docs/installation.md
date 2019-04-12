@@ -7,7 +7,7 @@ Therefore the first thing to do is install Nextflow.
 
 If you are working in the **IKMB RZ cluster**, you can simply load the following modules:
 
-`module load IKMB Java/1.8.0 Nextflow/0.32.0` 
+`module load IKMB Java/1.8.0 Nextflow/19.03.0` 
 
 Otherwise, you can easily install it yourself. Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
@@ -24,7 +24,7 @@ mv nextflow ~/bin/
 # sudo mv nextflow /usr/local/bin
 ```
 
-**You need NextFlow version >= 18.01.0 to run this pipeline.** 
+**You need NextFlow version >= 19.03.0 to run this pipeline.** 
 
 ## Cloning the genome-annotation repository 
 
@@ -38,13 +38,10 @@ git clone git@github.com:ikmb-denbi/genome-annotation.git
  
 ## Installing all other software 
 
-This pipeline uses a lot of different bioinformatics software (you can see a full list at the end of this document). How you proceed to install these programs will depend on what system/cluster you are using: 
+This pipeline uses a lot of different bioinformatics software - you can find a full list with versions in the included file [environment.yaml](../environment.yaml).
+You won't have to install of of these tools, but can instead use one of the two options below:
 
-### A. Working in the IKMB RZ cluster 
-
-In the **IKMB RZ cluster**, all these programs are available as modules and will be loaded automatically as the pipeline runs. You don't need to do anything else, just make sure that you run the pipeline using the parameter `-profile standard`. This is anyway the default profile, so you don't even need to especify it, only don't use any other. 
-
-### B. Not in the IKMB? Use Bioconda 
+### A. (Bio-) Conda
 
 Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. All you need to do is install the corresponding miniconda2 for your system: 
 
@@ -54,19 +51,26 @@ In this case, when you run the pipeline add `-profile conda` (if in the IKMB) or
 
 Nextflow will install the environments with the necessary packages as it runs. 
 
-#### Missing programs: 
+### B. Singularity
 
-Some of the required programs are not available as conda packages yet, so you will have to install them yourself. Some parts of the pipeline will run successfully anyway, but you need to turn off the ones that don't. 
+The preferred way of provisioning the software is through [Singularity](https://github.com/sylabs/singularity). If Singularity is not available on your cluster, please ask your admins to install it. 
 
-1. **GenomeThreader:** it is used to map the protein evidences to the genome and create hints. It is not necessary to run the pipeline and, by default, protein evidence will be mapped using [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate). However, my experience shows that the two programs complement each other: some models that were missed by Exonerate are found by GenomeThreader, and viceversa. You can download GenomeThreader from [here](http://genomethreader.org/download.html) and follow the installation instructions. If you want to run the pipeline without this program, you must use `--gth false` on your command call.
+To enable use of singularity, simply add the following to your custom config file (see below):
 
-2. **Annie:** it is used to transfer the functional annotations to your gff3 file. You can download it from [here](http://genomeannotation.github.io/annie/) and extract it in your system. Make sure the executable file `annie.py` is in your path. If you don't want to perform functional annotation, use `--funAnnot false`. 
+```bash
+singularity {
+	enabled = true
+}
+```
 
-3. **InterProScan:** it is also necessary during the functional annotation step. It it is used to scan the predicted protein sequences for known protein signatures (functional domains, GO terms, etc) searching in different public databases. You can download it from [here](https://www.ebi.ac.uk/interpro/download.html) and extract it in your system. Make sure the executable `interproscan.sh` is in your path. If you want to run the pipeline without this program, use `--funAnnot false`. 
+Depending on your cluster and configuration of singularity, you may also have to provide some additional run options. A typical example would be that your data is stored on a network-mounted drive, which is not automatically detected by singularity. In this case, you can do:
 
-4. **Bioruby:** to run the functional annotation step you also need to have the bioruby library installed. You can download and install ruby if you haven't done so yet from [here](https://www.ruby-lang.org/en/). Then install bioruby using the RubyGems tool: `gem install bio` 
-
-*coming soon:* [Singularity]() image with these programs installed. 
+```bash
+singularity {
+	enabled=true
+	runOptions="-B /path/to/network/drive"
+}
+```
 
 #### Configuration for other clusters (`conda_custom`)
 
