@@ -46,25 +46,29 @@ while (<$GFF>) {
 	chomp; 
 	my $line = $_; 
 	
-	next if ($line =~ /^#.*/) ;
+	if ($line =~ /^#.*/) {
 
-	my %entry = parse_gff($line);
-	
-	if ( $entry{"feature"} eq "gene" ) {
-		$this_gene_id += 1;
-		$entry{"attributes"}{"ID"} = "gene.$this_gene_id" ;
-	} elsif ($entry{"feature"} eq "mRNA" || $entry{"feature"} eq "transcript") {
-		$this_mrna_id += 1;
-		$entry{"attributes"}{"ID"} = "mRNA.$this_mrna_id" ;
-		$entry{"attributes"}{"Parent"} = "gene.$this_gene_id" ;
-	} elsif ( $entry{"feature"} eq "CDS" ) {
-		$entry{"attributes"}{"ID"} = "mRNA.$this_mrna_id.cds" ;
-		$entry{"attributes"}{"Parent"} = "mRNA.$this_mrna_id" ;		
+		printf $line . "\n";
 	} else {
-		$entry{"attributes"}{"Parent"} = "mRNA.$this_mrna_id" ;
-	}
+
+		my %entry = parse_gff($line);
+	
+		if ( $entry{"feature"} eq "gene" ) {
+			$this_gene_id += 1;
+			$entry{"attributes"}{"ID"} = "gene.$this_gene_id" ;
+		} elsif ($entry{"feature"} eq "mRNA" || $entry{"feature"} eq "transcript") {
+			$this_mrna_id += 1;
+			$entry{"attributes"}{"ID"} = "mRNA.$this_mrna_id" ;
+			$entry{"attributes"}{"Parent"} = "gene.$this_gene_id" ;
+		} elsif ( $entry{"feature"} eq "CDS" ) {
+			$entry{"attributes"}{"ID"} = "mRNA.$this_mrna_id.cds" ;
+			$entry{"attributes"}{"Parent"} = "mRNA.$this_mrna_id" ;		
+		} else {
+			$entry{"attributes"}{"Parent"} = "mRNA.$this_mrna_id" ;
+		}
 		
-	gff_print(%entry) ;
+		gff_print(%entry) ;
+	}
 	
 }
 
