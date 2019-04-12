@@ -65,8 +65,8 @@ while (<$IN>) {
                 %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
 
 	# Existing block, same sequence - extend or finish
-	} elsif ( $this_block{'seq_name'} == $seq ) {
-
+	} elsif ( $this_block{'seq_name'} eq $seq ) {
+		
 	        die "File not coordinate sorted! Previous start was $previous_start and this start is $this_start\n" if ($this_start < $previous_start );
 	
 		# Within range of the previous range
