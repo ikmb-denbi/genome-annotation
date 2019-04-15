@@ -148,7 +148,7 @@ Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustu
 
 ### 5. Other options 
 
-#### `--email` [ <your address> | false (default)]
+#### `--email` [ you@somewhere.com | false (default)]
 If you specify an Email address, the pipeline will send a notification upon completion. However, for this to work, the node running the nextflow process must have a configured Email server. 
 
 #### `--singleEnd` [ true | false (default) ]
