@@ -329,6 +329,7 @@ process runRepeatMasker {
 
 		if [ ! -f $genome_rm ]; then
 			cp $genome_fa $genome_rm
+			touch $rm_gff
 		fi
 	"""
 }
