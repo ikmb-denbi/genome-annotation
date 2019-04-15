@@ -148,6 +148,9 @@ Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustu
 
 ### 5. Other options 
 
+#### `--email` [ <your address> | false (default)]
+If you specify an Email address, the pipeline will send a notification upon completion. However, for this to work, the node running the nextflow process must have a configured Email server. 
+
 #### `--singleEnd` [ true | false (default) ]
 By default, the pipeline expects paired-end RNA-seq data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 

@@ -1182,6 +1182,7 @@ workflow.onComplete {
   log.info "Duration:		$workflow.duration"
   log.info "========================================="
 
+  summary["Output"] = workflow.launchDir + "/" + OUTDIR
   def email_fields = [:]
   email_fields['version'] = workflow.manifest.version
   email_fields['session'] = workflow.sessionId
@@ -1227,7 +1228,7 @@ workflow.onComplete {
   def html_template = engine.createTemplate(hf).make(email_fields)
   def email_html = html_template.toString()
   
-  def subject = "Diagnostic exome analysis finished ($run_name)."
+  def subject = "Annotation run finished ($run_name)."
 
   if (params.email) {
 
