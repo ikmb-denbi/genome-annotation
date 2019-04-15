@@ -83,7 +83,7 @@ while (<$IN>) {
 	system($cmd_target);
 	
 	# Run exonerate on these data
-	my $cmd_run = "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron $max_intron_size  --showalignment false --showtargetgff true $fa_clean $region_name.fa > $query_clean.$region_name.exonerate.out\n";
+	my $cmd_run = "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron $max_intron_size  --showalignment false --showtargetgff true $fa_clean $region_name.fa > subjob_$query_clean.$region_name.exonerate.out\n";
 	
 	printf($cmd_run);
 

@@ -502,6 +502,7 @@ if (params.proteins != false ) {
 			parallel -j ${task.cpus} < commands.txt
 			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
+			rm subjob_*.out
 		"""
 	}
 
@@ -709,6 +710,7 @@ if (params.ESTs != false ) {
                         parallel -j ${task.cpus} < commands.txt
                         cat *.exonerate.out |  grep "exonerate:est2genome" > merged_exonerate.out
                         exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
+                        rm subjob*.out
 		"""
 	}
 
@@ -1009,7 +1011,7 @@ if (params.reads != false ) {
         	                parallel -j ${task.cpus} < commands.txt
                 	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
                         	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
-
+	                        rm subjob_*.out
 			"""
 		}
 

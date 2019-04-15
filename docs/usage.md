@@ -12,19 +12,22 @@ All you have to indicate are your own genome and evidence file(s). This command 
 
 ### Parameters file
 
-In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide this config file as an option, use `-params-file my_config.yaml`. 
+In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide this config file as an option, use `-params-file my_config.yaml`. The revised command could then read:
+
+`nextflow run /path/to/main.nf -params-file config.yaml -profile your_profile`
+
+The full YAML options file:
 
 ```yaml
 genome: ""
 proteins: ""
 ESTs: ""
 rm_lib: ""
+rm_species: "mammal"
 reads: ""
 trinity: false
 gth: false
 augustus: false
-funAnnot: false
-rm_species: "mammal"
 model: "human"
 UTR: "off"
 isof: false
@@ -82,9 +85,6 @@ have to ensure that it is available on your systems some other way. We use versi
 #### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  
 
-#### `--funAnnot` [ true (default) | false ] 
-Run functional annotation using Annie. 
-
 ### 4. Within-scaffold parallelization
 
 #### `--max_intron_size <int>` [ 20000 (default) ]
@@ -94,7 +94,7 @@ a few introns are much longer. Genes containing such extraordinarily large intro
 However, choosing too large values will drastically increase the run time. 
 
 ### 5. Parameters for specific programs 
-To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
+To run some of the programs, additional information is required. All options have a (hopfully reasonable) default, but you must check if it is the proper one for your organism and for the output you expect. 
 
 #### `--rm_species` [ default = 'mammal' ]
 Species database for RepeatMasker. This option will use the very limited built-in database of Repeatmasker and is only useful for annotating primates (mostly). It is also mutually exclusive with the preferred option `--rm_lib <file>` (below). 

@@ -3,28 +3,20 @@ By running `genome-annotation/main.nf` you can generate a *de novo* annotation o
 
 ### Proteins:
 * **Exonerate**
-* **GenomeThreader**
+* **GenomeThreader** (if `--gth true`)
 
 ### ESTs and transcriptome: 
 * **Exonerate**
 
 ### RNA-seq reads: 
-* **Trimmgalore**
+* **Fastp**
 * **Hisat2**
 * **Trinity** 
 * **Exonerate** 
-
-#### `--RM true`:
-* **RepeatMasker** 
 
 Once a file with all possible extrinsic hints is generated, the following steps are run:
 
 #### `--augustus true`:
 * **Augustus** 
-
-#### `--funAnnot true`:
-* **Blast** 
-* **InterProScan**
-* **Annie** 
 
 ![](../images/genome-annotation_dag_mod.svg) 
