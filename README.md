@@ -14,7 +14,7 @@ This pipeline can be used to annotate a genome *de novo*.
 
 2. Gene models are predicted using Augustus with the hints file as extrinsic evidence. 
 
-3. Gene models are functionally annotated using Blast and InterProScan. 
+3. Gene models are functionally annotated using Blast. 
 
 The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirements are a genome file and at least one type of evidence. 
 
@@ -31,7 +31,6 @@ Documentation about the pipeline can be found in the `docs/` directory or under 
 ### Pipeline Scheme 
 
 ![](images/genome-annotation_dag_mod.svg) 
-
 
 ### Credits 
 

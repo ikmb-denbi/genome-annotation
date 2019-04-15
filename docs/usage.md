@@ -3,12 +3,44 @@
 The typical command for running the pipeline is as follows:
 
 ```
-nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --nthreads 3 --outdir 'my_species_annotation_out'
+nextflow run main.nf --genome 'Genome.fasta' --proteins 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --outdir 'my_species_annotation_out'
 ```
 
 This will run all the steps in the pipeline.
 
 All you have to indicate are your own genome and evidence file(s). This command will run all the steps in the pipeline, but you can also decide which parts of the pipeline you want to run and which to skip. 
+
+### Parameters file
+
+In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). 
+
+```yaml
+genome: ""
+proteins: ""
+ESTs: ""
+rm_lib: ""
+reads: ""
+trinity: false
+gth: false
+augustus: false
+funAnnot: false
+species: "mammal"
+model: "human"
+UTR: "off"
+isof: false
+augCfg: false
+uniprot: false
+nblast: 200
+blast_evalue: 0.001
+nexonerate: 100
+nrepeats: 20
+ninterpro: 200
+singleEnd: false
+rnaseq_stranded: false
+outdir: "output"
+run_name: "evidences"
+max_intron_size: 100000
+```
   
 ### 1. Mandatory arguments 
 
@@ -37,7 +69,8 @@ Location of a single FASTA file with all EST sequences or assembled transcriptom
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
 
 ### 3. Programs to run 
-By default, the complete pipeline you see above will run. You can skip some steps if you want. For example, if you already have created hints files (see `--addHints`) for a especific type of evidence, if you already have assembled a transcriptome, if you don't want to run gene prediction and/or functional annotation, if you don't want to install some of the required programs or if you want the pipeline to finish faster. 
+By default, the complete pipeline you see above will run, given the types of evidences your provide. However, you can skip some steps if you want. 
+For example,if you already have assembled a transcriptome or if you don't want to run gene prediction and/or functional annotation. 
 
 #### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
@@ -51,15 +84,23 @@ Run Augustus to predict genes.
 #### `--funAnnot` [ true (default) | false ] 
 Run functional annotation using Annie. 
 
+### 4. Within-scaffold parallelization
+
+#### `--max_intron_size <int>
+This pipeline will run certain programs not on full scaffolds, but on clusters of data within those scaffolds. The factor determining how to build these evidence clusters is the expected maximum intron size for your organism of interest. 
+The default value is set to 20000 - for something like a nematode, this would be too long, for human it would probably be fine, although 
+a few introns are much longer. Genes containing such extraordinarily large introns will then probably be mis-annotated. 
+However, chooising too large values will drastically increase the run time. 
+
 ### 5. Parameters for specific programs 
 To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
 
-#### `--species` [ default = 'mammal' ]
+#### `--rm_species` [ default = 'mammal' ]
 Species database for RepeatMasker.  
 
 #### `--rm_lib`[ fasta file | false ]
 By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources include self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial). 
-If you have a copy of the complete Repeatmasker library, you can download the repeat annotation from a species like this: 
+If you have a copy of the complete Repeatmasker library (and an installation of RM), you can extract the repeat annotation from a species like this: 
 ```
 # Get the Tree of all available species: 
 perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
@@ -73,41 +114,40 @@ Then run the pipeline with the option "--rm_lib RMdb_Ostreoida.fa".
 Species model for Augustus. 
 
 #### `--UTR` [ 'on' | 'off' (default) ] 
-Allow Augustus to predict UTRs (results are not optimal and takes much longer). 
+Allow Augustus to predict UTRs (results are not optimal and takes much longer - not recommended). 
 
 #### `--isof` [ 'true' | 'false' (default) ] 
-Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer). 
+Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer - not recommended). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of Augustus configuration file. I provide a file that best works, in my experience, to predict gene models in mammalian genomes using extrinsic hints.
+Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline.
 
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
-Fasta file with Uniprot proteins for functional annotation. I provide a file with all eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' family. 
+Fasta file with Uniprot proteins for functional annotation. By default, this pipeline uses eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' taxonomic group. 
     
-### 4. How to split programs 
-One of the greates advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. When all instances of the program are finished, Nextflow can correctly put together all the results  in a single output for that program. The following parameters allow you to decide, for different programs, how many sequences go into each 'chunk': 
+### 4. How to tune the speed of the pipeline - data splitting
+
+One of the advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before 
+running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. 
+When all instances of the program are finished, Nextflow can correctly put together all the results in a single output for that program. Depending on the size and contiguity of your target genome and the size of the evidence data, you may want to tweak on or several of the parameters below. If unsure, 
+leave at the defaults.
 
 #### `--nblast` [ default = 500 ]
-Number of sequences in each chunk to divide Blast jobs. 
+Number of sequences in each Blast job. Larger values will usually create longer run times, but decrease the number of parallel jobs and load on the file system. 
 
 #### `--nexonerate` [ default = 200 ]
-Number of blast hits in each chunk to divide Exonerate jobs.
+Number of alignments to compute in each Exonerate job. Larger values will usually create longer run times, but decrease the number of parallel jobs and load on the file system.
 
 #### `--nrepeats` [ default = 30 ]
-Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustus jobs.
-
-#### `--ninterpro` [ default = 200 ] 
-Number of sequences in each chunk to divide InterPro jobs. 
-
-Think of how large your input files are (how many sequences they contain) and how busy your cluster is. If your jobs take a long time to start because your cluster is very busy, it is better to make big chunks. Otherwise, if your cluster allow you to start many processes in parallel, you can make smaller chunks. 
+Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustus jobs. If your assembly is highly contiguous, this number can be quite small (for the human genome, 1 or 2 would be ok).
 
 ### 5. Other options 
 
 #### `--singleEnd` [ true | false (default) ]
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
+By default, the pipeline expects paired-end RNA-seq data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
 ```bash
---singleEnd --reads '*.fastq'
+--singleEnd --reads '*_R{1,2}_001.fastq.gz'
 ```
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
@@ -121,21 +161,6 @@ All the above options can be passed from either the command line or through a co
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
 
-Available profiles are:
-
-* `standard` 
-  * The default profile, used if `-profile` is not specified at all. Runs in the 'ikmb_a' queue of the **IKMB RZ cluster**. The required modules will be loaded as the pipeline runs. 
-* `conda` 
-  * Profile to run in the 'ikmb_a' queue of the **IKMB RZ cluster** using conda packages. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
-* `custom_conda` 
-  * Profile to run the pipeline in your cluster system using conda packages. You must modifiy the file [custom.config](../conf/custom.config) to fit your system. GenomeThreader, Annie, InterProScan and bioruby must be previously installed and available from your path. 
-* `self_install`
-  * Profile to run the pipeline in your cluster system, where you have already installed all the necessary programs. You must modifiy the file [custom.config](../conf/custom.config) to fit your system. 
-* `local` 
-  * Profile to run the pipeline locally, where you have already installed all the necessary programs.
-* `none`
-  * No configuration at all. Useful if you want to build your own config from scratch and want to avoid loading in the default `base` config profile (not recommended).
-
 ### 6. Nextflow parameters
 
 #### `-name`
@@ -148,18 +173,6 @@ You can also supply a run name to resume a specific run: `-resume [run-name]`. U
 
 #### `-c`
 Specify the path to a specific config file (this is a core NextFlow command).
-
-#### `--max_memory`
-Use to set a top-limit for the default memory requirement for each process.
-Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
-
-#### `--max_time`
-Use to set a top-limit for the default time requirement for each process.
-Should be a string in the format integer-unit. eg. `--max_time '2.h'`
-
-#### `--max_cpus`
-Use to set a top-limit for the default CPU requirement for each process.
-Should be a string in the format integer-unit. eg. `--max_cpus 1` 
 
 ### Job Resources
 #### Automatic resubmission

@@ -53,7 +53,7 @@ def helpMessage() {
     --funAnnot		Run functional annotation using Annie [ true (default) | false ]
  	
     Programs parameters:
-    --species		Species database for RepeatMasker [ default = 'mammal' ]
+    --rm_species		Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
     --model		Species model for Augustus [ default = 'human' ]
     --UTR		Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
@@ -113,7 +113,7 @@ if (params.reads){
 if (params.rm_lib) {
 	RM_LIB = file(params.rm_lib)
 	if (!RM_LIB.exists() ) exit 1, "Repeatmask library does not exist (--rm_lib)!"
-	if (params.species) {
+	if (params.rm_species) {
 		println "Provided both a custom repeatmask library (--rm_lib) AND a species/taxonomic group for RM - will only use the library!"
 	}
 }
@@ -246,7 +246,7 @@ log.info "Genome assembly: 		${params.genome}"
 if (params.rm_lib) {
 	log.info "Repeatmasker lib:		${params.rm_lib}"
 } else {
-	log.info "Repeatmasker species:		${params.species}"
+	log.info "Repeatmasker species:		${params.rm_species}"
 }
 log.info "-----------------------------------------"
 log.info "Evidences:"
@@ -318,7 +318,7 @@ process runRepeatMasker {
 	if (params.rm_lib != false ) {
 		options = "-lib $params.rm_lib"
 	} else {
-		options = "-species $params.species"
+		options = "-species $params.rm_species"
 	}
 
 	genome_rm = "${genome_fa.getName()}.masked"

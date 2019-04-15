@@ -5,11 +5,7 @@
 The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatics workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
 Therefore the first thing to do is install Nextflow. 
 
-If you are working in the **IKMB RZ cluster**, you can simply load the following modules:
-
-`module load IKMB Java/1.8.0 Nextflow/19.03.0` 
-
-Otherwise, you can easily install it yourself. Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
+Nextflow runs on most systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
 ```
 # Make sure that Java v8+ is installed:
@@ -26,9 +22,9 @@ mv nextflow ~/bin/
 
 **You need NextFlow version >= 19.03.0 to run this pipeline.** 
 
-## Cloning the genome-annotation repository 
+## Obtaining the code 
 
-To run the pipeline you first have to check out the code to a location in your system (i.e. $HOME/git/). 
+You can check out the code to a location on your system (i.e. $HOME/git/). This is recommended as you will have to make some minor changes so the pieline knows how to run on your system (see below). 
 
 ``` 
 cd $HOME/git/ 
@@ -36,9 +32,35 @@ cd $HOME/git/
 git clone git@github.com:ikmb-denbi/genome-annotation.git
 ``` 
  
+Launching the pipeline then works as follows:
+
+```bash
+nextflow run $HOME/git/genome-annotation/main.nf <run options>
+```
+
+## Creating a config file for your cluster
+
+This pipeline uses at minimum two configuration files. The file `conf/base.config` contains information about the resource requirements of the individual stages of the pipeline. Normally, you do not have to touch this.
+
+In addition, you will need a config file that specifies which resource manager your cluster uses. An example for a Slurm cluster which uses Singularity (see below) is included as [conf/slurm_ikmba.config](../conf/slurm_ikmba.config). 
+Detailed instructions about resource managers and available options can be found [here](https://www.nextflow.io/docs/latest/executor.html).
+
+You can now create a new execution profile by editing the file [nextflow.config](../nextflow.config):
+
+```bash
+profiles {
+
+	...
+	your_cluster {
+		includeConfig 'conf/base.config'
+		includeConfig 'conf/your_cluster.config'
+	}
+}
+```
+
 ## Installing all other software 
 
-This pipeline uses a lot of different bioinformatics software - you can find a full list with versions in the included file [environment.yaml](../environment.yaml).
+This pipeline uses a lot of different bioinformatics software - you can find a full list with versions in the included file [environment.yml](../environment.yml).
 You won't have to install of of these tools, but can instead use one of the two options below:
 
 ### A. (Bio-) Conda
@@ -49,7 +71,9 @@ Most of the required programs are available as [bioconda packages](https://bioco
 
 In this case, when you run the pipeline add `-profile conda` (if in the IKMB) or `-profile conda_custom` (see below) to your command. 
 
-Nextflow will install the environments with the necessary packages as it runs. 
+However, please note that you will not be able to run the GenomeThreader part of the pipeline unless you make sure to provide this package some other way. 
+
+Nextflow will install the environments with the necessary packages during pipeline start-up. 
 
 ### B. Singularity
 
@@ -71,54 +95,3 @@ singularity {
 	runOptions="-B /path/to/network/drive"
 }
 ```
-
-#### Configuration for other clusters (`conda_custom`)
-
-It is entirely possible to run this pipeline on clusters other than the IKMB, but you will need to set up your own config file so that the pipeline knows how to work with your cluster. 
-
-> If you think that there are other people using the pipeline who would benefit from your configuration (eg. other common cluster setups), please let us know. We can add a new configuration and profile which can used by specifying `-profile <name>` when running the pipeline. 
-
-If you are the only person to be running this pipeline, you can simply modify the [custom.config](../conf/custom.config) file to include the especifications of your cluster. Then remember to run the pipeline with `-profile conda_custom`. This profile automatically uses the [custom.config](../conf/custom.config) file, so keep the file name! 
-
-If you are familiar with Nextflow, you can add your own profiles by changing the [nextflow.config](../nextflow.config) file.
-
-#### Configuration for local execution (`local`)
-
-If you don't want to use any cluster management system but rather run the pipeline locally, use `-profile local`. 
-
-### C. Install all programs yourself 
-
-Here is a list of all the programs necessary to run the complete genome-annotation pipeline (`--prots proteins.fa --ESTs ESTs.fa --reads '*_R{1,2}.fastq' --gth true --RM true --trinity true --augustus true --funAnnot true`).
-
-1. [Blast+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) v2.2.30 
-
-2. [Exonerate](https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate) v2.2.0 
-
-3. [Bioperl](https://bioperl.org) 
-
-4. [GenomeThreader](http://genomethreader.org/download.html) v1.7.0 
-
-5. [Genometools](http://genometools.org) v1.5.6 
-
-6. [RepeatMasker](http://www.repeatmasker.org) v.4.0.6 
-
-7. [Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/) v0.4.4 
-
-8. [Hisat2](https://ccb.jhu.edu/software/hisat2/manual.shtml) v2.1.0 
-
-9. [Samtools](http://www.htslib.org/download/) v1.5 
-
-10. [Augustus](http://bioinf.uni-greifswald.de/augustus/) v3.2.1 
-
-11. [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) v2.5.1 
-
-12. [Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) v2.2.3 
-
-13. [Ruby](https://www.ruby-lang.org/en/) v2.2.2 + bioruby library 
-
-14. [Annie](http://genomeannotation.github.io/annie/)  
-
-15. [Interproscan](https://www.ebi.ac.uk/interpro/download.html)  
-
-You can use the `-profile self_install` to run the pipeline in this case. Modify the **_genome-annotation/conf/custom.config_** as necessary for your system. The pipeline has been tested successfully with the versions that are here described. 
-
