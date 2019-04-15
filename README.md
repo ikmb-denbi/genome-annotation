@@ -14,10 +14,14 @@ This pipeline can be used to annotate a genome *de novo*.
 
 2. Gene models are predicted using Augustus with the hints file as extrinsic evidence. 
 
-3. Gene models are functionally annotated using Blast and InterProScan. 
+3. Gene models are functionally annotated using Blast. 
 
 The pipeline runs these three steps by default, but each step can also be skipped by command line parameters. The minimum requirements are a genome file and at least one type of evidence. 
 
+### Test data
+
+A simple test data set can be downloaded [here](https://drive.google.com/open?id=1VFqLnRJiuj5Vhj2KCOdY58jwxZKkkMVU) 
+ 
 ### Documentation 
 
 Documentation about the pipeline can be found in the `docs/` directory or under the links below:
@@ -32,7 +36,6 @@ Documentation about the pipeline can be found in the `docs/` directory or under 
 
 ![](images/genome-annotation_dag_mod.svg) 
 
-
 ### Credits 
 
-This pipeline was written by Dr. Montserrat Torres ([m.torres](https://git.ikmb.uni-kiel.de/m.torres)) and Dr. Marc Höppner ([m.hoeppner](https://www.ikmb.uni-kiel.de/people/scientists/marc-hoppner)) at [IKMB](http://www.ikmb.uni-kiel.de).
+This pipeline was written by Dr. Montserrat Torres ([MontseTor](https://github.com/MontseTor)) and Dr. Marc Höppner ([marchoeppner](https://github.com/marchoeppner)) at [IKMB](http://www.ikmb.uni-kiel.de).

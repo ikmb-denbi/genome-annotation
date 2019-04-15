@@ -14,7 +14,7 @@
 
 // Make sure the Nextflow version is current enough
 try {
-    if( ! nextflow.version.matches(">= $workflow.manifest.nextflowVersion") ){
+    if( ! nextflow.version.replaceFirst(/\-edge/, '').matches(">= $workflow.manifest.nextflowVersion") ){
         throw GroovyException('Nextflow version too old')
     }
 } catch (all) {
@@ -53,7 +53,7 @@ def helpMessage() {
     --funAnnot		Run functional annotation using Annie [ true (default) | false ]
  	
     Programs parameters:
-    --species		Species database for RepeatMasker [ default = 'mammal' ]
+    --rm_species		Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
     --model		Species model for Augustus [ default = 'human' ]
     --UTR		Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
@@ -113,7 +113,7 @@ if (params.reads){
 if (params.rm_lib) {
 	RM_LIB = file(params.rm_lib)
 	if (!RM_LIB.exists() ) exit 1, "Repeatmask library does not exist (--rm_lib)!"
-	if (params.species) {
+	if (params.rm_species) {
 		println "Provided both a custom repeatmask library (--rm_lib) AND a species/taxonomic group for RM - will only use the library!"
 	}
 }
@@ -138,6 +138,16 @@ if (params.augustus != false && params.augCfg == false ) {
 // give this run a name
 params.run_name = false
 run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
+
+def summary = [:]
+
+summary['Assembly'] = params.genome
+summary['ESTs'] = params.ESTs
+summary['Proteins'] = params.proteins
+summary['RNA-seq'] = params.reads
+summary['RM species'] = params.rm_species
+summary['RM library'] = params.rm_lib
+summary['Augustus model'] = params.model
 
 // ----------------------
 // ----------------------
@@ -227,7 +237,13 @@ if (params.reads) {
 	Channel
 		.fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
 		.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-		.into {read_files_trimming }
+		.set {read_files_trimming }
+
+	// can use reads without wanting to run a de-novo transcriptome assembly
+	if (params.trinity == false) {
+	        trinity_exonerate_hints = Channel.from(false)
+	}
+
 } else {
 	trinity_exonerate_hints = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
@@ -240,7 +256,7 @@ log.info "Genome assembly: 		${params.genome}"
 if (params.rm_lib) {
 	log.info "Repeatmasker lib:		${params.rm_lib}"
 } else {
-	log.info "Repeatmasker species:		${params.species}"
+	log.info "Repeatmasker species:		${params.rm_species}"
 }
 log.info "-----------------------------------------"
 log.info "Evidences:"
@@ -254,6 +270,11 @@ if (params.augCfg) {
 	log.info "Augustus config file		${AUG_CONF}"
 }
 log.info "-----------------------------------------"
+log.info "Parallelization settings"
+log.info "Chunk size for Blast:			${params.nblast}"
+log.info "Chunk size for Exonerate:		${params.nexonerate}"
+log.info "Chunk size for RepeatMasker:		${params.nrepeats}"
+log.info "-----------------------------------------"
 log.info "Nextflow Version:             $workflow.nextflow.version"
 log.info "Command Line:			$workflow.commandLine"
 log.info "Run name: 			${params.run_name}"
@@ -263,32 +284,63 @@ log.info "========================================="
 // RUN REPEATMASKER
 //----------------------------
 
+// RepeatMasker library needs ot be writable. Need to do this so we can work with locked Singularity containers
+process createRMLib {
+
+	tag "ALL"
+	publishDir "${OUTDIR}/repeatmasker/", mode: 'copy'
+
+	output:
+	file("Library") into RMLibPath
+
+	script:
+
+	"""
+		mkdir -p Library
+		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
+		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
+	"""
+
+}
+
+// ---------------------------
+// RUN REPEATMASKER
+//----------------------------
+
 // generate a soft-masked sequence for each assembly chunk
+// toString is needed because RM modifies the library each time it touches it.
+// if nothing was masked, return the original genome sequence instead and an empty gff file. 
 process runRepeatMasker {
 
-	tag "Chunk ${chunk_name}"
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
 	file(genome_fa) from FastaRM
+	env(REPEATMASKER_LIB_DIR) from RMLibPath.map { it.toString() } 
 
 	output:
 	file(genome_rm) into RMFastaChunks
+	file(rm_gff) into RMGFF
 
 	script:
-	chunk_name = genome_fa.getName().tokenize('.')[-2]
-	// provide a custom repeat mask database
-	// mutually exclusive with --rm_lib
+
 	options = ""
-	if (params.rm_lib) {
-		options = "-lib ${RM_LIB}"
+	if (params.rm_lib != false ) {
+		options = "-lib $params.rm_lib"
 	} else {
-		options = "-species ${params.species}"
+		options = "-species $params.rm_species"
 	}
-	genome_rm = genome_fa + ".masked"
+
+	genome_rm = "${genome_fa.getName()}.masked"
+	rm_gff = "${genome_fa.getName()}.out.gff"
 	
 	"""
-		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa	
+		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa &>/dev/null
+
+		if [ ! -f $genome_rm ]; then
+			cp $genome_fa $genome_rm
+			touch $rm_gff
+		fi
 	"""
 }
 
@@ -303,7 +355,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity
+	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, genome_to_gth
 
 	script:
 	
@@ -331,16 +383,13 @@ process runMakeBlastDB {
 	file(genome_fa) from RMtoBlastDB
 
 	output:
-	file("${dbName}.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
-	file(db_mask) into BlastDBMask
+	file("${dbName}*.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
 
 	script:
 	dbName = genome_fa.baseName
-	db_mask = "${dbName}.asnb"
 	
 	"""
-		convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat -masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin -out $db_mask
-		makeblastdb -in $genome_fa -parse_seqids -mask_data $db_mask -dbtype nucl -out $dbName 
+		makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -out $dbName 
 	"""
 }
 
@@ -393,7 +442,7 @@ if (params.proteins != false ) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -db_soft_mask 40 -outfmt "${params.blast_options}" > $protein_blast_report
+			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -outfmt "${params.blast_options}" > $protein_blast_report
 		"""
 	}
 
@@ -431,8 +480,6 @@ if (params.proteins != false ) {
 		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
@@ -492,6 +539,7 @@ if (params.proteins != false ) {
 
 			input:
 			file(protein_chunk) from fasta_prots_gth
+			set file(genome_fa),file(genome_fai) from genome_to_gth.collect()
 
 			output:
 			file(gth_chunk) into ProteinGTHChunk
@@ -501,7 +549,7 @@ if (params.proteins != false ) {
 			gth_chunk = "${protein_chunk.getName()}.gth"
 
 			"""
-				gth -genomic $Genome -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
+				gth -genomic $genome_fa -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
 			"""	
 		}
 
@@ -606,7 +654,7 @@ if (params.ESTs != false ) {
 		blast_report = "${est_chunk.baseName}.${db_name}.est.blast"
 
 		"""
-			blastn -db $db_name -evalue $params.blast_evalue -db_soft_mask 40 -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
+			blastn -db $db_name -evalue $params.blast_evalue -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
 		"""
 	}
 
@@ -642,10 +690,8 @@ if (params.ESTs != false ) {
 	process runExonerateEST {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks"
+		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
 
-		scratch true
-	
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
 		set file(genome),file(genome_index) from RMGenomeIndexEST	
@@ -731,7 +777,7 @@ if (params.reads != false ) {
 
 	// Generate an alignment index from the genome sequence
 	process runMakeHisatDB {
-	
+
 		tag "${prefix}"
 		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
 
@@ -792,7 +838,7 @@ if (params.reads != false ) {
 	// Combine all BAM files for hint generation
 	process mergeHisatBams {
 
-		publishDir "${OUTDIR}/evidence/ranseq/Hisat2", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/rnaseq/Hisat2", mode: 'copy'
 
 		scratch true 
 
@@ -804,10 +850,10 @@ if (params.reads != false ) {
 
 		script:
 		bam = "hisat2.merged.bam"
-		avail_ram_per_core = (task.memory/${task.cpus}).toGiga()-1
+		avail_ram_per_core = (task.memory/task.cpus).toGiga()-1
 	
 		"""
-			samtools merge - $hisat_bams | samtools sort -@ ${task.cputs} -m${avail_ram_per_core}G - > $bam
+			samtools merge - $hisat_bams | samtools sort -@ ${task.cpus} -m${avail_ram_per_core}G - > $bam
 		"""
 	}
 
@@ -816,7 +862,6 @@ if (params.reads != false ) {
 	 */	
 	process Hisat2Hints {
 	
-		tag "${prefix}"
 		publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
 
 		input:
@@ -829,7 +874,7 @@ if (params.reads != false ) {
 		hisat_hints = "rnaseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$accepted_hits2hints --out=$hisat_hints
+			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$bam --out=$hisat_hints
 		"""
 	}
 
@@ -843,7 +888,7 @@ if (params.reads != false ) {
 	
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
 
-			scratch true 
+			//scratch true 
 	
 			input:
 			file(hisat_bam) from bam2trinity.collect()
@@ -881,12 +926,12 @@ if (params.reads != false ) {
 	
 			script: 
 
-			db_name = blastdb_nhr.baseName
+			db_name = blastdb[0].baseName
 			chunk_name = query_fa.getName().tokenize('-')[-2]
 			blast_report = "trinity.${chunk_name}.blast"
 
 			"""
-				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -db_soft_mask 40  -outfmt "${params.blast_options}" -num_threads ${task.cpus} > blast_report
+				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
 			"""
 		}
 
@@ -907,7 +952,7 @@ if (params.reads != false ) {
 			script:
 			trinity_targets = "trinity.all.targets.txt"
 			"""
-	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $trinity_targets
 			"""
 		} 	
 
@@ -924,10 +969,10 @@ if (params.reads != false ) {
 			set file(trinity_fa),file(trinity_db_index) into TrinityDBIndex
 
 			script:
-			trinity_db_index = trinity_fa.getName() + ".cdix"
+			trinity_db_index = trinity_fa.getName() + ".cidx"
 		
 			"""
-				cdbtools $trinity_fa
+				cdbfasta $trinity_fa
 			"""
 	
 		}
@@ -960,9 +1005,9 @@ if (params.reads != false ) {
 			
 			"""
 				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
-	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis est2genome --outfile commands.txt
+	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $transcript_db_index --analysis est2genome --outfile commands.txt
         	                parallel -j ${task.cpus} < commands.txt
-                	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome:local' > merged_exonerate.out
+                	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
                         	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
 
 			"""
@@ -986,8 +1031,8 @@ if (params.reads != false ) {
 			script:
 			trinity_hints = "RNAseq.trinity.hints.gff"
 			"""
-				cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > exonerate_gff_lines
-				Exonerate2GFF_trinity.pl exonerate_gff_lines $trinity_hints
+				cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > all_chunks.out
+	                        exonerate2gff.pl --infile all_chunks.out --source trinity --outfile $trinity_hints
 			"""
 		}
 
@@ -1013,14 +1058,47 @@ process runMergeAllHints {
         file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty()
 
 	output:
-	file(merged_hints) into mergedHints
+	file(merged_hints) into (mergedHints,mergedHintsSort)
 
 	script:
-
+	def file_list = ""
+	if (protein_exonerate_hint != "false" ) {
+		file_list += " ${protein_exonerate_hint}"
+	}
+	if (rnaseq_hint  != "false" ) {
+		file_list += " ${rnaseq_hint}"
+	}
+	if (protein_gth_hint != "false") {
+		file_list += " ${protein_gth_hint}"
+	}
+	if (est_exonerate_hint != "false" ) {
+		file_list += " ${est_exonerate_hint}"
+	}
+	if (trinity_exonerate_hint != "false") {
+		file_list += " ${trinity_exonerate_hint}"
+	}
 	merged_hints = "merged.hints.gff"
 	
 	"""
-		cat $rnaseq_hint $protein_exonerate_hint $protein_gth_hint $est_exonerate_hint $trinity_exonerate_hint >> $merged_hints
+		cat $file_list >> $merged_hints
+	"""
+}
+
+process runHintsToBed {
+
+	input:
+	file(hints) from mergedHintsSort
+
+	output:
+	file(bed) into HintRegions
+
+	script:
+
+	bed = "regions.bed"
+
+	"""
+                grep -v "#" $hints | grep -v "false" | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
+		gff2clusters.pl --infile hints.sorted --max_intron $params.max_intron_size > $bed
 	"""
 }
 
@@ -1032,13 +1110,13 @@ process runMergeAllHints {
 process runAugustus {
 
 	tag "Chunk ${chunk_name}"
-	publishDir "${OUTDIR}/annotation/augustus/chunks"
+	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
         when:
         params.augustus != false
 
 	input:
-
+	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints
 	file(genome_chunk) from GenomeChunksAugustus
 
@@ -1048,9 +1126,14 @@ process runAugustus {
 	script:
 	chunk_name = genome_chunk.getName().tokenize(".")[-2]
 	augustus_result = "augustus.${chunk_name}.out.gff"
+	genome_fai = genome_chunk.getName() + ".fai"
 
 	"""
-		augustus --species=$params.model --gff3=on --UTR=$params.UTR --alternatives-from-evidence=$params.isof --extrinsicCfgFile=$AUG_CONF --hintsfile=$hints $Genome > $augustus_result
+		samtools faidx $genome_chunk
+		fastaexplode -f $genome_chunk -d . 
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr $params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
+		parallel -j ${task.cpus} < commands.txt
+		cat *augustus.gff > $augustus_result
 	"""
 }
 
@@ -1068,8 +1151,9 @@ process runMergeAugustusGff {
 	script:
 	augustus_merged_gff = "augustus.merged.out.gff"
 	
-	"""
-		cat $augustus_gffs > $augustus_merged_gff
+	"""	
+		cat $augustus_gffs >> merged.gff
+		create_gff_ids.pl --gff merged.gff > $augustus_merged_gff
 	"""
 }
 
@@ -1093,3 +1177,77 @@ process runAugustus2Protein {
 	"""
 }
 
+workflow.onComplete {
+  log.info "========================================="
+  log.info "Duration:		$workflow.duration"
+  log.info "========================================="
+
+  summary["Output"] = workflow.launchDir + "/" + OUTDIR
+  def email_fields = [:]
+  email_fields['version'] = workflow.manifest.version
+  email_fields['session'] = workflow.sessionId
+  email_fields['runName'] = run_name
+  email_fields['success'] = workflow.success
+  email_fields['dateStarted'] = workflow.start
+  email_fields['dateComplete'] = workflow.complete
+  email_fields['duration'] = workflow.duration
+  email_fields['exitStatus'] = workflow.exitStatus
+  email_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
+  email_fields['errorReport'] = (workflow.errorReport ?: 'None')
+  email_fields['commandLine'] = workflow.commandLine
+  email_fields['projectDir'] = workflow.projectDir
+  email_fields['script_file'] = workflow.scriptFile
+  email_fields['launchDir'] = workflow.launchDir
+  email_fields['user'] = workflow.userName
+  email_fields['Pipeline script hash ID'] = workflow.scriptId
+  email_fields['manifest'] = workflow.manifest
+  email_fields['summary'] = summary
+
+  email_info = ""
+  for (s in email_fields) {
+	email_info += "\n${s.key}: ${s.value}"
+  }
+
+  def output_d = new File( "${params.outdir}/pipeline_info/" )
+  if( !output_d.exists() ) {
+      output_d.mkdirs()
+  }
+
+  def output_tf = new File( output_d, "pipeline_report.txt" )
+  output_tf.withWriter { w -> w << email_info }	
+
+ // make txt template
+  def engine = new groovy.text.GStringTemplateEngine()
+
+  def tf = new File("$baseDir/assets/email_template.txt")
+  def txt_template = engine.createTemplate(tf).make(email_fields)
+  def email_txt = txt_template.toString()
+
+  // make email template
+  def hf = new File("$baseDir/assets/email_template.html")
+  def html_template = engine.createTemplate(hf).make(email_fields)
+  def email_html = html_template.toString()
+  
+  def subject = "Annotation run finished ($run_name)."
+
+  if (params.email) {
+
+  	def mqc_report = null
+
+	def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report ]
+	def sf = new File("$baseDir/assets/sendmail_template.txt")	
+    	def sendmail_template = engine.createTemplate(sf).make(smail_fields)
+    	def sendmail_html = sendmail_template.toString()
+
+	try {
+          if( params.plaintext_email ){ throw GroovyException('Send plaintext e-mail, not HTML') }
+          // Try to send HTML e-mail using sendmail
+          [ 'sendmail', '-t' ].execute() << sendmail_html
+        } catch (all) {
+          // Catch failures and try with plaintext
+          [ 'mail', '-s', subject, params.email ].execute() << email_txt
+        }
+
+  }
+
+}
