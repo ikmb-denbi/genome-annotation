@@ -7,7 +7,7 @@ trinity: false
 gth: false
 augustus: false
 funAnnot: false
-species: "mammal"
+rm_species: "mammal"
 model: "human"
 UTR: "off"
 isof: false

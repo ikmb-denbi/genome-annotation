@@ -12,7 +12,7 @@ All you have to indicate are your own genome and evidence file(s). This command 
 
 ### Parameters file
 
-In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). 
+In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide this config file as an option, use `-params-file my_config.yaml`. 
 
 ```yaml
 genome: ""
@@ -24,7 +24,7 @@ trinity: false
 gth: false
 augustus: false
 funAnnot: false
-species: "mammal"
+rm_species: "mammal"
 model: "human"
 UTR: "off"
 isof: false
@@ -76,7 +76,8 @@ For example,if you already have assembled a transcriptome or if you don't want t
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
 
 #### `--gth` [ true (default) | false ] 
-Run GenomeThreader to produce hints from protein file.  
+Run GenomeThreader to produce hints from protein file. If you are using Conda for software provisioning, Gth will not be included and you
+have to ensure that it is available on your systems some other way. We use version [1.7.1](http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz). 
 
 #### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  
@@ -86,21 +87,24 @@ Run functional annotation using Annie.
 
 ### 4. Within-scaffold parallelization
 
-#### `--max_intron_size <int>
+#### `--max_intron_size <int>` [ 20000 (default) ]
 This pipeline will run certain programs not on full scaffolds, but on clusters of data within those scaffolds. The factor determining how to build these evidence clusters is the expected maximum intron size for your organism of interest. 
 The default value is set to 20000 - for something like a nematode, this would be too long, for human it would probably be fine, although 
 a few introns are much longer. Genes containing such extraordinarily large introns will then probably be mis-annotated. 
-However, chooising too large values will drastically increase the run time. 
+However, choosing too large values will drastically increase the run time. 
 
 ### 5. Parameters for specific programs 
 To run some of the programs, additional information is required. There is always a default parameter that I have chosen, but you must check if it is the proper one for your organism and for the output you expect. 
 
 #### `--rm_species` [ default = 'mammal' ]
-Species database for RepeatMasker.  
+Species database for RepeatMasker. This option will use the very limited built-in database of Repeatmasker and is only useful for annotating primates (mostly). It is also mutually exclusive with the preferred option `--rm_lib <file>` (below). 
 
 #### `--rm_lib`[ fasta file | false ]
-By default, Repeatmasker will run with the built-in DFam hmm profile for human. It is thus generally advisable to instead provide repeat annotations in FASTA format. Possible sources include self-computed repeats (using RepeatModeler) or curated repeat libraries from GRINST (www.grinst.org, commercial). 
+By default, Repeatmasker will run with the built-in DFam hmm profile for (mostly) primates. It is thus generally advisable to instead provide 
+repeat annotations in FASTA format. Possible sources include self-computed repeats (using RepeatModeler) or curated repeat libraries from 
+GRINST (www.grinst.org, commercial). 
 If you have a copy of the complete Repeatmasker library (and an installation of RM), you can extract the repeat annotation from a species like this: 
+
 ```
 # Get the Tree of all available species: 
 perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
@@ -108,10 +112,11 @@ perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
 # Select the name of the species (e.g. "Ostreoida") from the output tree and do:
 perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -species Ostreoida > RMdb_Ostreoida.fa
 ``` 
+
 Then run the pipeline with the option "--rm_lib RMdb_Ostreoida.fa". 
 
 #### `--model` [ default = 'human' ]
-Species model for Augustus. 
+Species model for Augustus. A list of valid identifiers can be found [here](https://github.com/Gaius-Augustus/Augustus/blob/master/docs/RUNNING-AUGUSTUS.md).
 
 #### `--UTR` [ 'on' | 'off' (default) ] 
 Allow Augustus to predict UTRs (results are not optimal and takes much longer - not recommended). 
@@ -155,13 +160,13 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 #### `--outdir` [ default = 'annotation_output' ]
 The output directory where the results will be saved. 
 
-#### `-params-file config.yaml`
-All the above options can be passed from either the command line or through a configuration file. A suitable template is included under assets/config.yaml.
-
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
 
 ### 6. Nextflow parameters
+
+#### `-params-file config.yaml`
+All the above options can be passed from either the command line or through a configuration file. A suitable template is included under assets/config.yaml.
 
 #### `-name`
 Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
