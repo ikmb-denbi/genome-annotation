@@ -77,7 +77,7 @@ file [environment.yml](../environment.yml). You won't have to install any of the
 
 ### A. (Bio-) Conda
 
-Most of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. 
+All of the required programs are available as [bioconda packages](https://bioconda.github.io/recipes.html) for easy installation. 
 All you need to do is install the corresponding miniconda2 for your system: 
 
 [miniconda2 installer](https://repo.continuum.io/miniconda/) 
@@ -91,7 +91,7 @@ process {
 ```
 
 Nextflow will install the environment with the necessary packages during pipeline start-up. However, please be advised that this takes a little while and 
-needs to be done every time you run a new project. Using Singularity is therefore highly recommended (see below). 
+needs to be done every time you run a new project. Using Singularity is therefore highly recommended (see below). Failing that, you can also install the conda environment into some other location (default is usually $HOME/.conda) and just make sure to activate it any time you want to start the pipeline. Your config file would then container neither a `conda` nor a `singularity` statement. 
 
 ### B. Singularity
 

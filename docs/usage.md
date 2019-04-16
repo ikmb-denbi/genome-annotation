@@ -20,12 +20,12 @@ use `-params-file my_config.yaml`. The revised command could then read:
 The full YAML options file:
 
 ```yaml
-genome: ""
-proteins: ""
-ESTs: ""
-rm_lib: ""
+genome: "/path/to/genome.fa"
+proteins: "/path/to/proteins.fa"
+ESTs: "/path/to/ests.fa"
+rm_lib: "/path/to/repeats.fa"
 rm_species: "mammal"
-reads: ""
+reads: "/path/to/*_R{1,2}_001.fastq.gz"
 trinity: false
 augustus: false
 model: "human"
