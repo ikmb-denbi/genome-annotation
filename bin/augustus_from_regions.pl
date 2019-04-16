@@ -81,7 +81,7 @@ while (<$BED>) {
 	my ($chr,$from,$to) = split("\t",$line);
 
 	# If this scaffold is part of our target chunk
-	if ( grep( /$chr/, @scaffolds ) ) {
+	if ( grep( /^$chr$/, @scaffolds ) ) {
 		my $outfile = $chr . "_" . $from . "-" . $to . ".augustus.gff" ;
 		my $infile = $chr . ".fa" ;
 		my $command = "augustus --species=$model --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;

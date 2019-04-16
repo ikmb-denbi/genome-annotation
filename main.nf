@@ -980,22 +980,22 @@ process runMergeAllHints {
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != false ) {
+	if (protein_exonerate_hint != false || protein_exonerate_hint != "false" ) {
 		file_list += " ${protein_exonerate_hint}"
 	}
-	if (rnaseq_hint  != false ) {
+	if (rnaseq_hint  != false || rnaseq_hint != "false" ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (est_exonerate_hint != false ) {
+	if (est_exonerate_hint != false || est_exonerate_hint != "false" ) {
 		file_list += " ${est_exonerate_hint}"
 	}
-	if (trinity_exonerate_hint != false) {
+	if (trinity_exonerate_hint != false || trinity_exonerate_hint != "false" ) {
 		file_list += " ${trinity_exonerate_hint}"
 	}
 	merged_hints = "merged.hints.gff"
 	
 	"""
-		cat $file_list >> $merged_hints
+		cat $file_list | grep -v "false" >> $merged_hints
 	"""
 }
 
@@ -1032,7 +1032,7 @@ process runAugustus {
 
 	input:
 	file(regions) from HintRegions.collect()
-	file(hints) from mergedHints
+	file(hints) from mergedHints.collect()
 	file(genome_chunk) from GenomeChunksAugustus
 
 	output:
