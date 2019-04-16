@@ -88,5 +88,5 @@ while (<$BED>) {
 		printf $command . "\n" ;
 	}
 }
- close($BED);
+close($BED);
 

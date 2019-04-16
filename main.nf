@@ -1048,6 +1048,7 @@ process runAugustus {
 		fastaexplode -f $genome_chunk -d . 
 		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr $params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
 		parallel -j ${task.cpus} < commands.txt
+		touch dummy.augustus.gff
 		cat *augustus.gff > $augustus_result
 	"""
 }
