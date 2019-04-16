@@ -6,13 +6,14 @@ The typical command for running the pipeline is as follows:
 nextflow run main.nf --genome 'Genome.fasta' --proteins 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' --ESTs 'ESTs.fa' --outdir 'my_species_annotation_out'
 ```
 
-This will run all the steps in the pipeline.
+This will run all the steps in the pipeline (Proteins, ESTs/Transcriptome, RNAseq). The types of evidences you provide determine which parts of the pipeline are actually run. 
 
-All you have to indicate are your own genome and evidence file(s). This command will run all the steps in the pipeline, but you can also decide which parts of the pipeline you want to run and which to skip. 
 
 ### Parameters file
 
-In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide a config file as an option, use `-params-file my_config.yaml`. The revised command could then read:
+In the next section, you will find a list of all user-configurable pipeline options. 
+You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide a config file as an option, 
+use `-params-file my_config.yaml`. The revised command could then read:
 
 `nextflow run /path/to/main.nf -params-file config.yaml -profile your_profile`
 
@@ -41,7 +42,7 @@ singleEnd: false
 rnaseq_stranded: false
 outdir: "output"
 run_name: "evidences"
-max_intron_size: 100000
+max_intron_size: 200000
 ```
   
 ### 1. Mandatory arguments 
@@ -125,7 +126,7 @@ Location of Augustus configuration file. By default, this pipeline uses config f
 #### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
 Fasta file with Uniprot proteins for functional annotation. By default, this pipeline uses eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' taxonomic group. 
     
-### 4. How to tune the speed of the pipeline - data splitting
+### 6. How to tune the speed of the pipeline - data splitting
 
 One of the advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before 
 running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. 
@@ -141,7 +142,7 @@ Number of alignments to compute in each Exonerate job. Larger values will usuall
 #### `--nrepeats` [ default = 30 ]
 Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustus jobs. If your assembly is highly contiguous, this number can be quite small (for the human genome, 1 or 2 would be ok).
 
-### 5. Other options 
+### 7. Other options 
 
 #### `--email` [ you@somewhere.com | false (default)]
 If you specify an Email address, the pipeline will send a notification upon completion. However, for this to work, the node running the nextflow process must have a configured Email server. 
@@ -161,7 +162,7 @@ The output directory where the results will be saved.
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
 
-### 6. Nextflow parameters
+### 8. Nextflow parameters
 
 #### `-params-file config.yaml`
 All the above options can be passed from either the command line or through a configuration file. A suitable template is included under assets/config.yaml.
@@ -183,3 +184,4 @@ Each step in the pipeline has a default set of requirements for number of CPUs, 
 
 #### Custom resource requests
 Wherever process-specific requirements are set in the pipeline, the default value can be changed by creating a custom config file. See the files in [`conf`](../conf) for examples. 
+
