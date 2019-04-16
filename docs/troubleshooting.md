@@ -17,6 +17,32 @@ ERROR ~ Cannot find any reads matching: *{1,2}.fastq.gz
 
 Note that if your sample name is "messy" then you have to be very particular with your glob specification. A file name like `L1-1-D-2h_S1_L002_R1_001.fastq.gz` can be difficult enough for a human to read. Specifying `*{1,2}*.gz` wont work give you what you want Whilst `*{R1,R2}*.gz` will.
 
+## Pipeline is very slow
+
+The performance of the pipeline can be tuned in a number of ways. We have observed long run times for highly fragmented genomes or if the number of sequences
+in blast and exonerate jobs is choosen to large. 
+
+### Genome assembly 
+Your genome assembly should, at most, contain thousands of scaffolds - ideally much less than that. Modern sequencing approaches such as linked-read sequencing
+or long reads make this a feasible goal for many organisms. It is also advisable to exclude very short scaffolds (<5kb) from your assembly prior to annotation;
+usually these will not contain any useful information but can increase the run time dramatically. 
+
+### Size if evidence data
+Another critical factor is of course the amount of sequence data that is used for annotation. Especially
+the processing of RNA-seq reads can be very demanding on the compute infrastructure. So as a general recommendation, we suggest to work with "tens of
+thousands of proteins", "hundreds of thousands of EST/Transcripts" and "tens of millions of RNA-seq reads".
+
+## Deleting the pipeline work directory takes a very long time
+
+This is a "known" issue with very deep directory trees under linux. The typical command `rm -Rf work` can then take hours, or days to complete. 
+
+As an alternative, try this:
+
+```bash
+mkdir -p empty_folder
+rsync -a --delete empty_dir/ work/
+rm -Rf empty_dir work
+```
 
 ## Data organization
 The pipeline can't take a list of multiple input files - it takes a glob expression. If your input files are scattered in different paths then we recommend that you generate a directory with symlinked files. If running in paired end mode please make sure that your files are sensibly named so that they can be properly paired. See the previous point.
@@ -26,3 +52,5 @@ If you still have an issue with running the pipeline then feel free to contact u
 Have look at the [pipeline website](https://github.com/ikmb-denbi/genome-annotation) to find out how.
 
 If you have problems that are related to Nextflow and not our pipeline then check out the [Nextflow gitter channel](https://gitter.im/nextflow-io/nextflow) or the [google group](https://groups.google.com/forum/#!forum/nextflow).
+
+

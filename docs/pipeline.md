@@ -20,3 +20,4 @@ Once a file with all possible extrinsic hints is generated, the following steps 
 * **Augustus** 
 
 ![](../images/genome-annotation_dag_mod.svg) 
+
