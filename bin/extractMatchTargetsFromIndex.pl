@@ -50,7 +50,7 @@ while (<$IN>) {
 	$query_clean =~ s/\|/_/g ;
 	
 	
-	my $fa_clean = "$query_clean.fa" ;
+	my $fa_clean = "$query_clean._query_.fa" ;
 	printf "Will try to extract $query to $fa_clean\n";
 
 	unless (-e $fa_clean) {

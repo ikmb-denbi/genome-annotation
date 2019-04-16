@@ -48,9 +48,7 @@ def helpMessage() {
     -profile            Hardware config to use (optional, will default to 'standard')
     Programs to run:
     --trinity		Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
-    --gth		Run GenomeThreader to produce hints from protein file [ true (default) | false ]
     --augustus		Run Augustus to predict genes [ true (default) | false ]
-    --funAnnot		Run functional annotation using Annie [ true (default) | false ]
  	
     Programs parameters:
     --rm_species		Species database for RepeatMasker [ default = 'mammal' ]
@@ -66,7 +64,6 @@ def helpMessage() {
     --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
     --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
     --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
-    --ninterpro		Chunks (# of sequences) to divide InterPro jobs [ default = 200 ]
 
     Other options:
     --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
@@ -213,18 +210,6 @@ if (params.ESTs) {
 	est_exonerate_hints = Channel.from(false)
 }
 
-// if GenomeThreader should be run
-if (params.gth != false ) {
-
-	// goes to aligning proteins with GTH
-        Channel
-        .fromPath(Proteins)
-        .splitFasta(by: params.nblast, file: true)
-        .set {fasta_prots_gth}
-} else {
-	gth_protein_hints = Channel.from(false)
-}
-
 // if RNAseq reads are provided
 if (params.reads) {
 
@@ -355,7 +340,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, genome_to_gth
+	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity
 
 	script:
 	
@@ -495,14 +480,17 @@ if (params.proteins != false ) {
 		
 		// get the protein fasta sequences, produce the exonerate command and genomic target interval fasta, run the whole thing,
 		// merge it all down to one file and translate back to genomic coordinates
+		// remove all the untracked intermediate files
 
 		"""
 			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
 			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
 			parallel -j ${task.cpus} < commands.txt
-			cat *.exonerate.out | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
+			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
-			rm subjob_*.out
+			rm *.align
+			rm *._target_.fa*
+			rm *._query_.fa*
 		"""
 	}
 
@@ -526,81 +514,6 @@ if (params.proteins != false ) {
 			exonerate2gff.pl --infile all_chunks.out --source protein --outfile $exonerate_gff
 		"""
 	}
-
-	// ------------------------------------
-        // GenomeThreader hints generation
-        // ------------------------------------
-	if (params.gth != false ) {
-
-		// Run genome threader for protein chunks if requested
-		process runGenomeThreaderProteins {
-
-			tag "Chunk ${chunk_name}"
-			publishDir "${OUTDIR}/evidence/proteins/gth/chunks/"
-
-			input:
-			file(protein_chunk) from fasta_prots_gth
-			set file(genome_fa),file(genome_fai) from genome_to_gth.collect()
-
-			output:
-			file(gth_chunk) into ProteinGTHChunk
-	
-			script:
-			chunk_name = protein_chunk.getName().tokenize('.')[-2]
-			gth_chunk = "${protein_chunk.getName()}.gth"
-
-			"""
-				gth -genomic $genome_fa -protein $protein_chunk -gff3out -intermediate -o $gth_chunk
-			"""	
-		}
-
-		// convert gth hits into hints
-		process GenomeThreader2HintsProts {
-
-			tag "Chunk ${chunk_name}"
-		        publishDir "${OUTDIR}/evidence/proteins/gth/chunks"
-
-			input:
-			file(not_clean_gth) from ProteinGTHChunk
-	
-			output:
-			file(gth_hints) into ProteinGTHChunkHint
-	
-			script:
-			gth_hints = not_clean_gth.baseName + ".clean.gth"
-			chunk_name = not_clean_gth.getName().tokenize('.')[-3]
-
-			"""
-				gt gff3 -addintrons yes -setsource gth -tidy yes -addids no $not_clean_gth > not_clean_gth_wIntrons
-				grep -v '#' not_clean_gth_wIntrons > no_hash_gth
-				GTH_rename_splitoutput.pl no_hash_gth > clean_gth
-				grep -e 'CDS' -e 'exon' -e 'intron' clean_gth | perl -ple 's/Parent=/grp=/' | perl -ple 's/(.*)\$/\$1;src=P;pri=3/' | perl -ple 's/CDS/CDSpart/' | perl -ple 's/intron/intronpart/' | perl -ple 's/exon/exonpart/' > $gth_hints
-		
-			"""
-		}
-
-		// merge gth hints
-		process GenomeThreaderMergeHints {
-
-			tag "ALL"
-	        	publishDir "${OUTDIR}/evidence/proteins/gth/", mode: 'copy'
-		
-			input:
-			file(gth_hint_chunks) from ProteinGTHChunkHint.collect()
-
-			output:
-			file(merged_gth_hint) into gth_protein_hints
-
-			script:
-	        	query_tag = Proteins.baseName
-			merged_gth_hint = "proteins.gth.${query_tag}.hints.gff"
-
-			"""
-				cat $gth_hint_chunks >> $merged_gth_hint
-			"""
-		}
-
-	} // close gth loop
 
 } // close protein loop
 
@@ -708,9 +621,11 @@ if (params.ESTs != false ) {
 			extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
                         exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
                         parallel -j ${task.cpus} < commands.txt
-                        cat *.exonerate.out |  grep "exonerate:est2genome" > merged_exonerate.out
+                        cat *.exonerate.align |  grep "exonerate:est2genome" > merged_exonerate.out
                         exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
-                        rm subjob*.out
+                        rm *.align
+			rm *._target_.fa*
+			rm *._query_.fa*
 		"""
 	}
 
@@ -1009,9 +924,11 @@ if (params.reads != false ) {
 				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
 	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $transcript_db_index --analysis est2genome --outfile commands.txt
         	                parallel -j ${task.cpus} < commands.txt
-                	        cat *.exonerate.out | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
+                	        cat *.exonerate.align | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
                         	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
-	                        rm subjob_*.out
+	                        rm *.align
+				rm *._target_.fa*
+				rm *._query_.fa*	
 			"""
 		}
 
@@ -1053,30 +970,26 @@ process runMergeAllHints {
 	publishDir "${OUTDIR}/evidence/hints", mode: 'copy'
 
 	input:
-	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty()
-	file(rnaseq_hint) from rnaseq_hints.ifEmpty()
-        file(protein_gth_hint) from gth_protein_hints.ifEmpty()
-        file(est_exonerate_hint) from est_exonerate_hints.ifEmpty()
-        file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty()
+	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty(false)
+	file(rnaseq_hint) from rnaseq_hints.ifEmpty(false)
+        file(est_exonerate_hint) from est_exonerate_hints.ifEmpty(false)
+        file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty(false)
 
 	output:
 	file(merged_hints) into (mergedHints,mergedHintsSort)
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != "false" ) {
+	if (protein_exonerate_hint != false ) {
 		file_list += " ${protein_exonerate_hint}"
 	}
-	if (rnaseq_hint  != "false" ) {
+	if (rnaseq_hint  != false ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (protein_gth_hint != "false") {
-		file_list += " ${protein_gth_hint}"
-	}
-	if (est_exonerate_hint != "false" ) {
+	if (est_exonerate_hint != false ) {
 		file_list += " ${est_exonerate_hint}"
 	}
-	if (trinity_exonerate_hint != "false") {
+	if (trinity_exonerate_hint != false) {
 		file_list += " ${trinity_exonerate_hint}"
 	}
 	merged_hints = "merged.hints.gff"

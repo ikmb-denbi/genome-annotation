@@ -1,9 +1,9 @@
 ## What happens in this pipeline?
-By running `genome-annotation/main.nf` you can generate a *de novo* annotation of the eukaryotic genome of your choice, using different kinds of evidences as extrinsic hints to make the annotation more accurate. The full pipeline processes data using the following steps for each data type: 
+By running `genome-annotation/main.nf` you can generate a a selection of "hints" to guide a subsequent *de novo* annotation of the eukaryotic genome of your choice.
+The full pipeline processes data using the following steps for each data type: 
 
 ### Proteins:
 * **Exonerate**
-* **GenomeThreader** (if `--gth true`)
 
 ### ESTs and transcriptome: 
 * **Exonerate**
