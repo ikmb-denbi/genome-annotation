@@ -90,9 +90,6 @@ process {
 }
 ```
 
-However, please note that you will not be able to run the GenomeThreader part of the pipeline (not available through conda) unless you 
-make sure to provide this package some other way. 
-
 Nextflow will install the environment with the necessary packages during pipeline start-up. However, please be advised that this takes a little while and 
 needs to be done every time you run a new project. Using Singularity is therefore highly recommended (see below). 
 

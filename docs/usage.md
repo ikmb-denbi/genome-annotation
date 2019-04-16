@@ -12,7 +12,7 @@ All you have to indicate are your own genome and evidence file(s). This command 
 
 ### Parameters file
 
-In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide this config file as an option, use `-params-file my_config.yaml`. The revised command could then read:
+In the next section, you will find a list of all user-configurable pipeline options. You can of course provide each option as a command line parameter. But this can get a bit tedious. As an alterantive, you can provide a configuration file using the YAML format. An example is included under [../assets/config.yaml](../assist/config.yaml). To provide a config file as an option, use `-params-file my_config.yaml`. The revised command could then read:
 
 `nextflow run /path/to/main.nf -params-file config.yaml -profile your_profile`
 
@@ -26,7 +26,6 @@ rm_lib: ""
 rm_species: "mammal"
 reads: ""
 trinity: false
-gth: false
 augustus: false
 model: "human"
 UTR: "off"
@@ -77,10 +76,6 @@ For example,if you already have assembled a transcriptome or if you don't want t
 
 #### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
-
-#### `--gth` [ true (default) | false ] 
-Run GenomeThreader to produce hints from protein file. If you are using Conda for software provisioning, Gth will not be included and you
-have to ensure that it is available on your systems some other way. We use version [1.7.1](http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz). 
 
 #### `--augustus` [ true (default) | false ] 
 Run Augustus to predict genes.  

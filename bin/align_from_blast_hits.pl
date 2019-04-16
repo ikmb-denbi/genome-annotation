@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use Getopt::Long;
@@ -27,6 +27,7 @@ perl my_script.pl
 };
 
 my $outfile = undef;
+my $aligner = undef;
 my $matches = undef;
 my $assembly_index = undef;
 my $max_intron_size = undef;
@@ -37,6 +38,7 @@ my $help;
 GetOptions(
     "help" => \$help,
     "matches=s" => \$matches,
+    "aligner=s" => \$aligner,
     "assembly_index=s" => \$assembly_index,
     "max_intron_size=i" => \$max_intron_size,
     "query_index=s" => \$query_index,
@@ -70,7 +72,7 @@ while (<$IN>) {
 	# get query sequence
 	my $query_clean = $qseqid;
 	$query_clean =~ s/\|/_/g ;
-	my $fa_clean = "$query_clean._query_.fa" ;
+	my $fa_clean = "$query_clean.fa" ;
 	
 	# THIS SHOULD COME FROM ANOTHER SCRIPT
 	#my $cmd_query = "cdbyank $query_index -a '$qseqid' > $fa_clean" ;
@@ -79,11 +81,31 @@ while (<$IN>) {
 	# get subregion of target scaffold
 	my $region = $sseqid . ":" . $target_start . "-" . $target_end ;
 	my $region_name = $sseqid . "_" . $target_start . "_" . $target_end ;
-	my $cmd_target = "samtools faidx $assembly_index $region > $region_name._target_.fa" ;
+	my $cmd_target = "samtools faidx $assembly_index $region > $region_name.fa" ;
 	system($cmd_target);
+	system("sed -i.bak 's/\:/__/' $region_name.fa");
+
+	my $cmd_run = undef;
 	
-	# Run exonerate on these data
-	my $cmd_run = "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron $max_intron_size  --showalignment false --showtargetgff true $fa_clean $region_name._target_.fa > subjob_$query_clean.$region_name.exonerate.align\n";
+	if ($aligner eq "exonerate") {
+
+		$cmd_run = "exonerate --model $analysis --softmasktarget yes --bestn 1 --minintron 20 --maxintron $max_intron_size  --showalignment false --showtargetgff true $fa_clean $region_name.fa > subjob_$query_clean.$region_name.exonerate.align\n";
+
+	} elsif ($aligner eq "gth") {
+
+
+		# Run gth on these data
+		my $cmd_run = "";
+
+		if ($analysis eq "protein2genome") {
+			$cmd_run = "gth -genomic $region_name.fa -protein $fa_clean -gff3out -intermediate -o subjob_$query_clean.$region_name.gth.align"
+		} elsif ($analysis eq "est2genome") {
+                        $cmd_run = "gth -genomic $region_name.fa -cdna $fa_clean -gff3out -intermediate -o subjob_$query_clean.$region_name.gth.align"
+		} elsif ($analysis eq "trinity2genome") {
+                        $cmd_run = "gth -genomic $region_name.fa -cdna $fa_clean -gff3out -intermediate -o subjob_$query_clean.$region_name.gth.align"
+		}
+
+	}
 	
 	printf($cmd_run);
 

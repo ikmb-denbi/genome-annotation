@@ -20,16 +20,5 @@ From:continuumio/anaconda
 # Prereqs for Nextflow
 apt-get -y install procps 
 
-# GenomeThreader
-mkdir -p /opt/gth
-cd /opt/gth
-wget http://genomethreader.org/distributions/gth-1.7.1-Linux_x86_64-64bit.tar.gz
-tar -xvf gth-1.7.1-Linux_x86_64-64bit.tar.gz
-mv gth-1.7.1-Linux_x86_64-64bit 1.7.1
-rm gth-1.7.1-Linux_x86_64-64bit.tar.gz
-echo 'export BSSMDIR=/opt/home/gth/1.7.1/bin/bssm' >> $SINGULARITY_ENVIRONMENT
-echo 'export GTHDATADIR=/opt/home/gth/1.7.1/bin/gthdata' >> $SINGULARITY_ENVIRONMENT
-echo 'export PATH=$PATH:/opt/gth/1.7.1/bin/' >> $SINGULARITY_ENVIRONMENT
-
-# To be able to mount on RZcluster
+# Create mount point for RZCluster
 mkdir -p /ifs
