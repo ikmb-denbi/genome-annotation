@@ -18,4 +18,4 @@ You can also see the output of each intermediate step, which is saved in specifi
   * reports on pipeline performance. 
 
 
-![](../images/genome-annotation_dag_v1.svg)
+![](../images/genome-annotation_dag.svg)
