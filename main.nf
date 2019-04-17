@@ -463,7 +463,7 @@ if (params.proteins != false ) {
 	process runExonerateProts {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+		// publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
@@ -553,7 +553,7 @@ if (params.ESTs != false ) {
 	process runBlastEst {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/EST/blast/chunks"
+		// publishDir "${OUTDIR}/evidence/EST/blast/chunks"
 
 		input:
 		file(est_chunk) from fasta_ests
@@ -604,7 +604,7 @@ if (params.ESTs != false ) {
 	process runExonerateEST {
 
 		tag "Chunk ${chunk_name}"
-		publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
+		// publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
 
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
@@ -779,7 +779,7 @@ if (params.reads != false ) {
 	 */	
 	process Hisat2Hints {
 	
-		publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
+		// publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
 
 		input:
 		file(bam) from Hisat2Hints
@@ -832,7 +832,7 @@ if (params.reads != false ) {
 		process runBlastTrinity {
 	
 			tag "Chunk ${chunk_name}"
-			publishDir "${OUTDIR}/evidence/rnaseq/trinity/blast/chunks"
+			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/blast/chunks"
 	
 			input:
 			file(query_fa) from trinity_chunks 
@@ -907,7 +907,7 @@ if (params.reads != false ) {
 		process runExonerateTrinity {
 	
 			tag "Chunk ${chunk_name}"
-			publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/chunks", mode: 'copy'
+			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/chunks", mode: 'copy'
 	
 			input:
 			set file(hits_trinity_chunk),file(transcript_fa),file(transcript_db_index) from query2target_trinity_chunk
