@@ -27,17 +27,15 @@ rm_lib: "/path/to/repeats.fa"
 rm_species: "mammal"
 reads: "/path/to/*_R{1,2}_001.fastq.gz"
 trinity: false
-augustus: false
+augustus: true
 model: "human"
 UTR: "off"
 isof: false
 augCfg: false
-uniprot: false
 nblast: 200
 blast_evalue: 0.001
 nexonerate: 100
 nrepeats: 20
-ninterpro: 200
 singleEnd: false
 rnaseq_stranded: false
 outdir: "output"
@@ -121,10 +119,7 @@ Allow Augustus to predict UTRs (results are not optimal and takes much longer - 
 Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer - not recommended). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline.
-
-#### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
-Fasta file with Uniprot proteins for functional annotation. By default, this pipeline uses eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' taxonomic group. 
+Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline. 
     
 ### 6. How to tune the speed of the pipeline - data splitting
 
@@ -162,7 +157,7 @@ The output directory where the results will be saved.
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
 
-### 8. Nextflow parameters
+### 8. Nextflow parameters (indicate with single dash "-")
 
 #### `-params-file config.yaml`
 All the above options can be passed from either the command line or through a configuration file. A suitable template is included under assets/config.yaml.
