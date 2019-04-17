@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 15.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="1638px" height="1940px" viewBox="0 0 1638 1940" enable-background="new 0 0 1638 1940" xml:space="preserve">
+<g id="graph1" transform="scale(1 1) rotate(0) translate(4 1936)">
+	<title>genomeannotation_dag</title>
+	<title>p0</title>
+	<title>p1</title>
+	<ellipse fill="none" stroke="#000000" cx="630.101" cy="-1408.399" rx="89.794" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 556.8164 -1402.2998)" font-family="'Verdana'" font-size="17">runMakeBlastDB</text>
+	<title>p4</title>
+	<title>p1-&gt;p4</title>
+	<title>p19</title>
+	<title>p1-&gt;p19</title>
+	<g>
+		<g>
+			<path fill="none" stroke="#000000" d="M582.784-1391.685c-15.562,20.993-36.021,48.568-51,68.77"/>
+			<g>
+				<polygon points="528.672,-1327.041 527.533,-1317.135 536.682,-1321.101 				"/>
+			</g>
+		</g>
+	</g>
+	<title>p50</title>
+	<title>p1-&gt;p50</title>
+	<title>p5</title>
+	<ellipse fill="#79AAFF" cx="241.996" cy="-1302.414" rx="82.497" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 171.8662 -1296.3145)" font-family="'Verdana'" font-size="17">runBlastProteins</text>
+	<g id="edge14">
+		<title>p4-&gt;p5</title>
+		<path fill="none" stroke="#000000" d="M553.36-1397.834c-24.976,9.461-142.304,53.895-222.558,84.28"/>
+		<polygon stroke="#000000" points="332.067,-1310.329 321.736,-1309.566 329.342,-1316.681 		"/>
+	</g>
+	<title>p20</title>
+	<ellipse fill="#B0D377" cx="488.059" cy="-1301.142" rx="73.394" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 435.0093 -1296.042)" font-family="'Verdana'" font-size="17">runBlastEST</text>
+	<title>p51</title>
+	<ellipse fill="#D9B7D4" cx="812.536" cy="-1297.314" rx="81.964" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 751.356 -1291.2148)" font-family="'Verdana'" font-size="17">runBlastTrinity</text>
+	<title>p2</title>
+	<ellipse stroke="#000000" cx="250.318" cy="-1460.414" rx="3.6" ry="3.6"/>
+	<title>p3</title>
+	<ellipse fill="none" stroke="#000000" cx="250.318" cy="-1381.414" rx="3" ry="3.5"/>
+	<g id="edge10">
+		<title>p2-&gt;p3</title>
+		<path fill="none" stroke="#000000" d="M250.318-1456.603c0,10.97,0,43.029,0,61.55"/>
+		<polygon stroke="#000000" points="253.818,-1395.003 250.318,-1385.003 246.818,-1395.003 		"/>
+	</g>
+	<title>p3-&gt;p5</title>
+	<path fill="none" stroke="#000000" d="M250.318-1377.603c0,8.22,0,28.27,0,45.6"/>
+	<polygon stroke="#000000" points="253.818,-1331.694 250.318,-1321.694 246.818,-1331.694 	"/>
+	<title>p6</title>
+	<ellipse fill="none" stroke="#000000" cx="231.735" cy="-1207.478" rx="3" ry="3.5"/>
+	<title>p5-&gt;p6</title>
+	<path fill="none" stroke="#000000" d="M246.675-1283.394c-3.504,18.301-8.71,45.49-11.797,61.61"/>
+	<polygon stroke="#000000" points="237.731,-1220.178 232.413,-1211.018 230.856,-1221.498 	"/>
+	<title>p7</title>
+	<ellipse fill="#79AAFF" cx="216.5" cy="-1111" rx="123" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 113.6426 -1104.9004)" font-family="'Verdana'" font-size="17">Blast2QueryTargetProts</text>
+	<g id="edge18">
+		<title>p6-&gt;p7</title>
+		<path fill="none" stroke="#000000" d="M230.559-1203.908c-3.3,10-12.878,39.05-20.299,61.55"/>
+		<polygon stroke="#000000" points="213.488,-1140.968 207.032,-1132.568 206.841,-1143.167 		"/>
+	</g>
+	<title>p8</title>
+	<title>p7-&gt;p8</title>
+	<title>p9</title>
+	<ellipse fill="#79AAFF" cx="192.5" cy="-923" rx="93" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 112.6338 -917.9004)" font-family="'Verdana'" font-size="17">runExonerateProts</text>
+	<title>p8-&gt;p9</title>
+	<title>p10</title>
+	<ellipse fill="#79AAFF" cx="191.304" cy="-829" rx="124.196" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 91.6338 -823.9004)" font-family="'Verdana'" font-size="17">Exonerate2HintsProtein</text>
+	<title>p9-&gt;p10</title>
+	<path fill="none" stroke="#000000" d="M192.068-903.979c0,13.037,0,30.591,0,45.435"/>
+	<polygon stroke="#000000" points="195.568,-858.317 192.068,-848.317 188.568,-858.317 	"/>
+	<title>p11</title>
+	<title>p10-&gt;p11</title>
+	<title>p60</title>
+	<title>p10-&gt;p60</title>
+	<title>p66</title>
+	<ellipse fill="#E38501" cx="1228.477" cy="-454.71" rx="74.412" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1175.0859 -449.6104)" font-family="'Verdana'" font-size="17">runAugustus</text>
+	<title>p13</title>
+	<title>p14</title>
+	<title>p13-&gt;p14</title>
+	<title>p15</title>
+	<title>p14-&gt;p15</title>
+	<title>p61</title>
+	<title>p14-&gt;p61</title>
+	<title>p17</title>
+	<ellipse stroke="#000000" cx="444.513" cy="-1459.142" rx="3.6" ry="3.6"/>
+	<title>p18</title>
+	<ellipse fill="none" stroke="#000000" cx="449.513" cy="-1380.142" rx="3" ry="3.5"/>
+	<g id="edge40">
+		<title>p17-&gt;p18</title>
+		<path fill="none" stroke="#000000" d="M444.754-1455.331c0.694,10.97,2.724,43.029,3.896,61.55"/>
+		<polygon stroke="#000000" points="452.146,-1393.932 449.286,-1383.731 445.161,-1393.491 		"/>
+	</g>
+	<title>p18-&gt;p20</title>
+	<g>
+		<g>
+			<path fill="none" stroke="#000000" d="M451.146-1376.752c4.388,8.556,15.14,29.498,25.077,48.86"/>
+			<g>
+				<polygon points="471.146,-1326.924 479.524,-1321.518 480.018,-1331.477 				"/>
+			</g>
+		</g>
+	</g>
+	<title>p21</title>
+	<ellipse fill="none" stroke="#000000" cx="487.513" cy="-1206.055" rx="3" ry="3.5"/>
+	<title>p20-&gt;p21</title>
+	<path fill="none" stroke="#000000" d="M487.513-1281.035c0,18.12,0,44.961,0,61.131"/>
+	<polygon stroke="#000000" points="491.013,-1219.595 487.513,-1209.595 484.013,-1219.595 	"/>
+	<title>p22</title>
+	<ellipse fill="#B0D377" cx="487.709" cy="-1112.055" rx="119.208" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 392.0347 -1105.9551)" font-family="'Verdana'" font-size="17">Blast2QueryTargetEST</text>
+	<g id="edge48">
+		<title>p21-&gt;p22</title>
+		<path fill="none" stroke="#000000" d="M487.513-1202.484c0,9.96,0,38.79,0,61.25"/>
+		<polygon stroke="#000000" points="491.013,-1141.145 487.513,-1131.145 484.013,-1141.145 		"/>
+	</g>
+	<title>p23</title>
+	<ellipse fill="none" stroke="#000000" cx="487.513" cy="-1018.055" rx="3" ry="3.5"/>
+	<title>p22-&gt;p23</title>
+	<path fill="none" stroke="#000000" d="M487.513-1093.035c0,18.12,0,44.961,0,61.131"/>
+	<polygon stroke="#000000" points="491.013,-1031.595 487.513,-1021.595 484.013,-1031.595 	"/>
+	<title>p24</title>
+	<ellipse fill="#B0D377" cx="487.995" cy="-924.055" rx="91.648" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 414.0264 -918.9551)" font-family="'Verdana'" font-size="17">runExonerateEST</text>
+	<title>p23-&gt;p24</title>
+	<path fill="none" stroke="#000000" d="M487.513-1014.484c0,9.959,0,38.788,0,61.246"/>
+	<polygon stroke="#000000" points="491.013,-953.147 487.513,-943.147 484.013,-953.147 	"/>
+	<title>p25</title>
+	<ellipse fill="#B0D377" cx="487.9" cy="-829.055" rx="109.518" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 401.0264 -822.9551)" font-family="'Verdana'" font-size="17">Exonerate2HintsEST</text>
+	<title>p24-&gt;p25</title>
+	<path fill="none" stroke="#000000" d="M487.513-905.033c0,13.037,0,30.591,0,45.435"/>
+	<polygon stroke="#000000" points="491.013,-859.372 487.513,-849.372 484.013,-859.372 	"/>
+	<title>p26</title>
+	<title>p25-&gt;p26</title>
+	<title>p62</title>
+	<title>p25-&gt;p62</title>
+	<title>p28</title>
+	<title>p29</title>
+	<title>p30</title>
+	<text transform="matrix(1 0 0 1 500.916 -1717.8594)" font-family="'Verdana'" font-size="17">runRepeatMasker</text>
+	<title>p29-&gt;p30</title>
+	<title>p31</title>
+	<title>p30-&gt;p31</title>
+	<title>p32</title>
+	<title>p33</title>
+	<title>p32-&gt;p33</title>
+	<title>p34</title>
+	<title>p33-&gt;p34</title>
+	<title>p36</title>
+	<title>p34-&gt;p36</title>
+	<title>p34-&gt;p35</title>
+	<title>p63</title>
+	<title>p34-&gt;p63</title>
+	<title>p38</title>
+	<ellipse stroke="#000000" cx="1062.551" cy="-1397.253" rx="3.6" ry="3.6"/>
+	<title>p39</title>
+	<title>p40</title>
+	<title>p41</title>
+	<ellipse fill="#C593BE" cx="1062.385" cy="-1309.566" rx="55.12" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1025.2754 -1303.4668)" font-family="'Verdana'" font-size="17">runFastp</text>
+	<title>p40-&gt;p41</title>
+	<title>p45</title>
+	<ellipse fill="#C593BE" cx="1069.654" cy="-1191.886" rx="58.851" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1024.6875 -1186.7871)" font-family="'Verdana'" font-size="17">runHisat2</text>
+	<title>p41-&gt;p45</title>
+	<title>p46</title>
+	<ellipse fill="#C593BE" cx="1062.385" cy="-702.053" rx="63.115" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1009.6035 -695.9531)" font-family="'Verdana'" font-size="17">Hisat2Hints</text>
+	<title>p45-&gt;p46</title>
+	<title>p47</title>
+	<title>p45-&gt;p47</title>
+	<title>p42</title>
+	<title>p43</title>
+	<ellipse fill="#C593BE" cx="927.156" cy="-1607.777" rx="92.447" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 853.54 -1601.6777)" font-family="'Verdana'" font-size="17">runMakeHisatDB</text>
+	<title>p42-&gt;p43</title>
+	<title>p44</title>
+	<title>p43-&gt;p44</title>
+	<g id="edge94">
+		<title>p44-&gt;p45</title>
+		<path fill="none" stroke="#000000" d="M444.461-1804.958c1.254,9.67,5.721,36.08,18.58,53.3c4.197,5.62,9.502,10.7,15.125,15.17"
+			/>
+		<polygon stroke="#000000" points="476.396,-1733.448 486.539,-1730.388 480.52,-1739.108 		"/>
+	</g>
+	<title>p64</title>
+	<title>p46-&gt;p64</title>
+	<title>p48</title>
+	<ellipse fill="#D9B7D4" cx="806.842" cy="-1455.542" rx="59.131" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 766.1606 -1449.4424)" font-family="'Verdana'" font-size="17">runTrinity</text>
+	<g id="edge102">
+		<title>p47-&gt;p48</title>
+		<path fill="none" stroke="#000000" d="M644.503-1389.725c13.29,9.14,68.609,47.2,105.06,72.27"/>
+		<polygon stroke="#000000" points="751.68,-1320.245 757.935,-1311.694 747.712,-1314.475 		"/>
+	</g>
+	<title>p49</title>
+	<ellipse fill="none" stroke="#000000" cx="812.025" cy="-1377.562" rx="3" ry="3.5"/>
+	<title>p48-&gt;p49</title>
+	<path fill="none" stroke="#000000" d="M812.025-1437.441c0,14.25,0,33.37,0,46.13"/>
+	<polygon stroke="#000000" points="815.525,-1391.081 812.025,-1381.081 808.525,-1391.081 	"/>
+	<title>p55</title>
+	<title>p48-&gt;p55</title>
+	<title>p49-&gt;p51</title>
+	<path fill="none" stroke="#000000" d="M812.025-1373.751c0,8.22,0,28.27,0,45.6"/>
+	<polygon stroke="#000000" points="815.525,-1327.842 812.025,-1317.842 808.525,-1327.842 	"/>
+	<title>p56</title>
+	<title>p55-&gt;p56</title>
+	<title>p52</title>
+	<title>p51-&gt;p52</title>
+	<title>p53</title>
+	<ellipse fill="#D9B7D4" cx="812.151" cy="-1113" rx="129.349" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 707.7959 -1106.9004)" font-family="'Verdana'" font-size="17">BlastTrinity2QueryTarget</text>
+	<title>p54</title>
+	<title>p53-&gt;p54</title>
+	<title>p54-&gt;p55</title>
+	<title>p56-&gt;p57</title>
+	<title>p58</title>
+	<title>p56-&gt;p58</title>
+	<title>p65</title>
+	<title>p56-&gt;p65</title>
+	<title>p67</title>
+	<title>p66-&gt;p67</title>
+	<title>p69</title>
+	<title>p66-&gt;p69</title>
+	<title>p72</title>
+	<ellipse fill="#E38501" cx="1229.011" cy="-207.239" rx="97.41" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1149.8506 -201.1387)" font-family="'Verdana'" font-size="17">Augustus2Proteins</text>
+	<title>p66-&gt;p72</title>
+	<path fill="none" d="M1228.203-284.97c0,13.037,0,30.591,0,45.435"/>
+	<polygon stroke="#000000" points="1231.703,-239.309 1228.203,-229.309 1224.703,-239.309 	"/>
+	<title>p70</title>
+	<title>p69-&gt;p70</title>
+	<title>p81</title>
+	<title>p69-&gt;p81</title>
+	<title>p85</title>
+	<title>p69-&gt;p85</title>
+	<title>p86</title>
+	<title>p69-&gt;p86</title>
+	<title>p73</title>
+	<title>p72-&gt;p73</title>
+	<title>p77</title>
+	<title>p72-&gt;p77</title>
+	<title>p82</title>
+	<title>p72-&gt;p82</title>
+	<title>p81-&gt;p86</title>
+	<title>p85-&gt;p86</title>
+	<title>p87</title>
+	<title>p86-&gt;p87</title>
+	<title>p79</title>
+	<title>p77-&gt;p79</title>
+	<title>p83</title>
+	<title>p82-&gt;p83</title>
+	<title>p75</title>
+	<title>p76</title>
+	<title>p75-&gt;p76</title>
+	<title>p78</title>
+	<title>p76-&gt;p78</title>
+	<title>p80</title>
+	<title>p79-&gt;p80</title>
+	<title>p80-&gt;p81</title>
+	<title>p84</title>
+	<title>p83-&gt;p84</title>
+	<title>p84-&gt;p85</title>
+	<text transform="matrix(1 0 0 1 1142.9355 -100.7471)" font-family="'Arial-ItalicMT'" font-size="24">augustus.proteins.fa</text>
+	<text transform="matrix(1 0 0 1 1335.9004 -163.8496)" font-family="'Arial-ItalicMT'" font-size="24">augustus.merged.out.gff</text>
+	<text transform="matrix(1 0 0 1 182.9819 -1472.5049)" fill="#1D0316" font-family="'CourierNewPS-BoldMT'" font-size="24">--proteins</text>
+	<text transform="matrix(1 0 0 1 396.3472 -1471.2334)" fill="#1D0316" font-family="'CourierNewPS-BoldMT'" font-size="24">--ESTs</text>
+	<text transform="matrix(1 0 0 1 1012.4004 -1411.4277)" fill="#1D0316" font-family="'CourierNewPS-BoldMT'" font-size="24">--reads</text>
+	<text transform="matrix(1 0 0 1 520.165 -1898.5449)" fill="#1D0316" font-family="'CourierNewPS-BoldMT'" font-size="24">--genome</text>
+	<ellipse fill="#E38501" cx="1247.05" cy="-1606.655" rx="17.307" ry="16.5"/>
+	<ellipse fill="#D9B7D4" cx="1247.05" cy="-1667.456" rx="17.307" ry="16.5"/>
+	<text transform="matrix(1 0 0 1 1276.7412 -1663.4014)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="24">--trinity true</text>
+	<text transform="matrix(1 0 0 1 1276.7402 -1600.418)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="24">--augustus true</text>
+	<text transform="matrix(0 1 -1 0 261.0859 -1462.4141)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
+	
+		<text transform="matrix(-0.0043 1 -1 -0.0043 824.6318 -1429.5239)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
+	<text transform="matrix(0 1 -1 0 497.8115 -1086.9141)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nexonerate</text>
+	<ellipse fill="#79AAFF" cx="1247.05" cy="-1851.664" rx="17.307" ry="16.5"/>
+	<text transform="matrix(1 0 0 1 1276.7412 -1846.9912)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="24">--proteins</text>
+	<ellipse fill="#B0D377" cx="1247.05" cy="-1790.97" rx="17.307" ry="16.5"/>
+	<ellipse fill="#B26FA9" cx="1247.05" cy="-1727.835" rx="17.307" ry="16.5"/>
+	<text transform="matrix(1 0 0 1 1276.7412 -1785.8711)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="24">--ESTs</text>
+	<text transform="matrix(1 0 0 1 1276.7412 -1723.7813)" fill="#1A171B" font-family="'CourierNewPS-BoldMT'" font-size="24">--reads</text>
+	<path fill="none" stroke="#000000" d="M1228.203-286.122c0,15.75,0,37.637,0,51.739"/>
+	<text transform="matrix(1 0 0 1 390.0347 -1825.1348)" fill="#1D0316" font-family="'CourierNewPS-BoldMT'" font-size="24">--rm_lib</text>
+	<ellipse stroke="#000000" cx="441.963" cy="-1807.87" rx="3.6" ry="3.6"/>
+	<ellipse stroke="#000000" cx="577.013" cy="-1883.37" rx="3.6" ry="3.6"/>
+	<ellipse fill="none" stroke="#000000" cx="577.013" cy="-1804.37" rx="3" ry="3.5"/>
+	<g id="edge10_1_">
+		<title>p2-&gt;p3</title>
+		<path fill="none" stroke="#000000" d="M577.013-1879.56c0,10.97,0,43.029,0,61.55"/>
+		<polygon stroke="#000000" points="580.513,-1817.96 577.013,-1807.96 573.513,-1817.96 		"/>
+	</g>
+	<path fill="none" stroke="#000000" d="M577.013-1800.56c0,8.22,0,28.27,0,45.6"/>
+	<polygon stroke="#000000" points="580.513,-1754.65 577.013,-1744.65 573.513,-1754.65 	"/>
+	<ellipse fill="none" stroke="#000000" cx="577.013" cy="-1643.266" rx="3" ry="3.5"/>
+	<path fill="none" stroke="#000000" d="M577.013-1703.146c0,14.25,0,33.37,0,46.13"/>
+	<polygon stroke="#000000" points="580.513,-1656.785 577.013,-1646.785 573.513,-1656.785 	"/>
+	<path fill="none" stroke="#000000" d="M577.013-1639.455c0,8.22,0,28.27,0,45.6"/>
+	<polygon stroke="#000000" points="580.513,-1593.546 577.013,-1583.546 573.513,-1593.546 	"/>
+	<text transform="matrix(1 0 0 1 480.5156 -1555.5273)" font-family="'Verdana'" font-size="17">runMergeRMGenome</text>
+	
+		<text transform="matrix(0.052 0.9987 -0.9987 0.052 455.9375 -1463.0078)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nblast</text>
+	<g>
+		<g>
+			<path fill="none" stroke="#000000" d="M589.336-1541.967c6.195,32.873,14.377,76.251,20.253,107.426"/>
+			<g>
+				<polygon points="604.446,-1435.059 610.945,-1427.496 614.245,-1436.906 				"/>
+			</g>
+		</g>
+	</g>
+	<ellipse fill="none" stroke="#000000" cx="192.068" cy="-734.145" rx="3" ry="3.5"/>
+	<g id="edge10_2_">
+		<title>p2-&gt;p3</title>
+		<path fill="none" stroke="#000000" d="M192.068-809.334c0,10.971,0,43.029,0,61.551"/>
+		<polygon stroke="#000000" points="195.568,-747.734 192.068,-737.734 188.568,-747.734 		"/>
+	</g>
+	<ellipse fill="none" stroke="#000000" cx="487.513" cy="-736.05" rx="3" ry="3.5"/>
+	<g id="edge10_3_">
+		<title>p2-&gt;p3</title>
+		<path fill="none" stroke="#000000" d="M487.513-811.239c0,10.971,0,43.029,0,61.551"/>
+		<polygon stroke="#000000" points="491.013,-749.64 487.513,-739.64 484.013,-749.64 		"/>
+	</g>
+	<ellipse fill="none" stroke="#000000" cx="192.169" cy="-1017.433" rx="3" ry="3.5"/>
+	<path fill="none" stroke="#000000" d="M192.169-1092.414c0,18.12,0,44.961,0,61.131"/>
+	<polygon stroke="#000000" points="195.669,-1030.973 192.169,-1020.973 188.669,-1030.973 	"/>
+	<path fill="none" stroke="#000000" d="M192.169-1013.863c0,9.959,0,38.788,0,61.246"/>
+	<polygon stroke="#000000" points="195.669,-952.525 192.169,-942.525 188.669,-952.525 	"/>
+	<text transform="matrix(0 1 -1 0 202.4678 -1086.2925)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nexonerate</text>
+	<ellipse fill="none" stroke="#000000" cx="573.912" cy="-1561.627" rx="108.588" ry="19.092"/>
+	<ellipse fill="none" stroke="#000000" cx="577.641" cy="-1723.559" rx="93.859" ry="19.092"/>
+	<ellipse fill="#C593BE" cx="1061.953" cy="-1042.72" rx="89.111" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 989.1758 -1036.6201)" font-family="'Verdana'" font-size="17">mergeHisatBams</text>
+	<g>
+		<g>
+			<path fill="none" stroke="#000000" d="M1062.633-1023.628c0,53.215,0,181.424,0,294.311"/>
+			<g>
+				<polygon points="1057.675,-730.779 1062.66,-722.145 1067.646,-730.779 				"/>
+			</g>
+		</g>
+	</g>
+	<ellipse fill="none" stroke="#000000" cx="812.025" cy="-1204.449" rx="3" ry="3.5"/>
+	<path fill="none" stroke="#000000" d="M812.025-1279.43c0,18.12,0,44.961,0,61.131"/>
+	<polygon stroke="#000000" points="815.525,-1217.989 812.025,-1207.989 808.525,-1217.989 	"/>
+	<g id="edge48_1_">
+		<title>p21-&gt;p22</title>
+		<path fill="none" stroke="#000000" d="M812.025-1200.879c0,9.262,0,36.071,0,56.957"/>
+		<polygon stroke="#000000" points="815.525,-1143.838 812.025,-1134.539 808.525,-1143.838 		"/>
+	</g>
+	<ellipse fill="none" stroke="#000000" cx="812.126" cy="-1017.396" rx="3" ry="3.5"/>
+	<path fill="none" stroke="#000000" d="M812.126-1092.377c0,18.12,0,44.961,0,61.131"/>
+	<polygon stroke="#000000" points="815.626,-1030.937 812.126,-1020.937 808.626,-1030.937 	"/>
+	<path fill="none" stroke="#000000" d="M812.126-1013.826c0,9.959,0,38.788,0,61.246"/>
+	<polygon stroke="#000000" points="815.626,-952.489 812.126,-942.489 808.626,-952.489 	"/>
+	<text transform="matrix(0 1 -1 0 822.4248 -1086.2559)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nexonerate</text>
+	<ellipse fill="#D9B7D4" cx="812.016" cy="-923" rx="107.121" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 728.7876 -917.9004)" font-family="'Verdana'" font-size="17">runExonerateTrinity</text>
+	<path fill="none" stroke="#000000" d="M812.126-903.979c0,13.037,0,30.591,0,45.435"/>
+	<polygon stroke="#000000" points="815.626,-858.317 812.126,-848.317 808.626,-858.317 	"/>
+	<ellipse fill="#D9B7D4" cx="812.135" cy="-830.055" rx="121.736" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 715.7896 -824.9551)" font-family="'Verdana'" font-size="17">Exonerate2HintsTrinity</text>
+	<ellipse fill="none" stroke="#000000" cx="615.905" cy="-588.858" rx="103.989" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 537.1973 -581.7588)" font-family="'Verdana'" font-size="17">runMergeAllHints</text>
+	<ellipse fill="none" stroke="#000000" cx="606.657" cy="-492.894" rx="86.492" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 549.0928 -486.7939)" font-family="'Verdana'" font-size="17">runHintsToBed</text>
+	<path fill="none" stroke="#000000" d="M610.918-568.929c0,13.037,0,30.591,0,45.435"/>
+	<polygon stroke="#000000" points="614.418,-523.268 610.918,-513.268 607.418,-523.268 	"/>
+	<ellipse fill="none" stroke="#000000" cx="812.126" cy="-736.05" rx="3" ry="3.5"/>
+	<g id="edge10_5_">
+		<title>p2-&gt;p3</title>
+		<path fill="none" stroke="#000000" d="M812.126-811.239c0,10.971,0,43.029,0,61.551"/>
+		<polygon stroke="#000000" points="815.626,-749.64 812.126,-739.64 808.626,-749.64 		"/>
+	</g>
+	<ellipse fill="#E38501" cx="1228.012" cy="-298.136" rx="120.498" ry="19.092"/>
+	<text transform="matrix(1 0 0 1 1135.7676 -292.0352)" font-family="'Verdana'" font-size="17">runMergeAugustusGff</text>
+	<ellipse fill="none" stroke="#000000" cx="1228.203" cy="-374.947" rx="3" ry="3.5"/>
+	<path fill="none" stroke="#000000" d="M1228.203-434.827c0,14.25,0,33.37,0,46.13"/>
+	<polygon stroke="#000000" points="1231.703,-388.467 1228.203,-378.467 1224.703,-388.467 	"/>
+	<path fill="none" stroke="#000000" d="M1228.203-371.137c0,8.22,0,28.27,0,45.6"/>
+	<polygon stroke="#000000" points="1231.703,-329.228 1228.203,-319.228 1224.703,-329.228 	"/>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="194.068" y1="-732.645" x2="505.377" y2="-591.816"/>
+			<g>
+				<polygon points="502.005,-587.9 511.927,-588.884 506.115,-596.985 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="489.513" y1="-732.55" x2="551.803" y2="-614.3"/>
+			<g>
+				<polygon points="546.736,-613.279 555.172,-607.963 555.559,-617.927 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="810.126" y1="-734.05" x2="701.703" y2="-607.552"/>
+			<g>
+				<polygon points="698.888,-611.887 697.054,-602.086 706.459,-605.397 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="1035.721" y1="-684.748" x2="726.761" y2="-590.943"/>
+			<g>
+				<polygon points="726.717,-596.111 719.902,-588.832 729.614,-586.569 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="1010.806" y1="-1191.886" x2="861.185" y2="-1439.109"/>
+			<g>
+				<polygon points="866.182,-1440.429 857.445,-1445.235 857.65,-1435.266 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="1062.632" y1="-1172.794" x2="1062.633" y2="-1068.988"/>
+			<g>
+				<polygon points="1057.675,-1070.447 1062.66,-1061.812 1067.646,-1070.447 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="578.612" y1="-1881.37" x2="874.194" y2="-1628.645"/>
+			<g>
+				<polygon points="869.863,-1625.825 879.666,-1624.002 876.344,-1633.404 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="917.647" y1="-1588.686" x2="1024.723" y2="-1212.541"/>
+			<g>
+				<polygon points="1019.555,-1212.586 1026.714,-1205.646 1029.146,-1215.316 				"/>
+			</g>
+		</g>
+	</g>
+	
+		<text transform="matrix(-0.0145 -0.9999 0.9999 -0.0145 564.8584 -1752.7075)" fill="#697989" font-family="'CourierNewPS-BoldMT'" font-size="17">--nrepeats</text>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="1062.551" y1="-1400.854" x2="1062.552" y2="-1335.51"/>
+			<g>
+				<polygon points="1057.594,-1336.969 1062.579,-1328.334 1067.565,-1336.969 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#000000" x1="1062.15" y1="-1292.214" x2="1062.151" y2="-1218.154"/>
+			<g>
+				<polygon points="1057.193,-1219.613 1062.179,-1210.978 1067.165,-1219.613 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#1A171B" stroke-dasharray="12,1" x1="1229.744" y1="-188.147" x2="1229.743" y2="-134.676"/>
+			<g>
+				<polygon fill="#1A171B" points="1224.785,-136.136 1229.771,-127.5 1234.757,-136.135 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#1A171B" stroke-dasharray="12,1" x1="1291.342" y1="-281.36" x2="1395.043" y2="-192.808"/>
+			<g>
+				<polygon fill="#1A171B" points="1390.714,-189.984 1400.518,-188.168 1397.189,-197.567 				"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<g>
+			<line fill="none" stroke="#1A171B" stroke-dasharray="12,1" x1="610.918" y1="-473.802" x2="610.918" y2="-418.938"/>
+			<g>
+				<polygon fill="#1A171B" points="605.96,-420.396 610.945,-411.762 615.932,-420.396 				"/>
+			</g>
+		</g>
+	</g>
+	<text transform="matrix(1 0 0 1 527.1973 -383.4668)" font-family="'Arial-ItalicMT'" font-size="24">merged.hints.gff</text>
+</g>
+<g>
+	<g>
+		<path fill="none" stroke="#1A171B" d="M1232.203,1455.021c-0.024-1071.13-5.998-1080.648-545.703-1080.648"/>
+		<g>
+			<polygon fill="#1A171B" points="1237.131,1453.546 1232.176,1462.198 1227.159,1453.581 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#1A171B" x1="697.148" y1="1443.106" x2="1150.913" y2="1480.697"/>
+		<g>
+			<polygon fill="#1A171B" points="1149.049,1485.519 1158.066,1481.263 1149.873,1475.58 			"/>
+		</g>
+	</g>
+</g>
+<rect x="11.5" fill="none" width="1568" height="1902.5"/>
+</svg>
