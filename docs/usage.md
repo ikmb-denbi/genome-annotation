@@ -146,7 +146,7 @@ If you specify an Email address, the pipeline will send a notification upon comp
 By default, the pipeline expects paired-end RNA-seq data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
 ```bash
---singleEnd --reads '*_R{1,2}_001.fastq.gz'
+--singleEnd --reads '*.fastq.gz'
 ```
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
