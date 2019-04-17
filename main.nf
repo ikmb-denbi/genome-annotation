@@ -57,7 +57,6 @@ def helpMessage() {
     --UTR		Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
     --iso		Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
-    --uniprot		Fasta file with Uniprot proteins for functional annotation [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
  	
     How to split programs:
@@ -156,7 +155,6 @@ summary['Augustus model'] = params.model
 // -- make masked blast database
 // --- align proteins with blast
 // ---- align proteins with exonerate
-// --- align proteins with genomethreader
 // --- align ESTs with Blast
 // -- Align RNAseq reads with HiSat2
 // -- Assembly Trinity transcripts (genome-guided)
@@ -788,7 +786,7 @@ if (params.reads != false ) {
 		file(hisat_hints) into rnaseq_hints
 	
 		script:
-		hisat_hints = "rnaseq.hisat.hints.gff"
+		hisat_hints = "RNAseq.hisat.hints.gff"
 
 		"""
 			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$bam --out=$hisat_hints
