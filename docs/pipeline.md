@@ -19,5 +19,5 @@ Once a file with all possible extrinsic hints is generated, the following steps 
 #### `--augustus true`:
 * **Augustus** 
 
-![](../images/genome-annotation_dag.svg) 
+![](../images/Pipeline_dag.svg) 
 
