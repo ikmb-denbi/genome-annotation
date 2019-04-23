@@ -18,7 +18,7 @@ Make sure that the sequences are from your species of interest; on the nucleotid
 greatly dimminish the alignment quality/rate. 
 
 An alternative to traditional ESTs are sequence data from de-novo assembled transcriptomes. For this, we recommend genome-guided [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Genome-Guided-Trinity-Transcriptome-Assembly).
-Please be advised that this pipeline actually performs this step for you, if you specify both `--reads` and `-trinity true`.
+Please be advised that this pipeline actually performs this step for you, if you specify both `--reads` and `--trinity true`.
 
 ## RNA-seq data
 

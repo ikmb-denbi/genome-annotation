@@ -1,6 +1,6 @@
 # Genome Annotation - Troubleshooting
 
-## Input files not found
+## (RNA-seq) Input files not found
 
 If only no file, only one input file , or only read one and not read two is picked up then something is wrong with your input file declaration
 
@@ -20,7 +20,7 @@ Note that if your sample name is "messy" then you have to be very particular wit
 ## Pipeline is very slow
 
 The performance of the pipeline can be tuned in a number of ways. We have observed long run times for highly fragmented genomes or if the number of sequences
-in blast and exonerate jobs is choosen to large. 
+in blast and exonerate jobs is chosen too large. 
 
 ### Genome assembly 
 Your genome assembly should, at most, contain thousands of scaffolds - ideally much less than that. Modern sequencing approaches such as linked-read sequencing
@@ -48,8 +48,7 @@ rm -Rf empty_dir work
 The pipeline can't take a list of multiple input files - it takes a glob expression. If your input files are scattered in different paths then we recommend that you generate a directory with symlinked files. If running in paired end mode please make sure that your files are sensibly named so that they can be properly paired. See the previous point.
 
 ## Extra resources and getting help
-If you still have an issue with running the pipeline then feel free to contact us.
-Have look at the [pipeline website](https://github.com/ikmb-denbi/genome-annotation) to find out how.
+If you still have an issue with running the pipeline then feel free to contact us and open an issue here on github.
 
 If you have problems that are related to Nextflow and not our pipeline then check out the [Nextflow gitter channel](https://gitter.im/nextflow-io/nextflow) or the [google group](https://groups.google.com/forum/#!forum/nextflow).
 

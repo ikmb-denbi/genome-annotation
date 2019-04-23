@@ -71,7 +71,7 @@ Location of a single FASTA file with protein sequences from related species. If 
 
 ### 3. Programs to run 
 By default, the complete pipeline you see above will run, given the types of evidences your provide. However, you can skip some steps if you want. 
-For example,if you already have assembled a transcriptome or if you don't want to run gene prediction and/or functional annotation. 
+For example,if you already have assembled a transcriptome or if you don't want to run gene prediction. 
 
 #### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
@@ -125,7 +125,7 @@ Location of Augustus configuration file. By default, this pipeline uses config f
 
 One of the advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before 
 running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. 
-When all instances of the program are finished, Nextflow can correctly put together all the results in a single output for that program. Depending on the size and contiguity of your target genome and the size of the evidence data, you may want to tweak on or several of the parameters below. If unsure, 
+When all instances of the program are finished, Nextflow can correctly put together all the results in a single output for that program. Depending on the size and contiguity of your target genome and the size of the evidence data, you may want to tweak one or several of the parameters below. If unsure, 
 leave at the defaults.
 
 #### `--nblast` [ default = 500 ]
