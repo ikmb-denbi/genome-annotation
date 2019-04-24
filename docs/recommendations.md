@@ -45,3 +45,18 @@ perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
 # Select the name of the species (e.g. "Ostreoida") from the output tree and do:
 perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -species Ostreoida > RMdb_Ostreoida.fa
 ``` 
+
+## Custom Augustus models
+
+This is where it gets a bit complicated. We have decided to use conda/singularity to automatically provision software. This is for your 
+convenience and to do away with complicated software deployment. However, as a draw back it is not straight-forward to train AUGUSTUS
+for another species in this setup. The solution is a bit of a workaround, which involves these steps:
+
+- Create a cluster config file that uses neither Conda nor Singularity. 
+- Instead, install the conda environment into your standard conda directory using `conda env create -f environment.yml` 
+- You will then have to manually activate this environment before you start the pipeline; or indeed if you wish to 
+train AUGUSTUS: `source activate genome-annotation-1.0`
+
+With the environment active, you can follow the instructions [here](http://bioinf.uni-greifswald.de/augustus/binaries/tutorial/training.html) to build 
+a model for your species of interest and use it in your subsequent pipeline run. There is also an automated 
+webserver [here](http://bioinf.uni-greifswald.de/webaugustus/trainingtutorial.gsp).
