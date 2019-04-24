@@ -320,12 +320,10 @@ process runRepeatMasker {
 	rm_gff = "${genome_fa.getName()}.out.gff"
 	
 	"""
-		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa &>/dev/null
+		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa
 
-		if [ ! -f $genome_rm ]; then
-			cp $genome_fa $genome_rm
-			touch $rm_gff
-		fi
+		test -f ${genome_rm} || cp $genome_fa $genome_rm && touch $rm_gff
+
 	"""
 }
 

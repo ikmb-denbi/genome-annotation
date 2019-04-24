@@ -26,7 +26,7 @@ my $hints = undef;
 my $aug_conf = undef;
 my $isof = undef;
 my $utr = undef;
-my @scaffolds;
+my %dictionary;
 my $model = undef;
 my $help;
 
@@ -63,7 +63,7 @@ while (<$FAI>) {
 
 	my ($chr,$len,$a,$b,$c) = split("\t",$line);
 
-	push @scaffolds, $chr ;
+	$dictionary{$chr} = $len;
 	
 }
 
@@ -81,9 +81,14 @@ while (<$BED>) {
 	my ($chr,$from,$to) = split("\t",$line);
 
 	# If this scaffold is part of our target chunk
-	if ( grep( /^$chr$/, @scaffolds ) ) {
+	if ( exists $dictionary{$chr}) {
+		my $scaffold_len = $dictionary{$chr};
+
+		my $max_len = ($to > $scaffold_len) ? $to = $scaffold_len : $to = $to;
+
 		my $outfile = $chr . "_" . $from . "-" . $to . ".augustus.gff" ;
 		my $infile = $chr . ".fa" ;
+		
 		my $command = "augustus --species=$model --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;
 		printf $command . "\n" ;
 	}
