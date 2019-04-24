@@ -27,17 +27,15 @@ rm_lib: "/path/to/repeats.fa"
 rm_species: "mammal"
 reads: "/path/to/*_R{1,2}_001.fastq.gz"
 trinity: false
-augustus: false
+augustus: true
 model: "human"
 UTR: "off"
 isof: false
 augCfg: false
-uniprot: false
 nblast: 200
 blast_evalue: 0.001
 nexonerate: 100
 nrepeats: 20
-ninterpro: 200
 singleEnd: false
 rnaseq_stranded: false
 outdir: "output"
@@ -73,7 +71,7 @@ Location of a single FASTA file with protein sequences from related species. If 
 
 ### 3. Programs to run 
 By default, the complete pipeline you see above will run, given the types of evidences your provide. However, you can skip some steps if you want. 
-For example,if you already have assembled a transcriptome or if you don't want to run gene prediction and/or functional annotation. 
+For example,if you already have assembled a transcriptome or if you don't want to run gene prediction. 
 
 #### `--trinity` [ true (default) | false ] 
 Run transcriptome assembly with Trinity and produce hints from the transcripts. 
@@ -121,16 +119,13 @@ Allow Augustus to predict UTRs (results are not optimal and takes much longer - 
 Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer - not recommended). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
-Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline.
-
-#### `--uniprot` [ default = '/bin/Eumetazoa_UniProt_reviewed_evidence.fa' ]
-Fasta file with Uniprot proteins for functional annotation. By default, this pipeline uses eumetazoan proteins which have been reviewed by the Uniprot project (as of March 2017). You probably want to use a more recent collection of sequences or one that is more restricted to your species' taxonomic group. 
+Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline. 
     
 ### 6. How to tune the speed of the pipeline - data splitting
 
 One of the advantages of using Nextflow is that it allows you to speed up a pipeline by splitting some of the input files into smaller chunks before 
 running specific programs. Then that program can be run on each smaller chunk in parallel in a compute cluster. 
-When all instances of the program are finished, Nextflow can correctly put together all the results in a single output for that program. Depending on the size and contiguity of your target genome and the size of the evidence data, you may want to tweak on or several of the parameters below. If unsure, 
+When all instances of the program are finished, Nextflow can correctly put together all the results in a single output for that program. Depending on the size and contiguity of your target genome and the size of the evidence data, you may want to tweak one or several of the parameters below. If unsure, 
 leave at the defaults.
 
 #### `--nblast` [ default = 500 ]
@@ -151,7 +146,7 @@ If you specify an Email address, the pipeline will send a notification upon comp
 By default, the pipeline expects paired-end RNA-seq data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
 
 ```bash
---singleEnd --reads '*_R{1,2}_001.fastq.gz'
+--singleEnd --reads '*.fastq.gz'
 ```
 
 It is not possible to run a mixture of single-end and paired-end files in one run. 
@@ -162,7 +157,7 @@ The output directory where the results will be saved.
 #### `-profile`
 Use this parameter to choose a configuration profile. Each profile is designed for a different combination of compute environment and installation estrategy (see [Installation instructions](../docs/installation.md)). 
 
-### 8. Nextflow parameters
+### 8. Nextflow parameters (indicate with single dash "-")
 
 #### `-params-file config.yaml`
 All the above options can be passed from either the command line or through a configuration file. A suitable template is included under assets/config.yaml.
