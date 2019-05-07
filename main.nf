@@ -729,7 +729,7 @@ if (params.reads != false ) {
 		file hs2_indices from hs2_indices.collect()	
 	
 		output:
-		file "*accepted_hits.bam" into accepted_hits2merge , bam2trinity
+		file "*accepted_hits.bam" into accepted_hits2merge
 	
 		script:
 		indexBase = hs2_indices[0].toString() - ~/.\d.ht2/
@@ -759,7 +759,7 @@ if (params.reads != false ) {
 		file hisat_bams from accepted_hits2merge.collect()
 
 		output:
-		file(bam) into  Hisat2Hints
+		file(bam) into  Hisat2Hints, bam2trinity
 
 		script:
 		bam = "hisat2.merged.bam"
