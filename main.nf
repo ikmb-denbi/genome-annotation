@@ -804,7 +804,7 @@ if (params.reads != false ) {
 			//scratch true 
 	
 			input:
-			file(hisat_bam) from bam2trinity.collect()
+			file(hisat_bam) from bam2trinity
 
 			output:
 			file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate, trinity_to_index
