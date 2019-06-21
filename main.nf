@@ -759,7 +759,7 @@ if (params.reads != false ) {
 		file hisat_bams from accepted_hits2merge.collect()
 
 		output:
-		file(bam) into  Hisat2Hints, bam2trinity
+		file(bam) into  (Hisat2Hints, bam2trinity)
 
 		script:
 		bam = "hisat2.merged.bam"
