@@ -9,6 +9,7 @@ dependencies:
  - parallel
  - samtools=1.9
  - perl-text-soundex
+ - repeatmodeler=1.0.11
  - repeatmasker=4.0.7
  - cdbtools
  - exonerate=2.4.0 

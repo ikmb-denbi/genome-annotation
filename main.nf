@@ -131,6 +131,10 @@ if (params.augustus != false && params.augCfg == false ) {
 	AUG_CONF = params.augCfg
 }
 
+if (params.rm_lib == false && params.rm_species == false) {
+	println = "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
+)
+
 // give this run a name
 params.run_name = false
 run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
@@ -232,14 +236,25 @@ if (params.reads) {
 	rnaseq_hints = Channel.from(false)
 }
 
+// if no repeat data is provided
+if (params.rm_lib == false && params.rm_species == false) {
+	Channel
+		.fromPath(Genome)
+		.set { inputRepeatModeler }
+} else {
+        repeats_fa = Channel.from(false)
+}
+
 // Header log info
 log.info "========================================="
 log.info "IKMB Genome Annotation Pipeline v${workflow.manifest.version}"
 log.info "Genome assembly: 		${params.genome}"
 if (params.rm_lib) {
 	log.info "Repeatmasker lib:		${params.rm_lib}"
-} else {
+} else if (params.rm_species) {
 	log.info "Repeatmasker species:		${params.rm_species}"
+} else {
+	log.info "Repeamasking:			Compute de-novo"
 }
 log.info "-----------------------------------------"
 log.info "Evidences:"
@@ -262,6 +277,28 @@ log.info "Nextflow Version:             $workflow.nextflow.version"
 log.info "Command Line:			$workflow.commandLine"
 log.info "Run name: 			${params.run_name}"
 log.info "========================================="
+
+// Model Repeats if nothing is provided
+if (params.rm_lib == false && params.rm_species == false") {
+	process runRepeatModeler {
+
+		scratch true
+
+		input:
+		file(genome_fa) from inputRepeatModeler
+
+		output:
+		file(repeats) into repeats_fa
+
+		script:	
+
+		repeats = "consensi.fa.classified"	
+		"""
+			BuildDatabase -name genome_source -engine ncbi $genome_fa
+			RepeatModeler -engine ncbi -pa ${task.cpus} -database genome_source
+		"""
+	}
+}
 
 // ---------------------------
 // RUN REPEATMASKER
@@ -299,6 +336,7 @@ process runRepeatMasker {
 
 	input: 
 	file(genome_fa) from FastaRM
+	file(repeats) from repeats_fa
 	env(REPEATMASKER_LIB_DIR) from RMLibPath.map { it.toString() } 
 
 	output:
@@ -308,7 +346,9 @@ process runRepeatMasker {
 	script:
 
 	options = ""
-	if (params.rm_lib != false ) {
+	if (repeats != false) {
+		options = "-lib $repeats"
+	else if (params.rm_lib != false ) {
 		options = "-lib $params.rm_lib"
 	} else {
 		options = "-species $params.rm_species"
