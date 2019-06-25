@@ -133,7 +133,7 @@ if (params.augustus != false && params.augCfg == false ) {
 
 if (params.rm_lib == false && params.rm_species == false) {
 	println = "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
-)
+}
 
 // give this run a name
 params.run_name = false
@@ -236,7 +236,7 @@ if (params.reads) {
 	rnaseq_hints = Channel.from(false)
 }
 
-// if no repeat data is provided
+// Trigger de-novo repeat prediction of no repeats were provided
 if (params.rm_lib == false && params.rm_species == false) {
 	Channel
 		.fromPath(Genome)
@@ -279,7 +279,9 @@ log.info "Run name: 			${params.run_name}"
 log.info "========================================="
 
 // Model Repeats if nothing is provided
-if (params.rm_lib == false && params.rm_species == false") {
+
+if (params.rm_lib == false && params.rm_species == false ) {
+
 	process runRepeatModeler {
 
 		scratch true
@@ -292,10 +294,11 @@ if (params.rm_lib == false && params.rm_species == false") {
 
 		script:	
 
-		repeats = "consensi.fa.classified"	
+		repeats = "consensi.fa"	
 		"""
 			BuildDatabase -name genome_source -engine ncbi $genome_fa
 			RepeatModeler -engine ncbi -pa ${task.cpus} -database genome_source
+			cp RM_*/consensi.fa . 
 		"""
 	}
 }
@@ -346,12 +349,12 @@ process runRepeatMasker {
 	script:
 
 	options = ""
-	if (repeats != false) {
-		options = "-lib $repeats"
-	else if (params.rm_lib != false ) {
+	if (params.rm_lib) {
+		options = "-lib $params.rm_lib"
+	} else if (params.rm_species) {
 		options = "-lib $params.rm_lib"
 	} else {
-		options = "-species $params.rm_species"
+		options = "-lib $repeats"
 	}
 
 	genome_rm = "${genome_fa.getName()}.masked"

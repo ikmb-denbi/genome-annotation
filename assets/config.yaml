@@ -1,8 +1,8 @@
 genome: ""
 proteins: ""
 ESTs: ""
-rm_lib: ""
-rm_species: "mammal"
+rm_lib: false
+rm_species: false
 reads: ""
 trinity: false
 gth: false
