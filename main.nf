@@ -352,7 +352,7 @@ process runRepeatMasker {
 	if (params.rm_lib) {
 		options = "-lib $params.rm_lib"
 	} else if (params.rm_species) {
-		options = "-lib $params.rm_lib"
+		options = "-species $params.rm_species"
 	} else {
 		options = "-lib $repeats"
 	}
