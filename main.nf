@@ -132,7 +132,7 @@ if (params.augustus != false && params.augCfg == false ) {
 }
 
 if (params.rm_lib == false && params.rm_species == false) {
-	println = "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
+	println "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
 }
 
 // give this run a name
