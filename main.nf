@@ -354,6 +354,7 @@ process runRepeatMasker {
 		options = "-species $params.rm_species"
 	} else {
 		if (repeats.size() == 0) {
+			options = "-species eukaryota"
 		} else {
 			options = "-lib $repeats"
 		}
