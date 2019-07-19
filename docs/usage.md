@@ -99,6 +99,11 @@ repeat annotations in FASTA format. Possible sources include self-computed repea
 GRINST (www.grinst.org, commercial). 
 If you have a copy of the complete Repeatmasker library (and an installation of RM), you can extract the repeat annotation from a species like this: 
 
+Please note: If *no* repeats are specified, the pipeline will try to model repeats de-novo using the RepeatModeler package. However, this requires a 
+sufficient number of related repeats to be present in your assembly. If your genome was assembled from short reads, this strategy may not return anything - 
+short read assemblies tend to collapse repeats. In this case, the pipeline will fall back to the built-in library that ships with RepeatMasker 
+(which is very limited and probably not very useful). 
+
 ```
 # Get the Tree of all available species: 
 perl /[...]/RepeatMasker/4.0.8/util/queryRepeatDatabase.pl -tree
