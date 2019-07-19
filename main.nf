@@ -277,6 +277,8 @@ if (params.rm_lib == false && params.rm_species == false ) {
 
 	process runRepeatModeler {
 
+	        publishDir "${OUTDIR}/repeatmodeler/", mode: 'copy'
+
 		scratch true
 
 		input:
