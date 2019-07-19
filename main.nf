@@ -12,19 +12,6 @@
 ----------------------------------------------------------------------------------------
 */
 
-// Make sure the Nextflow version is current enough
-try {
-    if( ! nextflow.version.replaceFirst(/\-edge/, '').matches(">= $workflow.manifest.nextflowVersion") ){
-        throw GroovyException('Nextflow version too old')
-    }
-} catch (all) {
-    log.error "====================================================\n" +
-              "  Nextflow version $workflow.manifest.nextflowVersion required! You are running v$workflow.nextflow.version.\n" +
-              "  Pipeline execution will continue, but things may break.\n" +
-              "  Please use a more recent version of Nextflow!\n" +
-              "============================================================"
-}
-
 def helpMessage() {
   log.info"""
   =================================================================
@@ -279,10 +266,18 @@ log.info "Run name: 			${params.run_name}"
 log.info "========================================="
 
 // Model Repeats if nothing is provided
+def check_file_size(fasta) {
+
+        if (file(fasta).isEmpty()) {
+                log.info "No repeats were modelled, will use the built-in repeat library that ships with RepeatMasker"
+        }
+}
 
 if (params.rm_lib == false && params.rm_species == false ) {
 
 	process runRepeatModeler {
+
+	        publishDir "${OUTDIR}/repeatmodeler/", mode: 'copy'
 
 		scratch true
 
@@ -290,7 +285,7 @@ if (params.rm_lib == false && params.rm_species == false ) {
 		file(genome_fa) from inputRepeatModeler
 
 		output:
-		file(repeats) into repeats_fa
+		file(repeats) into (repeats_fa, check_repeats)
 
 		script:	
 
@@ -301,7 +296,13 @@ if (params.rm_lib == false && params.rm_species == false ) {
 			cp RM_*/consensi.fa . 
 		"""
 	}
+
+	// Let the user know if the repeat search was unsuccesful
+	check_repeats
+	        .filter { fasta -> check_file_size(fasta) }
+        	.set  { checked_repeats }
 }
+
 
 // ---------------------------
 // RUN REPEATMASKER
@@ -348,13 +349,17 @@ process runRepeatMasker {
 
 	script:
 
-	options = ""
+	def options = ""
 	if (params.rm_lib) {
 		options = "-lib $params.rm_lib"
 	} else if (params.rm_species) {
 		options = "-species $params.rm_species"
 	} else {
-		options = "-lib $repeats"
+		if (repeats.size() == 0) {
+			options = "-species eukaryota"
+		} else {
+			options = "-lib $repeats"
+		}
 	}
 
 	genome_rm = "${genome_fa.getName()}.masked"
