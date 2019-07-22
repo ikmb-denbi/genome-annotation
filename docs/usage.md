@@ -29,8 +29,6 @@ reads: "/path/to/*_R{1,2}_001.fastq.gz"
 trinity: false
 augustus: true
 model: "human"
-UTR: "off"
-isof: false
 augCfg: false
 nblast: 200
 blast_evalue: 0.001
@@ -116,12 +114,6 @@ short read assemblies tend to collapse repeats. In this case, the pipeline will 
 
 #### `--model` [ default = 'human' ]
 Species model for Augustus. A list of valid identifiers can be found [here](https://github.com/Gaius-Augustus/Augustus/blob/master/docs/RUNNING-AUGUSTUS.md).
-
-#### `--UTR` [ 'on' | 'off' (default) ] 
-Allow Augustus to predict UTRs (results are not optimal and takes much longer - not recommended). 
-
-#### `--isof` [ 'true' | 'false' (default) ] 
-Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer - not recommended). 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
 Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline. 

@@ -41,8 +41,6 @@ def helpMessage() {
     --rm_species		Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
     --model		Species model for Augustus [ default = 'human' ]
-    --UTR		Allow Augustus to predict UTRs (results are not optimal and takes much longer) [ 'on' | 'off' (default) ]
-    --iso		Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer) [ 'true' | 'false' (default) ]
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
  	
@@ -855,7 +853,7 @@ if (params.reads != false ) {
 			file(hisat_bam) from bam2trinity
 
 			output:
-			file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate, trinity_to_index
+			file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate, trinity_to_index, trinity_to_pasa
 	
 			script:
 
@@ -1002,6 +1000,21 @@ if (params.reads != false ) {
 	} // Close Trinity loop
 	
 } // Close RNAseq loop
+
+
+/*
+* RUN PASA WITH TRINITY TRANSCRIPTS
+*/
+
+//process runPasa {
+
+//	input:
+//	file(transcripts) from transcripts_to_pasa
+
+//	output:
+
+
+//}
 
 /*
 * RUN AUGUSTUS GENE PREDICTOR
