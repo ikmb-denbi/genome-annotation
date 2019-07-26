@@ -26,3 +26,4 @@ dependencies:
  - evidencemodeler=1.1.1
  - perl-uri=1.76
  - perl-dbi=1.642
+ - perl-parallel-forkmanager

@@ -36,11 +36,14 @@ def helpMessage() {
     Programs to run:
     --trinity		Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
     --augustus		Run Augustus to predict genes [ true (default) | false ]
+    --training		Run de novo model training for Augustus with complete proteins (from Pasa + Transdecoder). Only if RNA-seq data provided. [ true | false ]. You must provide a name for your model with "--model". If you use the name of an existing model, this will be re-trained.
  	
     Programs parameters:
-    --rm_species		Species database for RepeatMasker [ default = 'mammal' ]
+    --rm_species	Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
-    --model		Species model for Augustus [ default = 'human' ]
+    --train_perc	What percentage of complete proteins (from Pasa + Transdecoder) should be used for training. The rest will be used for testing model accuracy [ default = 90 ]]
+    --train_set		High confident protein set to train augustus model. If not provided, Pasa + Transdecoder is used to obtain protein set.
+    --model		Species model for Augustus [ default = 'human' ]. If "--training true" and you want to do de novo training, give a NEW name to your species
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
  	
@@ -72,6 +75,14 @@ if (params.help){
 // -----------------------------
 
 OUTDIR = params.outdir
+pasa_config = "$workflow.projectDir/bin/alignAssembly.config"
+
+if (params.train_set) {
+	Train_set = file(params.train_set)
+}
+
+uniprot_path = "$workflow.projectDir/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
+Uniprot = file(uniprot_path)
 
 Genome = file(params.genome)
 if( !Genome.exists() || !params.genome ) exit 1; "No genome assembly found, please specify with --genome"
@@ -115,6 +126,11 @@ if (params.augustus != false && params.augCfg == false ) {
 } else if (params.augustus != false) {
 	AUG_CONF = params.augCfg
 }
+
+// If de novo model training, species model is "esga_species":
+//if (params.training != false) {
+//	params.model = "esga_species"
+//}
 
 if (params.rm_lib == false && params.rm_species == false) {
 	println "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
@@ -197,6 +213,7 @@ if (params.ESTs) {
 	est_exonerate_hints = Channel.from(false)
 }
 
+
 // if RNAseq reads are provided
 if (params.reads) {
 
@@ -219,6 +236,7 @@ if (params.reads) {
 } else {
 	trinity_exonerate_hints = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
+	training_finished = Channel.from(false)
 }
 
 // Trigger de-novo repeat prediction of no repeats were provided
@@ -239,7 +257,7 @@ if (params.rm_lib) {
 } else if (params.rm_species) {
 	log.info "Repeatmasker species:		${params.rm_species}"
 } else {
-	log.info "Repeamasking:			Compute de-novo"
+	log.info "Repeatmasking:			Compute de-novo"
 }
 log.info "-----------------------------------------"
 log.info "Evidences:"
@@ -1006,19 +1024,105 @@ if (params.reads != false ) {
 * RUN PASA WITH TRINITY TRANSCRIPTS
 */
 
-//process runPasa {
+if (params.trinity != false) {
 
-//	input:
-//	file(transcripts) from transcripts_to_pasa
+	process runPasa {
+		
+		publishDir "${OUTDIR}/evidence/rnaseq/pasa", mode: 'copy'
 
-//	output:
+		input:
+		file(transcripts) from trinity_to_pasa
 
+		output:
+		file(pasa_assemblies_fasta)
+		file(pasa_assemblies_gff)
+		file(transdecoder_pep)
+		file(complete_pep)
+		file(complete_gff) into complete2training
+	
+		script:
+		pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
+		pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
+		transdecoder_pep = "pasa_DB.assemblies.fasta.transdecoder.pep"
+		complete_pep = "transdec.complete.pep"
+		complete_gff = "transdec.complete.gff3"
+	
+		// When resuming, Pasa complains if the database already exists
+		DB_path = workflow.workDir + "/pasa_DB"
+		if (DB_path.exists() ) DB_path.delete()
 
-//}
+		"""
+			\$PASAHOME/bin/seqclean $transcripts
+			cp $pasa_config pasa_DB.config
+			sed -i 's+testDB+$DB_path+' pasa_DB.config 
+			\$PASAHOME/Launch_PASA_pipeline.pl -c pasa_DB.config -C -R -g $params.genome -t Trinity-GG.fasta.clean --CPU ${task.cpus} -T -u $transcripts --ALIGNERS gmap
+			\$PASAHOME/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta pasa_DB.assemblies.fasta --pasa_transcripts_gff3 pasa_DB.pasa_assemblies.gff3
+			Transdec_complete.pl --fasta_in pasa_DB.assemblies.fasta.transdecoder.pep --gff_in pasa_DB.assemblies.fasta.transdecoder.genome.gff3 --fasta_out transdec.complete.pep --gff_out transdec.complete.gff3
+			rm $workflow.workDir/pasa_DB
+		"""	
+	}
+}
 
 /*
 * RUN AUGUSTUS GENE PREDICTOR
 */
+
+if (params.training != false) {
+
+	process runTrainAugustus {
+	
+		publishDir "${OUTDIR}/training/", mode: 'copy'
+
+		input:
+		file(complete_peptides) from complete2training
+
+		output:
+		file(complete_gb)
+		file(train_gb)
+		file(test_gb)
+		file(train_out) into training_finished	
+
+		script:
+		complete_gb = "complete_peptides.raw.gb"	
+		train_gb = "complete_peptides.raw.gb.train"
+		test_gb = "complete_peptides.raw.gb.test"
+		train_out = "training_accuracy.out"
+
+		// If the user has provided high conf. peptides, use those instead of complete_peptides from runPasa
+// To do: if params.train_set has been provided, runTranAugustus should not wait for runPasa to finish  
+		if (params.train_set) {
+			peptides2train = params.train_set
+		} else {
+			peptides2train = complete_peptides
+		}
+		
+		// If the model already exists, do nott run new_species.pl: DOES NOT WORK YET
+		model_path = env["AUGUSTUS_CONFIG_PATH"] + "/species/" + params.model
+		model_file = file(model_path)		
+
+// To do: check if results are better when running "etraining" again after optimize_augustus.pl" 
+		if (model_file.exists()) {
+			// Re-train an existing model (or when resuming)
+			"""
+                   		gff2gbSmallDNA.pl $peptides2train $params.genome 1000 complete_peptides.raw.gb
+                        	split_training.pl --infile complete_peptides.raw.gb --percent 90
+                        	etraining --species=$params.model --stopCodonExcludedFromCDS=false complete_peptides.raw.gb.train
+                        	optimize_augustus.pl --species=$params.model complete_peptides.raw.gb.train --cpus=${task.cpus} --UTR=off                       	
+				augustus --stopCodonExcludedFromCDS=false --species=$params.model complete_peptides.raw.gb.test | tee training_accuracy.out
+                	"""
+		} else {
+			// De novo model:
+			"""
+				gff2gbSmallDNA.pl $peptides2train $params.genome 1000 complete_peptides.raw.gb
+				split_training.pl --infile complete_peptides.raw.gb --percent 90
+				new_species.pl --species=$params.model
+				etraining --species=$params.model --stopCodonExcludedFromCDS=false complete_peptides.raw.gb.train
+				optimize_augustus.pl --species=$params.model complete_peptides.raw.gb.train --cpus=${task.cpus} --UTR=off 
+				augustus --stopCodonExcludedFromCDS=false --species=$params.model complete_peptides.raw.gb.test | tee training_accuracy.out
+			"""
+		}
+	}
+}
 
 // get all available hints and merge into one file
 process runMergeAllHints {
@@ -1091,6 +1195,7 @@ process runAugustus {
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
 	file(genome_chunk) from GenomeChunksAugustus
+	file(can_start) from training_finished
 
 	output:
 	file(augustus_result) into augustus_out_gff
@@ -1103,7 +1208,7 @@ process runAugustus {
 	"""
 		samtools faidx $genome_chunk
 		fastaexplode -f $genome_chunk -d . 
-		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr $params.UTR --isof $params.isof --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr off --isof false --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
 		parallel -j ${task.cpus} < commands.txt
 		touch dummy.augustus.gff
 		cat *augustus.gff > $augustus_result
@@ -1119,7 +1224,7 @@ process runMergeAugustusGff {
 	file(augustus_gffs) from augustus_out_gff.collect()
 
 	output:
-	file(augustus_merged_gff) into (augustus_2gff3, augustus_2prots)
+	file(augustus_merged_gff) into (augustus_2prots, augustus_gff2annie, augustus_gff2functions)
 
 	script:
 	augustus_merged_gff = "augustus.merged.out.gff"
@@ -1139,7 +1244,7 @@ process runAugustus2Protein {
 	file augustus2parse from augustus_2prots
 	
 	output:
-	file(augustus_prot_fa) into (augustus_proteins, augustus_prots2annie, augustus_prots2interpro)
+	file(augustus_prot_fa) into (augustus_prots2annie, augustus_prots2functions)
 	
 	script:
 	augustus_prot_fa = "augustus.proteins.fa"
@@ -1149,6 +1254,113 @@ process runAugustus2Protein {
 		cat *.aa > $augustus_prot_fa	
 	"""
 }
+
+/*
+ * STEP Functional Annotation
+ */
+
+Channel
+        .fromPath(Uniprot)
+        .set { MakeUniprotDB }
+
+process runMakeUniprotDB {
+
+	publishDir "${OUTDIR}/functional_annotation/BlastDB", mode: 'copy'
+
+	input:
+	file(uniprot_fa) from MakeUniprotDB	
+
+	output:
+	set file(db_uniprot_phr),file(db_uniprot_pin),file(db_uniprot_psq) into blast_uniprot_db	
+
+	script:
+        dbName_uniprot = uniprot_fa.baseName
+        db_uniprot_phr = dbName_uniprot + ".phr"
+        db_uniprot_pin = dbName_uniprot + ".pin"
+        db_uniprot_psq = dbName_uniprot + ".psq"
+
+        target_uniprot = file(db_uniprot_phr)
+
+        if (!target_uniprot.exists()) {
+                """
+                	makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
+                """
+        }
+}
+
+Channel
+       	.fromPath(augustus_prots2annie)
+        .splitFasta(by: params.nblast, file: true)
+        .set {proteins_annotated_chunk}
+
+process runBlastpUniprot {
+
+        publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
+
+        input:
+	file(annotated_prots) from proteins_annotated_chunk
+        set file(blastdb_uniprot_phr),file(blastdb_uniprot_pin),file(blastdb_uniprot_psq) from blast_uniprot_db.collect()
+
+        output:
+        file(uniprot_blast_result)
+
+        script:
+        db_name_uniprot = blastdb_uniprot_phr.baseName
+        chunk_name_annotated = annotated_prots.baseName
+
+        """
+           	blastp -query $annotated_prots -db db_name_uniprot -evalue 0.01 -outfmt 6 -num_threads ${task.cpus} -max_hsps 1 -max_target_seqs 1 > uniprot_blast_result
+        """
+}
+
+mergedUniprotBlast = uniprot_blast_result.collectFile(name:'mergedUniprotBlast')
+
+process runAnnie {
+
+        publishDir "${OUTDIR}/functional_annotation"
+
+        input:
+	file(blast_report) from mergedUniprotBlast
+        file(augustus_annotated_gff) from augustus_gff2annie
+
+        output:
+        file(annie_report) into outputAnnie
+
+        script:
+        annie_report = "blastp.annie"
+
+        """
+           	annie_blastp.py -db $Uniprot -b $blast_report -g $augustus_annotated_gff -o $annie_report
+        """
+}
+
+process runFunctionsToGffFasta {
+
+        publishDir "${OUTDIR}/functional_annotation"
+
+        input:
+	file(annie) from outputAnnie
+        file(annotation_gff) from augustus_gff2functions
+	file(annotation_fasta) from augustus_prots2functions
+
+        output:
+        file(annotated_gff)
+        file(annotated_fasta)
+
+        script:
+        annotated_gff = "annotation.functions.gff"
+        annotated_fasta = "annotation.functions.fasta"
+
+        """
+		gff_fasta_add_annie_functions.pl --gff $annotation_gff --fasta $annotation_fasta --annie $annie --out_gff $annotated_gff --out_fasta $annotated_fasta
+	"""
+}
+
+
+
+
+
+
 
 workflow.onComplete {
   log.info "========================================="
