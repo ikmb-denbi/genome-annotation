@@ -90,11 +90,6 @@ if (params.proteins) {
 if ( params.ESTs ){
 	ESTs = file(params.ESTs)
 	if( !ESTs.exists() ) exit 1, "ESTs file not found: ${ESTs}. Specify with --ESTs."
-	println "Will run Exonerate on EST/Transcriptome file"
-}
-
-if (params.reads){
-	println "Found reads and will run Hisat2 on RNA-seq data"
 }
 
 if (params.rm_lib) {
@@ -103,7 +98,6 @@ if (params.rm_lib) {
 	if (params.rm_species) {
 		println "Provided both a custom repeatmask library (--rm_lib) AND a species/taxonomic group for RM - will only use the library!"
 	}
-	println "Found a FASTA file with repeats and will use for masking..."
 }
 
 // Make it fail if basic requirements are unmet
@@ -118,7 +112,6 @@ if (params.trinity == true && params.reads == false) {
 // Use a default config file for Augustus if none is provided
 if (params.augustus  && !params.augCfg ) {
 	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
-	println "Using Augustus config bundled with this pipeline..."
 } else if (params.augustus) {
 	AUG_CONF = params.augCfg
 }
@@ -126,8 +119,8 @@ if (params.augustus  && !params.augCfg ) {
 // Check prereqs for training a new model
 if (params.training && !params.model) {
         exit 1; "You requested for a new prediction profile to be trained, but did not provide a name for the model (--model)"
-} else if (params.training && !params.trinity) {
-        exit 1; "You rquested for a new prediction profile to be trained, but we need a de-novo transcriptome assembly for that (--trinity)"
+} else if (params.training && !params.trinity && !params.ESTs) {
+        exit 1; "You requested for a new prediction profile to be trained, but we need transcriptome data for that (--trinity and/or --ESTs)"
 }
 
 // Check prereqs for repeatmasking
@@ -196,9 +189,10 @@ if (params.ESTs) {
 	// create a cdbtools index for the EST file
 	Channel
 		.fromPath(ESTs)
-		.set { ests_index }
+		.set { ests_index, est_to_pasa }
 } else {
 	est_exonerate_hints = Channel.from(false)
+	est_to_pasa = Channel.from(false)
 }
 
 // if RNAseq reads are provided
@@ -224,6 +218,7 @@ if (params.reads) {
 	trinity_exonerate_hints = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
 	training_finished = Channel.from(false)
+	trinity_to_pasa = Channel.from(false)
 }
 
 // Trigger de-novo repeat prediction of no repeats were provided
@@ -269,7 +264,7 @@ if (params.augCfg) {
 	log.info "Augustus config file		${AUG_CONF}"
 }
 if (params.training) {
-	log.info "Model training:	yes (${params.model})"
+	log.info "Model training:		yes (${params.model})"
 }
 log.info "-----------------------------------------"
 log.info "Parallelization settings"
@@ -860,7 +855,7 @@ if (params.reads != false ) {
 	// run trinity de-novo assembly
 	// ----------------------------
 
-	if (params.trinity != false ) {
+	if (params.trinity) {
 
 		process runTrinity {
 	
@@ -1027,7 +1022,7 @@ if (params.reads != false ) {
 
 if (params.training ) {
 
-	if (params.trinity) {
+	if (params.trinity || params.ESTs ) {
 
 		// Clean transcripts
 		process runSeqclean {
@@ -1035,15 +1030,25 @@ if (params.training ) {
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
 
 			input:
-			file(transcripts) from trinity_to_pasa
+			file(trinity) from trinity_to_pasa
+			file(ests) from est_to_pasa
 
 			output:
 			set file(transcripts_clean),file(transcripts) into seqclean_to_pasa
 
 			script:
+			transcripts = "transcripts.fa"
 			transcript_clean = transcripts + ".clean"
+			file_list = ""
+			if (ests) {
+				file_list += ests
+			}
+			if (trinity) {
+				file_list += " ${trinity}"
+			}
 
 			"""
+				cat $file_list | grep -v false >> $transcripts
 				\$PASAHOME/bin/seqclean $transcripts -c ${task.cpus}
 			"""		
 		}
@@ -1191,6 +1196,8 @@ if (params.training ) {
 		} 
 	} // close trinity loop
 } else {
+	// We have to make the AUGUSTUS_CONFIG_PATH a mutable object, so we have to carry through the location of the modifiable 
+	// copy of the original config folder. 
         acf_prediction = augustus_config_folder
 }
 
@@ -1286,6 +1293,7 @@ process runAugustus {
 	"""
 }
 
+// Merge all the chunk GFF files into one file
 process runMergeAugustusGff {
 
 	tag "ALL"
@@ -1306,6 +1314,7 @@ process runMergeAugustusGff {
 	"""
 }
 
+// Dump out proteins for subsequent functional annotation
 process runAugustus2Protein {
 
 	tag "ALL"
@@ -1358,9 +1367,10 @@ process runMakeUniprotDB {
 proteins_annotated_chunk = augustus_prots2annie
         .splitFasta(by: params.nblast, file: true)
 
+// Blast the protein chunks against some reference db in uniprot/swissprot compliant format
 process runBlastpUniprot {
 
-        publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
+        // publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
 
         input:
 	file(annotated_prots) from proteins_annotated_chunk
@@ -1380,6 +1390,7 @@ process runBlastpUniprot {
 
 mergedUniprotBlast = uniprot_blast_result.collectFile(name:'mergedUniprotBlast')
 
+// Run a reverse engineered version of the Annie script to map names to ids
 process runAnnie {
 
         publishDir "${OUTDIR}/functional_annotation"
@@ -1399,6 +1410,7 @@ process runAnnie {
         """
 }
 
+// add everything into the annotation file
 process runFunctionsToGffFasta {
 
         publishDir "${OUTDIR}/functional_annotation", mode: 'copy'
