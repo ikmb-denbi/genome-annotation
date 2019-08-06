@@ -42,7 +42,6 @@ def helpMessage() {
     --rm_species	Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
     --train_perc	What percentage of complete proteins (from Pasa + Transdecoder) should be used for training. The rest will be used for testing model accuracy [ default = 90 ]]
-    --train_set		High confident protein set to train augustus model. If not provided, Pasa + Transdecoder is used to obtain protein set.
     --model		Species model for Augustus [ default = 'human' ]. If "--training true" and you want to do de novo training, give a NEW name to your species
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
@@ -77,10 +76,6 @@ if (params.help){
 OUTDIR = params.outdir
 pasa_config = "$workflow.projectDir/bin/alignAssembly.config"
 
-if (params.train_set) {
-	Train_set = file(params.train_set)
-}
-
 uniprot_path = "$workflow.projectDir/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
 Uniprot = file(uniprot_path)
 
@@ -108,6 +103,7 @@ if (params.rm_lib) {
 	if (params.rm_species) {
 		println "Provided both a custom repeatmask library (--rm_lib) AND a species/taxonomic group for RM - will only use the library!"
 	}
+	println "Found a FASTA file with repeats and will use for masking..."
 }
 
 // Make it fail if basic requirements are unmet
@@ -120,25 +116,27 @@ if (params.trinity == true && params.reads == false) {
 }
 
 // Use a default config file for Augustus if none is provided
-if (params.augustus != false && params.augCfg == false ) {
+if (params.augustus  && !params.augCfg ) {
 	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
 	println "Using Augustus config bundled with this pipeline..."
-} else if (params.augustus != false) {
+} else if (params.augustus) {
 	AUG_CONF = params.augCfg
 }
 
-// If de novo model training, species model is "esga_species":
-//if (params.training != false) {
-//	params.model = "esga_species"
-//}
+// Check prereqs for training a new model
+if (params.training && !params.model) {
+        exit 1; "You requested for a new prediction profile to be trained, but did not provide a name for the model (--model)"
+} else if (params.training && !params.trinity) {
+        exit 1; "You rquested for a new prediction profile to be trained, but we need a de-novo transcriptome assembly for that (--trinity)"
+}
 
+// Check prereqs for repeatmasking
 if (params.rm_lib == false && params.rm_species == false) {
 	println "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
 }
 
 // give this run a name
-params.run_name = false
-run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
+run_name = ( !params.run_name) ? "${workflow.sessionId}" : "${params.run_name}"
 
 def summary = [:]
 
@@ -155,16 +153,6 @@ summary['Augustus model'] = params.model
 // Starting the pipeline
 // ----------------------
 // ----------------------
-// Logic:
-// - repeatmask the genome
-// -- make masked blast database
-// --- align proteins with blast
-// ---- align proteins with exonerate
-// --- align ESTs with Blast
-// -- Align RNAseq reads with HiSat2
-// -- Assembly Trinity transcripts (genome-guided)
-// -- Generate hints from all available sources
-// -- Run AUGUSTUS prediction on each chunk of the masked genome using all available hints
 
 // --------------------------
 // Set various input channels
@@ -213,7 +201,6 @@ if (params.ESTs) {
 	est_exonerate_hints = Channel.from(false)
 }
 
-
 // if RNAseq reads are provided
 if (params.reads) {
 
@@ -252,9 +239,10 @@ if (params.rm_lib == false && params.rm_species == false) {
 // If it's in a container, use the hard-coded path, otherwise the augustus env variable
 if (!workflow.containerEngine) {
 	Channel.from(file(System.getenv('AUGUSTUS_CONFIG_PATH')))
-        	.set { augustus_config_folder)
+		.ifEmpty { exit 1; "Looks like the Augustus config path is not set? This shouldn't happen!" }
+        	.set { augustus_config_folder }
 } else {
-	Channel.from(file("/opt/conda/envs/genome-annotation-${workflow.manifest.version}/config"))
+	Channel.from(file("/opt/conda/envs/genome-annotation-1.0/config"))
         	.set { augustus_config_folder }
 }
 
@@ -279,6 +267,9 @@ if (params.augustus) {
 }
 if (params.augCfg) {
 	log.info "Augustus config file		${AUG_CONF}"
+}
+if (params.training) {
+	log.info "Model training:	yes (${params.model})"
 }
 log.info "-----------------------------------------"
 log.info "Parallelization settings"
@@ -367,7 +358,7 @@ process runRepeatMasker {
 	input: 
 	file(genome_fa) from FastaRM
 	file(repeats) from repeats_fa
-	env(REPEATMASKER_LIB_DIR) from RMLibPath.map { it.toString() } 
+	env REPEATMASKER_LIB_DIR from RMLibPath.map { it.toString() } 
 
 	output:
 	file(genome_rm) into RMFastaChunks
@@ -410,7 +401,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity)
 
 	script:
 	
@@ -1034,175 +1025,171 @@ if (params.reads != false ) {
 * RUN PASA WITH TRINITY TRANSCRIPTS
 */
 
-if (params.trinity && params.training ) {
+if (params.training ) {
 
-	// Clean transcripts
-	process runSeqclean {
+	if (params.trinity) {
 
-		publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
+		// Clean transcripts
+		process runSeqclean {
 
-		input:
-		file(transcripts) from trinity_to_pasa
+			publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
 
-		output:
-		set file(transcripts_clean),file(transcripts_unclipped) into seqclean_to_pasa
+			input:
+			file(transcripts) from trinity_to_pasa
 
-		script:
-		transcript_clean = ""
-		transcripts_uncplipped = ""
+			output:
+			set file(transcripts_clean),file(transcripts) into seqclean_to_pasa
 
-		"""
-			\$PASAHOME/bin/seqclean $transcripts -c ${task.cpus}
-		"""
-		
-	}
+			script:
+			transcript_clean = transcripts + ".clean"
 
-	// Run the PASA pipeline
-	process runPasa {
-		
-		publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
-
-		input:
-		set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
-
-		output:
-		file(pasa_db) into PasaDB
-	
-		script:
-		pasa_db = "pasa_DB"
-	
-		"""
-			cp $pasa_config pasa_DB.config
-			sed -i 's+testDB+$pasa_db+' pasa_DB.config 
-			\$PASAHOME/Launch_PASA_pipeline.pl \
-				-c pasa_DB.config -C -R \
-				-g $params.genome -t Trinity-GG.fasta.clean \
-				--CPU ${task.cpus} -T -u $transcripts --ALIGNERS gmap
-		"""	
-	}
-
-	// Extract gene models from PASA database
-	process runPasa2Models {
-
-                publishDir "${OUTDIR}/evidence/rnaseq/pasa/models/", mode: 'copy'
-
-		input:
-		file(pasa_db) from PasaDB
-
-		output:
-		set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into into pasa_output
-
-		script:
-		pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
-                pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
-		pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
-		pasa_transdecoder_gff = "pasa_DB.assemblies.fasta.transdecoder.genome.gff3"
-
-		script:
-
-		"""
-			\$PASAHOME/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta pasa_DB.assemblies.fasta --pasa_transcripts_gff3 \
-                        pasa_DB.pasa_assemblies.gff3
-		"""
-	}
-
-	// Extract full length models for training
-	process runModelsToTraining {
-
-                publishDir "${OUTDIR}/evidence/rnaseq/pasa/training/", mode: 'copy'
-
-		input:
-		set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_output
-			
-		output:
-		file(training_gff) into complete2training
-
-		script:
-		training_pep = "transdec.complete.pep"
-		training_gff = "transdec.complete.gff3"
-	
-		"""
-			Transdec_complete.pl --fasta_in $pasa_transdecoder_fasta --gff_in $pasa_transdecoder_gff \
-                        --fasta_out $training_pep --gff_out $training_gff
-		"""
-	}
-
-}
-
-if (params.training) {
-
-	// If we have to modify the AUGUSTUS config folder, we must copy it first
-        process runAugustusConfigFolder {
-
-                input:
-                val(config_folder) from augustus_config_folder
-
-                output:
-                file(copied_folder) into acf_training
-
-                script:
-                copied_folder = ""
-
-                """
-                        cp -R $config_folder .
-                """
-        }
-
-	if (params.train_set) {
-        	models2train = Channel.from(params.train_set)
-        } else {
-	        models2train = complete2training
-	}
-
-	process runTrainAugustus {
-	
-		publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
-
-		input:
-		file(complete_models) from models2train
-		env AUGUSTUS_CONFIG_PATH from acf_training.collect()
-
-		output:
-		
-		file(complete_gb)
-		file(train_gb)
-		file(test_gb)
-		file(train_out) into training_finished	
-		val(acf_training) into acf_prediction
-
-		script:
-		complete_gb = "complete_peptides.raw.gb"	
-		train_gb = "complete_peptides.raw.gb.train"
-
-		test_gb = "complete_peptides.raw.gb.test"
-		train_out = "training_accuracy.out"
-
-		// If the model already exists, do nott run new_species.pl: DOES NOT WORK YET
-		model_path = acf_training +  "/species/" + params.model
-		model_file = file(model_path)		
-
-		// To do: check if results are better when running "etraining" again after optimize_augustus.pl" 
-		if (model_file.exists()) {
-			// Re-train an existing model (or when resuming)
 			"""
-                   		gff2gbSmallDNA.pl $complete_models $params.genome 1000 complete_peptides.raw.gb
-                        	split_training.pl --infile complete_peptides.raw.gb --percent 90
-                        	etraining --species=$params.model --stopCodonExcludedFromCDS=false complete_peptides.raw.gb.train
-                        	optimize_augustus.pl --species=$params.model complete_peptides.raw.gb.train --cpus=${task.cpus} --UTR=off                       	
-				augustus --stopCodonExcludedFromCDS=false --species=$params.model complete_peptides.raw.gb.test | tee training_accuracy.out
-                	"""
-		} else {
-			// De novo model:
+				\$PASAHOME/bin/seqclean $transcripts -c ${task.cpus}
+			"""		
+		}
+
+		// Run the PASA pipeline
+		process runPasa {
+		
+			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
+
+			input:
+			set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
+
+			output:
+			file(pasa_db) into PasaDB
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
+	
+			script:
+			pasa_db = "pasa_DB"
+			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
+			pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
+	
 			"""
-				gff2gbSmallDNA.pl $complete_models $params.genome 1000 complete_peptides.raw.gb
-				split_training.pl --infile complete_peptides.raw.gb --percent 90
-				new_species.pl --species=$params.model
-				etraining --species=$params.model --stopCodonExcludedFromCDS=false complete_peptides.raw.gb.train
-				optimize_augustus.pl --species=$params.model complete_peptides.raw.gb.train --cpus=${task.cpus} --UTR=off 
-				augustus --stopCodonExcludedFromCDS=false --species=$params.model complete_peptides.raw.gb.test | tee training_accuracy.out
+				cp $pasa_config pasa_DB.config
+				sed -i 's+testDB+$pasa_db+' pasa_DB.config 
+				\$PASAHOME/Launch_PASA_pipeline.pl \
+					-c pasa_DB.config -C -R \
+					-g $params.genome -t $transcripts_clean \
+					--CPU ${task.cpus} -T -u $transcript_unclipped --ALIGNERS gmap
+			"""	
+		}
+
+		// Extract gene models from PASA database
+		process runPasa2Models {
+
+	                publishDir "${OUTDIR}/evidence/rnaseq/pasa/models/", mode: 'copy'
+
+			input:
+                        set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
+
+			output:
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into pasa_output
+
+			script:
+			pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
+			pasa_transdecoder_gff = "pasa_DB.assemblies.fasta.transdecoder.genome.gff3"
+
+			script:
+
+			"""
+				\$PASAHOME/scripts/pasa_asmbls_to_training_set.dbi \
+				--pasa_transcripts_fasta $pasa_assemblies_fasta \
+				--pasa_transcripts_gff3 $pasa_assemblies_gff
+                        	
 			"""
 		}
-	}
+
+		// Extract full length models for training
+		process runModelsToTraining {
+
+                	publishDir "${OUTDIR}/evidence/rnaseq/pasa/training/", mode: 'copy'
+
+			input:
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_output
+			
+			output:
+			file(training_gff) into models2train
+
+			script:
+			training_pep = "transdec.complete.pep"
+			training_gff = "transdec.complete.gff3"
+	
+			"""
+				Transdec_complete.pl --fasta_in $pasa_transdecoder_fasta --gff_in $pasa_transdecoder_gff \
+                        	--fasta_out $training_pep --gff_out $training_gff
+			"""
+		}
+
+
+		// If we have to modify the AUGUSTUS config folder, we must copy it first
+	        process runAugustusConfigFolder {
+
+			publishDir "${OUTDIR}/augustus/", mode: 'copy'
+
+        	        input:
+                	val(config_folder) from augustus_config_folder
+
+	                output:
+        	        val(copied_folder) into (acf_training,acf_trainig_path)
+
+                	script:
+	                copied_folder = "config_folder"
+
+        	        """
+                	        cp -R $config_folder $copied_folder
+	                """
+        	}
+
+		// Run one of two training routines for model training
+		process runTrainAugustus {
+	
+			publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
+
+			input:
+			file(complete_models) from models2train
+			env AUGUSTUS_CONFIG_PATH from acf_training
+			val(acf_folder) from acf_training_path
+
+			output:
+		
+			file(train_out) into training_finished	
+			val(acf_training) into acf_prediction
+
+			script:
+			complete_gb = "complete_peptides.raw.gb"	
+			train_gb = "complete_peptides.raw.gb.train"
+
+			test_gb = "complete_peptides.raw.gb.test"
+			train_out = "training_accuracy.out"
+
+			// If the model already exists, do nott run new_species.pl: DOES NOT WORK YET
+			model_path = "${acf_training_path}/species/${params.model}"
+			model_file = file(model_path)		
+
+			// To do: check if results are better when running "etraining" again after optimize_augustus.pl" 
+			if (model_file.exists()) {
+				// Re-train an existing model (or when resuming)
+				"""
+                	   		gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+                        		split_training.pl --infile $complete_gb --percent 90
+                        		etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
+	                        	optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off                       	
+					augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $train_out
+        	        	"""
+			} else {
+				// De novo model:
+				"""
+					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+					split_training.pl --infile $complete_gb --percent 90
+					new_species.pl --species=$params.model
+					etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
+					optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off 
+					augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $train_out
+				"""
+			}
+		} 
+	} // close trinity loop
 } else {
         acf_prediction = augustus_config_folder
 }
@@ -1275,7 +1262,7 @@ process runAugustus {
         params.augustus != false
 
 	input:
-	env AUGUSTUS_CONFIG_PATH from acf_prediction
+	env(AUGUSTUS_CONFIG_PATH) from acf_prediction.map { it.toString() }
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
 	file(genome_chunk) from GenomeChunksAugustus
@@ -1363,19 +1350,13 @@ process runMakeUniprotDB {
         db_uniprot_pin = dbName_uniprot + ".pin"
         db_uniprot_psq = dbName_uniprot + ".psq"
 
-        target_uniprot = file(db_uniprot_phr)
-
-        if (!target_uniprot.exists()) {
-                """
-                	makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
-                """
-        }
+	"""
+        	makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
+	"""
 }
 
-Channel
-       	.fromPath(augustus_prots2annie)
+proteins_annotated_chunk = augustus_prots2annie
         .splitFasta(by: params.nblast, file: true)
-        .set {proteins_annotated_chunk}
 
 process runBlastpUniprot {
 
@@ -1420,16 +1401,15 @@ process runAnnie {
 
 process runFunctionsToGffFasta {
 
-        publishDir "${OUTDIR}/functional_annotation"
+        publishDir "${OUTDIR}/functional_annotation", mode: 'copy'
 
         input:
 	file(annie) from outputAnnie
-        file(annotation_gff) from augustus_gff2functions
-	file(annotation_fasta) from augustus_prots2functions
+        file(annotation_gff) from augustus_gff2functions.collect()
+	file(annotation_fasta) from augustus_prots2functions.collect()
 
         output:
-        file(annotated_gff)
-        file(annotated_fasta)
+        set file(annotated_gff),file(annotated_fasta) into AnnieOut
 
         script:
         annotated_gff = "annotation.functions.gff"
@@ -1439,12 +1419,6 @@ process runFunctionsToGffFasta {
 		gff_fasta_add_annie_functions.pl --gff $annotation_gff --fasta $annotation_fasta --annie $annie --out_gff $annotated_gff --out_fasta $annotated_fasta
 	"""
 }
-
-
-
-
-
-
 
 workflow.onComplete {
   log.info "========================================="
