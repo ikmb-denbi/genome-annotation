@@ -8,4 +8,4 @@ ENV PATH /opt/conda/envs/genome-annotation-1.0/bin:$PATH
 ENV PATH /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:$PATH
 ENV PASAHOME /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3
 RUN mkdir -p /ifs
-RUN cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/config.txt
+RUN cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/conf.txt
