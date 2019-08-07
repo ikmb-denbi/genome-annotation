@@ -5,11 +5,9 @@ rm_lib: false
 rm_species: false
 reads: ""
 trinity: false
-gth: false
+training: false
 augustus: false
 model: "human"
-UTR: "off"
-isof: false
 augCfg: false
 uniprot: false
 nblast: 200
