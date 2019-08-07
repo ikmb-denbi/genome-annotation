@@ -1,0 +1,4 @@
+ABINITIO_PREDICTION      AUGUSTUS       1
+PROTEIN         protein2genome 1
+TRANSCRIPT      est2genome      5
+TRANSCRIPT      PASA_transcript_assemblies      10

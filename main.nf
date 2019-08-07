@@ -189,7 +189,7 @@ if (params.ESTs) {
 	// create a cdbtools index for the EST file
 	Channel
 		.fromPath(ESTs)
-		.set { ests_index, est_to_pasa }
+		.into { ests_index; est_to_pasa }
 } else {
 	est_exonerate_hints = Channel.from(false)
 	est_to_pasa = Channel.from(false)
@@ -217,7 +217,6 @@ if (params.reads) {
 } else {
 	trinity_exonerate_hints = Channel.from(false)
 	rnaseq_hints = Channel.from(false)
-	training_finished = Channel.from(false)
 	trinity_to_pasa = Channel.from(false)
 }
 
@@ -237,6 +236,7 @@ if (!workflow.containerEngine) {
 		.ifEmpty { exit 1; "Looks like the Augustus config path is not set? This shouldn't happen!" }
         	.set { augustus_config_folder }
 } else {
+// this is a bit dangerous, need to make sure this is updated when we bump to the next release version
 	Channel.from(file("/opt/conda/envs/genome-annotation-1.0/config"))
         	.set { augustus_config_folder }
 }
@@ -286,7 +286,7 @@ def check_file_size(fasta) {
 
 // Model Repeats if nothing is provided
 
-if (params.rm_lib == false && params.rm_species == false ) {
+if (!params.rm_lib && !params.rm_species) {
 
 	process runRepeatModeler {
 
@@ -320,7 +320,7 @@ if (params.rm_lib == false && params.rm_species == false ) {
 // RUN REPEATMASKER
 //----------------------------
 
-// RepeatMasker library needs ot be writable. Need to do this so we can work with locked Singularity containers
+// RepeatMasker library needs ot be writable. Need to do this so we can work with locked containers
 process createRMLib {
 
 	tag "ALL"
@@ -661,6 +661,8 @@ if (params.ESTs != false ) {
 
 		tag "Chunk ${chunk_name}"
 		// publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
+	
+		scratch true 
 
 		input:
 		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
@@ -1017,11 +1019,12 @@ if (params.reads != false ) {
 
 
 /*
-* RUN PASA WITH TRINITY TRANSCRIPTS
+* RUN PASA WITH TRANSCRIPTS
 */
 
 if (params.training ) {
 
+	// use trinity transcripts, ESTs or both
 	if (params.trinity || params.ESTs ) {
 
 		// Clean transcripts
@@ -1049,6 +1052,7 @@ if (params.training ) {
 
 			"""
 				cat $file_list | grep -v false >> $transcripts
+
 				\$PASAHOME/bin/seqclean $transcripts -c ${task.cpus}
 			"""		
 		}
@@ -1136,7 +1140,7 @@ if (params.training ) {
                 	val(config_folder) from augustus_config_folder
 
 	                output:
-        	        val(copied_folder) into (acf_training,acf_trainig_path)
+        	        val(copied_folder) into (acf_training,acf_training_path)
 
                 	script:
 	                copied_folder = "config_folder"
@@ -1157,44 +1161,34 @@ if (params.training ) {
 			val(acf_folder) from acf_training_path
 
 			output:
-		
-			file(train_out) into training_finished	
-			val(acf_training) into acf_prediction
+			file(training_stats)
+			val(acf_folder) into acf_prediction
 
 			script:
 			complete_gb = "complete_peptides.raw.gb"	
 			train_gb = "complete_peptides.raw.gb.train"
-
 			test_gb = "complete_peptides.raw.gb.test"
-			train_out = "training_accuracy.out"
+			training_stats = "training_accuracy.out"
 
-			// If the model already exists, do nott run new_species.pl: DOES NOT WORK YET
+			// If the model already exists, do nott run new_species.pl
 			model_path = "${acf_training_path}/species/${params.model}"
 			model_file = file(model_path)		
-
-			// To do: check if results are better when running "etraining" again after optimize_augustus.pl" 
-			if (model_file.exists()) {
-				// Re-train an existing model (or when resuming)
-				"""
-                	   		gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
-                        		split_training.pl --infile $complete_gb --percent 90
-                        		etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
-	                        	optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off                       	
-					augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $train_out
-        	        	"""
-			} else {
-				// De novo model:
-				"""
-					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
-					split_training.pl --infile $complete_gb --percent 90
-					new_species.pl --species=$params.model
-					etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
-					optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off 
-					augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $train_out
-				"""
+			
+			options = ""
+			if (!model_file.exists()) {
+				options = "new_species.pl --species=${params.model}"
 			}
+
+			"""
+				gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+				split_training.pl --infile $complete_gb --percent 90
+				$options
+				etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
+				optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off 
+				augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $training_stats
+			"""
 		} 
-	} // close trinity loop
+	} // close trinity/est loop
 } else {
 	// We have to make the AUGUSTUS_CONFIG_PATH a mutable object, so we have to carry through the location of the modifiable 
 	// copy of the original config folder. 
@@ -1273,7 +1267,6 @@ process runAugustus {
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
 	file(genome_chunk) from GenomeChunksAugustus
-	file(can_start) from training_finished
 
 	output:
 	file(augustus_result) into augustus_out_gff
