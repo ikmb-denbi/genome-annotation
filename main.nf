@@ -1041,7 +1041,8 @@ if (params.training ) {
 
 			script:
 			transcripts = "transcripts.fa"
-			transcript_clean = transcripts + ".clean"
+			transcripts_clean = transcripts + ".clean"
+
 			file_list = ""
 			if (ests) {
 				file_list += ests
@@ -1052,8 +1053,8 @@ if (params.training ) {
 
 			"""
 				cat $file_list | grep -v false >> $transcripts
+				cp $transcripts $transcripts_clean
 
-				\$PASAHOME/bin/seqclean $transcripts -c ${task.cpus}
 			"""		
 		}
 
@@ -1080,7 +1081,7 @@ if (params.training ) {
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
 					-g $params.genome -t $transcripts_clean \
-					--CPU ${task.cpus} -T -u $transcript_unclipped --ALIGNERS gmap
+					--CPU ${task.cpus} --ALIGNERS gmap
 			"""	
 		}
 
