@@ -78,6 +78,7 @@ pasa_config = "$workflow.projectDir/assets/pasa/alignAssembly.config"
 
 uniprot_path = "$workflow.projectDir/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
 Uniprot = file(uniprot_path)
+if ( !Uniprot.exists()) exit 1; "Could not find the Uniprot data that should be bundled with this pipeline, exiting...."
 
 Genome = file(params.genome)
 if( !Genome.exists() || !params.genome ) exit 1; "No genome assembly found, please specify with --genome"
@@ -105,7 +106,7 @@ if (!binding.variables.containsKey("Proteins") && !binding.variables.containsKey
 	exit 1, "At least one type of input data must be specified (--proteins, --ESTs, --reads)"
 }
 
-if (params.trinity == true && params.reads == false) {
+if (params.trinity && !params.reads ) {
 	exit 1, "Cannot run Trinity de-novo assembly without RNA-seq reads (specify both --reads and --trinity)"
 }
 
@@ -124,7 +125,7 @@ if (params.training && !params.model) {
 }
 
 // Check prereqs for repeatmasking
-if (params.rm_lib == false && params.rm_species == false) {
+if (!params.rm_lib && !params.rm_species) {
 	println "No repeat library provided, will model repeats de-novo instead using RepeatModeler."
 }
 
@@ -336,7 +337,6 @@ process createRMLib {
 		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
 		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
-
 }
 
 // ---------------------------
@@ -437,7 +437,7 @@ process runMakeBlastDB {
 // ---------------------
 // PROTEIN DATA PROCESSING
 // ---------------------
-if (params.proteins != false ) {
+if (params.proteins) {
 	// ----------------------------
 	// Protein BLAST against genome
 	// ----------------------------
@@ -519,14 +519,14 @@ if (params.proteins != false ) {
 	process runExonerateProts {
 
 		tag "Chunk ${chunk_name}"
-		// publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) into exonerate_result_prots
+		file(exonerate_chunk) into (exonerate_result_prots, exonerate_prot_chunk_evm)
 		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
 	
 		script:
@@ -579,7 +579,7 @@ if (params.proteins != false ) {
 //-------------------
 // --------------------------
 
-if (params.ESTs != false ) {
+if (params.ESTs) {
 
 	// create a cdbtools compatible database for ESTs
 	process runIndexESTDB {
@@ -669,7 +669,7 @@ if (params.ESTs != false ) {
 		set file(genome),file(genome_index) from RMGenomeIndexEST	
 
 		output:
-		file(results) into exonerate_result_ests
+		file(results) into (exonerate_result_ests,exonerate_est_chunk_evm)
 	
 		script:	
 		chunk_name = est_hits_chunk.getName().tokenize('.')[-2]
@@ -713,10 +713,7 @@ if (params.ESTs != false ) {
 // ++++++++++++++++++
 // RNA-seq PROCESSING
 // ++++++++++++++++++
-if (params.reads != false ) {
-	// ++++++++++++++++++
-	// RNA-seq PROCESSING
-	// ++++++++++++++++++
+if (params.reads) {
 
 	// trim reads
 	process runFastp {
@@ -972,7 +969,7 @@ if (params.reads != false ) {
 			set file(genome),file(genome_index) from RMGenomeIndexTrinity
 		
 			output:
-			file(exonerate_out) into exonerate_result_trinity
+			file(exonerate_out) into (exonerate_result_trinity,exonerate_trinity_chunk_evm)
 	
 			script:
 			chunk_name = hits_trinity_chunk.getName().tokenize('.')[-2]
@@ -1017,12 +1014,11 @@ if (params.reads != false ) {
 	
 } // Close RNAseq loop
 
-
 /*
 * RUN PASA WITH TRANSCRIPTS
 */
 
-if (params.training ) {
+if (params.training) {
 
 	// use trinity transcripts, ESTs or both
 	if (params.trinity || params.ESTs ) {
@@ -1068,7 +1064,7 @@ if (params.training ) {
 			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
-			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into (PasaResults,PasaToEvm)
 	
 			script:
 			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
@@ -1080,6 +1076,7 @@ if (params.training ) {
 				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
+					-I $params.max_intron_size \
 					-g $genome_rm -t $transcripts_clean \
 					--CPU ${task.cpus} --ALIGNERS gmap
 			"""	
@@ -1130,7 +1127,6 @@ if (params.training ) {
                         	--fasta_out $training_pep --gff_out $training_gff
 			"""
 		}
-
 
 		// If we have to modify the AUGUSTUS config folder, we must copy it first
 	        process runAugustusConfigFolder {
@@ -1297,7 +1293,7 @@ process runMergeAugustusGff {
 	file(augustus_gffs) from augustus_out_gff.collect()
 
 	output:
-	file(augustus_merged_gff) into (augustus_2prots, augustus_gff2annie, augustus_gff2functions)
+	file(augustus_merged_gff) into (augustus_2prots, augustus_gff2annie, augustus_gff2functions, augustus_to_evm)
 
 	script:
 	augustus_merged_gff = "augustus.merged.out.gff"
@@ -1328,6 +1324,36 @@ process runAugustus2Protein {
 		cat *.aa > $augustus_prot_fa	
 	"""
 }
+
+/*
+ * Run EvidenceModeler
+*/
+
+if (params.evm) {
+
+	process runEvm {
+
+		publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
+
+		input:
+		file(augustus_gff) from augustus_to_evm
+		file("protein.gff") from exonerate_prot_chunk_evm.collectFile()
+		file("est.gff") from exonerate_est_chunk_evm.collectFile()
+		file("trinity.gff") from exonerate_trinity_chunk_evm.collectFile()
+		file(pasa_models) from PasaToEvm
+
+		output:
+		file("*.out") into outputEvm
+
+		script:
+
+		"""
+			
+		"""	
+			
+	}
+
+} // end evm loop
 
 /*
  * STEP Functional Annotation
