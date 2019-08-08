@@ -74,7 +74,7 @@ if (params.help){
 // -----------------------------
 
 OUTDIR = params.outdir
-pasa_config = "$workflow.projectDir/bin/alignAssembly.config"
+pasa_config = "$workflow.projectDir/assets/pasa/alignAssembly.config"
 
 uniprot_path = "$workflow.projectDir/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
 Uniprot = file(uniprot_path)
@@ -140,7 +140,7 @@ summary['RNA-seq'] = params.reads
 summary['RM species'] = params.rm_species
 summary['RM library'] = params.rm_lib
 summary['Augustus model'] = params.model
-
+summary['ModelTraining'] = params.training
 // ----------------------
 // ----------------------
 // Starting the pipeline
@@ -264,7 +264,7 @@ if (params.augCfg) {
 	log.info "Augustus config file		${AUG_CONF}"
 }
 if (params.training) {
-	log.info "Model training:		yes (${params.model})"
+	log.info "Model training:			yes (${params.model})"
 }
 log.info "-----------------------------------------"
 log.info "Parallelization settings"
@@ -396,7 +396,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity)
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa)
 
 	script:
 	
@@ -1044,10 +1044,10 @@ if (params.training ) {
 			transcripts_clean = transcripts + ".clean"
 
 			file_list = ""
-			if (ests) {
+			if (params.ESTs) {
 				file_list += ests
 			}
-			if (trinity) {
+			if (params.trinity) {
 				file_list += " ${trinity}"
 			}
 
@@ -1065,22 +1065,22 @@ if (params.training ) {
 
 			input:
 			set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
+			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
-			file(pasa_db) into PasaDB
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
 	
 			script:
-			pasa_db = "pasa_DB"
 			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
 			pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
-	
+			// The pasa sqlite file must have a fully qualified path, the script is a workaround as this seems difficult to do inside 
+			// the script statement
+
 			"""
-				cp $pasa_config pasa_DB.config
-				sed -i 's+testDB+$pasa_db+' pasa_DB.config 
+				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
-					-g $params.genome -t $transcripts_clean \
+					-g $genome_rm -t $transcripts_clean \
 					--CPU ${task.cpus} --ALIGNERS gmap
 			"""	
 		}
