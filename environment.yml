@@ -27,3 +27,4 @@ dependencies:
  - perl-uri=1.76
  - perl-dbi=1.642
  - perl-parallel-forkmanager
+ - minimap2=2.17

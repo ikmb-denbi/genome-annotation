@@ -176,6 +176,8 @@ if (params.proteins) {
 	.set { index_prots }
 } else {
 	prot_exonerate_hints = Channel.from(false)
+	// Protein Exonerate files to EVM
+	exonerate_protein_chunk_evm = Channel.from(false)
 }
 
 // if ESTs are provided
@@ -192,8 +194,12 @@ if (params.ESTs) {
 		.fromPath(ESTs)
 		.into { ests_index; est_to_pasa }
 } else {
+	// EST hints to Augustus
 	est_exonerate_hints = Channel.from(false)
+	// EST file to Pasa assembly
 	est_to_pasa = Channel.from(false)
+	// EST exonerate files to EVM
+	exonerate_est_chunk_evm = Channel.from(false)
 }
 
 // if RNAseq reads are provided
@@ -216,11 +222,20 @@ if (params.reads) {
 	}
 
 } else {
+	// Trinity hints to Augustus
 	trinity_exonerate_hints = Channel.from(false)
+	// RNAseq hints to Augustus
 	rnaseq_hints = Channel.from(false)
+	// Trinity assembly to Pasa assembly
 	trinity_to_pasa = Channel.from(false)
+	// Trinity exonerate files to EVM
+	exonerate_trinity_chunk_evm = Channel.from(false)
 }
 
+if (!params.training) {
+	// Pasa models to EVM
+	PasaToEvm = Channel.from(false)
+}
 // Trigger de-novo repeat prediction of no repeats were provided
 if (params.rm_lib == false && params.rm_species == false) {
 	Channel
@@ -236,6 +251,30 @@ if (!workflow.containerEngine) {
 	Channel.from(file(System.getenv('AUGUSTUS_CONFIG_PATH')))
 		.ifEmpty { exit 1; "Looks like the Augustus config path is not set? This shouldn't happen!" }
         	.set { augustus_config_folder }
+
+	// Minimap support not yet stable in PASA , need to add it manually...
+	Channel.from(file($baseDir/bin/SAM_to_gtf.pl))
+                .set { pasa_sam_parser }
+
+        process runCopySamParser {
+
+                executor 'local'
+
+                input:
+                file(parser) from pasa_sam_parser
+
+                output:
+                file(copied_parser)
+
+                script:
+                copied_parser = "dummy.pl"
+
+                """
+                        cp $parser \$PASAHOME/misc_utilities/
+			chmod +x \$PASAHOME/misc_utilities/SAM_to_gtf.pl
+                """
+
+        }
 } else {
 // this is a bit dangerous, need to make sure this is updated when we bump to the next release version
 	Channel.from(file("/opt/conda/envs/genome-annotation-1.0/config"))
@@ -396,7 +435,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa)
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa, RMGenomeEvm, RMGenomeEvmMerge, RMGenomeMinimap)
 
 	script:
 	
@@ -1024,6 +1063,7 @@ if (params.training) {
 	if (params.trinity || params.ESTs ) {
 
 		// Clean transcripts
+		// This is a place holder until we figure out how to make Seqclean work within Nextflow
 		process runSeqclean {
 
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
@@ -1054,13 +1094,33 @@ if (params.training) {
 			"""		
 		}
 
+		process runMinimap2 {
+			
+			publishDir "${OUTDIR}/evidence/pasa/alignments", mode: 'copy'
+
+			input:
+			set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
+			set file(genome) from RMGenomeMinimap
+
+			output:
+			file(minimap_gff) into gff_to_pasa
+		
+			script:
+			minimap_gff = "minimap.gff"
+
+			"""
+				minimap2 -ax splice --cs $genome $transcripts_clean | samtools sort -o minimap2.alignments.bam -
+				\$PASAHOME/misc_utilities/SAM_to_gtf.pl minimap2.alignments.bam > $minimap_gff
+			"""
+		}
+
 		// Run the PASA pipeline
 		process runPasa {
 		
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
 
 			input:
-			set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
+			file(minimap_gff) from gff_to_pasa
 			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
@@ -1167,7 +1227,7 @@ if (params.training) {
 			test_gb = "complete_peptides.raw.gb.test"
 			training_stats = "training_accuracy.out"
 
-			// If the model already exists, do nott run new_species.pl
+			// If the model already exists, do not run new_species.pl
 			model_path = "${acf_training_path}/species/${params.model}"
 			model_file = file(model_path)		
 			
@@ -1331,26 +1391,97 @@ process runAugustus2Protein {
 
 if (params.evm) {
 
-	process runEvm {
+	process runEvmPartition {
 
 		publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
 
 		input:
 		file(augustus_gff) from augustus_to_evm
-		file("protein.gff") from exonerate_prot_chunk_evm.collectFile()
-		file("est.gff") from exonerate_est_chunk_evm.collectFile()
-		file("trinity.gff") from exonerate_trinity_chunk_evm.collectFile()
+		file(proteins) from exonerate_prot_chunk_evm.collectFile()
+		file(est) from exonerate_est_chunk_evm.collectFile()
+		file(trinity) from exonerate_trinity_chunk_evm.collectFile()
+		file(genome_rm) from RMGenomeEvm
 		file(pasa_models) from PasaToEvm
 
 		output:
-		file("*.out") into outputEvm
+		file(evm_commands) into outputEvm
+		set file(gene_models),file(proteins),file(transcripts) into inputToEvm
+		file(partitions) into EvmPartition
+
+		script:
+
+		partitions = "partitions_list.out"
+		evm_commands = "commands.list"
+
+		transcripts = "transcripts.merged.gff"
+                gene_models = "gene_models.gff"
+
+		protein_options = ""
+		transcript_options = ""
+		if (!proteins.toString() == "false") {
+			protein_options = "--protein_alignments $proteins"
+		}
+		if (!est.toString() == "false" || !trinity.toString() == "false") {
+			transcript_options = "--transcript_alignments $transcripts"
+		}
+
+		"""
+			cat $est $trinity | grep -v "false" >> $transcripts
+			cat $augustus_gff $pasa_models | grep -v "false" >> $gene_models
+
+			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
+				--gene_predictions $gene_models \
+				--segmentSize 100000 --overlapSize 10000 --partition_listing $partitions \
+				$protein_options $transcript_options
+				
+			\$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome $genome_rm \
+				--weights $evm_weights \
+				--gene_predictions $gene_models \
+				--output_file_name evm.out \
+				--partitions $partitions > $evm_commands
+		"""	
+			
+	}
+
+	// run 10 commands per chunk
+	evm_command_chunks = outputEvm.splitText(by: 10, file: true)
+
+	process runEvm {
+
+		input:
+		file(evm_chunk) from evm_command_chunks
+		set file(gene_models),file(proteins),file(transcripts) from inputToEvm.collect()
+
+		output:
+		file(evm_out) into EvmOut
 
 		script:
 
 		"""
-			
-		"""	
-			
+			$EVM_HOME/EvmUtils/execute_EVM_commands.pl $evm | tee run.log
+		"""
+		
+	}
+	
+	// Merge all the separate partition outputs into a final gff file
+	process runEvmMerge {
+	
+		input:
+		file(evm_out) from EvmOut.collect()
+		file(partitions) from EvmPartition
+		file(genome_rm) from RMGenomeEvmMerge
+		output:
+		file(evm_final) into EvmResult
+
+		script:
+		evm_final = "evm.out"
+		evm_gff = "EVM.all.gff"
+
+		"""
+			\$EVM_HOME/EvmUtils/recombine_EVM_partial_outputs.pl --partitions $partitions --output_file_name evm.out
+			$EVM_HOME/EvmUtils/convert_EVM_outputs_to_GFF3.pl  --partitions $partitions --output evm.out --genome $genome_rm
+		"""
+
 	}
 
 } // end evm loop
