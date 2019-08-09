@@ -251,30 +251,6 @@ if (!workflow.containerEngine) {
 	Channel.from(file(System.getenv('AUGUSTUS_CONFIG_PATH')))
 		.ifEmpty { exit 1; "Looks like the Augustus config path is not set? This shouldn't happen!" }
         	.set { augustus_config_folder }
-
-	// Minimap support not yet stable in PASA , need to add it manually...
-	Channel.from(file($baseDir/bin/SAM_to_gtf.pl))
-                .set { pasa_sam_parser }
-
-        process runCopySamParser {
-
-                executor 'local'
-
-                input:
-                file(parser) from pasa_sam_parser
-
-                output:
-                file(copied_parser)
-
-                script:
-                copied_parser = "dummy.pl"
-
-                """
-                        cp $parser \$PASAHOME/misc_utilities/
-			chmod +x \$PASAHOME/misc_utilities/SAM_to_gtf.pl
-                """
-
-        }
 } else {
 // this is a bit dangerous, need to make sure this is updated when we bump to the next release version
 	Channel.from(file("/opt/conda/envs/genome-annotation-1.0/config"))
@@ -1094,33 +1070,36 @@ if (params.training) {
 			"""		
 		}
 
+		// Run Minimap to map reads 
 		process runMinimap2 {
 			
-			publishDir "${OUTDIR}/evidence/pasa/alignments", mode: 'copy'
-
-			input:
-			set file(transcripts_clean),file(transcripts_unclipped) from seqclean_to_pasa
-			set file(genome) from RMGenomeMinimap
-
-			output:
-			file(minimap_gff) into gff_to_pasa
+			publishDir "${OUTDIR}/evidence/transcripts/minimap", mode: 'copy'
 		
+			input:
+			set file(transcripts_clean),file(transcripts) from seqclean_to_pasa
+			set file(genome),file(genome_index) from RMGenomeMinimap
+			output:
+			file(minimap_gff) into minimap_to_pasa
+			file(minimap_bam) 
+
 			script:
-			minimap_gff = "minimap.gff"
+			minimap_gff = "minimap.transcripts.gff"	
+			minimap_bam = "minimap.transcripts.bam"
 
 			"""
-				minimap2 -ax splice --cs $genome $transcripts_clean | samtools sort -o minimap2.alignments.bam -
-				\$PASAHOME/misc_utilities/SAM_to_gtf.pl minimap2.alignments.bam > $minimap_gff
+				minimap2 -t ${task.cpus} -ax splice -c $genome $transcripts_clean  | samtools sort -O BAM -o $minimap_bam
+				minimap2_bam2gff.pl $minimap_bam > $minimap_gff
 			"""
+	
 		}
-
+		
 		// Run the PASA pipeline
 		process runPasa {
 		
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
 
 			input:
-			file(minimap_gff) from gff_to_pasa
+			file(minimap_gff) from minimap_to_pasa
 			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
@@ -1137,8 +1116,9 @@ if (params.training) {
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
 					-I $params.max_intron_size \
-					-g $genome_rm -t $transcripts_clean \
-					--CPU ${task.cpus} --ALIGNERS gmap
+					-g $genome_rm \
+					--IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
+					--CPU ${task.cpus}
 			"""	
 		}
 
