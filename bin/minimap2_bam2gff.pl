@@ -1,6 +1,10 @@
-#!/bin/env perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
+use Data::Dumper;
+
+# This is a rip-off from Brian Haas's Sam_to_gtf.pl converter bundled with PASA
+# Needed this as a standalone version.
 
 my %PATH_COUNTER;
 
@@ -22,9 +26,13 @@ open BAM,"samtools view $bam |";
 		$num_mismatches = $1;
         }
 
-	my $strand = ($entry{"flag"} == 0) ? "+" : "-" ;
+	
+	my $strand = ($entry{"flag"} & 16) ? "-" : "+" ;
+	$entry{"strand"} = $strand ;
+	
 	my $read_name = $entry{"qname"} ;
 	my $scaff_name = $entry{"rname"};
+	
 	my ($genome_coords_aref, $query_coords_aref) = get_aligned_coords(%entry);
 
 	my $align_len = 0;
@@ -32,6 +40,8 @@ open BAM,"samtools view $bam |";
 	foreach my $coordset (@$genome_coords_aref) {
                 $align_len += abs($coordset->[1] - $coordset->[0]) + 1;
         }
+	# Check this...
+	next if ($align_len eq 0);
 
 	my $per_id = sprintf("%.1f", 100 - $num_mismatches/$align_len * 100); 
 
@@ -76,7 +86,6 @@ open BAM,"samtools view $bam |";
 
 	foreach my $coordset_ref (@merged_coords) {
             my ($genome_lend, $genome_rend, $trans_lend, $trans_rend) = @$coordset_ref;
-            
             print join("\t",
                        $scaff_name,
                        "genome",
@@ -87,7 +96,7 @@ open BAM,"samtools view $bam |";
                        ".",
                        "ID=$align_counter;Target=$read_name $trans_lend $trans_rend") . "\n";
         }
-        print "\n";
+        #print "\n";
         
         
 }
@@ -98,6 +107,7 @@ sub get_aligned_coords {
 	my %entry = @_;
 
 	my $genome_lend = $entry{"pos"};
+
 	my $alignment = $entry{"cigar"};
 	my $query_lend = 0;
 
@@ -112,10 +122,10 @@ sub get_aligned_coords {
 		my $code = $2;
 		
 		unless ($code =~ /^[MSDNIH]$/) {
-			exit 1;  "Error, cannot parse cigar code [$code] ";
+			die  "Error, cannot parse cigar code [$code] ";
 		}
 		
-		# print "parsed $len,$code\n";
+		#print "parsed $len,$code\n";
 		
 		if ($code eq 'M') { # aligned bases match or mismatch
 			
@@ -128,7 +138,6 @@ sub get_aligned_coords {
 			# reset coord pointers
 			$genome_lend = $genome_rend;
 			$query_lend = $query_rend;
-			
 		}
 		elsif ($code eq 'D' || $code eq 'N') { # insertion in the genome or gap in query (intron, perhaps)
 			$genome_lend += $len;
@@ -144,5 +153,28 @@ sub get_aligned_coords {
 		}
 	}
 
+	 ## see if reverse strand alignment - if so, must revcomp the read matching coordinates.
+    	if ($entry{"strand"} eq '-') {
+
+        my $read_len = length($entry{"seq"});
+        unless ($read_len) {
+            die "Error, no read length obtained from entry";
+        }
+
+        my @revcomp_coords;
+        foreach my $coordset (@query_coords) {
+            my ($lend, $rend) = @$coordset;
+
+            my $new_lend = $read_len - $lend + 1;
+            my $new_rend = $read_len - $rend + 1;
+
+            push (@revcomp_coords, [$new_lend, $new_rend]);
+        }
+
+        @query_coords = @revcomp_coords;
+
+    }
+
 	return(\@genome_coords, \@query_coords);
 }
+;

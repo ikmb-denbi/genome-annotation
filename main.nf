@@ -1049,7 +1049,7 @@ if (params.training) {
 			file(ests) from est_to_pasa
 
 			output:
-			set file(transcripts_clean),file(transcripts) into seqclean_to_pasa
+			set file(transcripts_clean),file(transcripts) into (seqclean_to_pasa,seqclean_to_minimap)
 
 			script:
 			transcripts = "transcripts.fa"
@@ -1070,16 +1070,16 @@ if (params.training) {
 			"""		
 		}
 
-		// Run Minimap to map reads 
+		// run minimap fopr fast transcript mapping
 		process runMinimap2 {
 			
 			publishDir "${OUTDIR}/evidence/transcripts/minimap", mode: 'copy'
 		
 			input:
-			set file(transcripts_clean),file(transcripts) from seqclean_to_pasa
+			set file(transcripts_clean),file(transcripts) from seqclean_to_minimap
 			set file(genome),file(genome_index) from RMGenomeMinimap
 			output:
-			file(minimap_gff) into minimap_to_pasa
+			set file(transcripts_clean),file(minimap_gff) into minimap_to_pasa
 			file(minimap_bam) 
 
 			script:
@@ -1099,7 +1099,7 @@ if (params.training) {
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
 
 			input:
-			file(minimap_gff) from minimap_to_pasa
+			set file(transcripts_clean),file(transcripts) from seqclean_to_pasa
 			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
@@ -1115,9 +1115,10 @@ if (params.training) {
 				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
+					-t $transcripts \
 					-I $params.max_intron_size \
 					-g $genome_rm \
-					--IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
+					--ALIGNERS gmap \
 					--CPU ${task.cpus}
 			"""	
 		}
