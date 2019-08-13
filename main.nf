@@ -195,11 +195,11 @@ if (params.ESTs) {
 		.into { ests_index; est_to_pasa }
 } else {
 	// EST hints to Augustus
-	est_exonerate_hints = Channel.from(false)
+	est_minimap_hints = Channel.from(false)
 	// EST file to Pasa assembly
 	est_to_pasa = Channel.from(false)
 	// EST exonerate files to EVM
-	exonerate_est_chunk_evm = Channel.from(false)
+	minimap_ests_to_evm = Channel.from(false)
 }
 
 // if RNAseq reads are provided
@@ -339,7 +339,6 @@ if (!params.rm_lib && !params.rm_species) {
 // RepeatMasker library needs ot be writable. Need to do this so we can work with locked containers
 process createRMLib {
 
-	tag "ALL"
 	publishDir "${OUTDIR}/repeatmasker/", mode: 'copy'
 
 	output:
@@ -403,7 +402,6 @@ process runRepeatMasker {
 // Merge the repeat-masked assembly chunks
 process runMergeRMGenome {
 
-	tag "ALL"
         publishDir "${OUTDIR}/repeatmasker", mode: 'copy'
 
 	input:
@@ -411,7 +409,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa, RMGenomeEvm, RMGenomeEvmMerge, RMGenomeMinimap)
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa, RMGenomeEvm, RMGenomeEvmMerge, RMGenomeMinimap, RMGenomeMinimapEst)
 
 	script:
 	
@@ -432,7 +430,6 @@ GenomeChunksAugustus = RMtoPartition
 // Generates a dust mask from softmasked genome sequence
 process runMakeBlastDB {
 	
-	tag "ALL"
 	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
 
 	input:
@@ -461,7 +458,6 @@ if (params.proteins) {
 	// we need this to do very focused exonerate searches later
 	process runIndexProteinDB {
 
-		tag "ALL"
 		publishDir "${OUTDIR}/databases/cdbtools/proteins", mode: 'copy'
 
 		input:
@@ -483,7 +479,6 @@ if (params.proteins) {
 	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
 	process runBlastProteins {
 
-		tag "Chunk ${chunk_name}"
 		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
@@ -505,7 +500,6 @@ if (params.proteins) {
 	// Parse Protein Blast output for exonerate processing
 	process Blast2QueryTargetProts {
 
-		tag "ALL"
 	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
@@ -533,7 +527,6 @@ if (params.proteins) {
 	// Run Exonerate on the blast regions
 	process runExonerateProts {
 
-		tag "Chunk ${chunk_name}"
 		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
 		input:
@@ -568,7 +561,6 @@ if (params.proteins) {
 	// merge the exonerate hits and create the hints
 	process Exonerate2HintsProtein {
 
-		tag "ALL"
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/", mode: 'copy'
 
 		input:
@@ -596,130 +588,70 @@ if (params.proteins) {
 
 if (params.ESTs) {
 
-	// create a cdbtools compatible database for ESTs
-	process runIndexESTDB {
-
-		tag "ALL"
-		publishDir "${OUTDIR}/databases/cdbtools/ESTs", mode: 'copy'
-
-		input:
-		file (est_fa) from ests_index
-
-		output:
-		set file(est_fa),file(est_index) into EstDB
-
-		script:
-		est_index = est_fa.getName() + ".cidx"
-
-		"""
-			cdbfasta $est_fa
-		"""
-	}
-
 	/*
-	 * EST blasting
+	 * EST alignment
 	*/
 
-	// Blast each EST chunk against the nucleotide database
-	process runBlastEst {
-
-		tag "Chunk ${chunk_name}"
-		// publishDir "${OUTDIR}/evidence/EST/blast/chunks"
-
-		input:
-		file(est_chunk) from fasta_ests
-		file(blastdb_files) from blast_db_ests
+	// Align all ESTs against the masked genome
+	process runMinimapEst {
 		
-		output:
-		file(blast_report) into ESTBlastReport
-
-		script:
-		db_name = blastdb_files[0].baseName
-		chunk_name = est_chunk.getName().tokenize('.')[-2]
-		blast_report = "${est_chunk.baseName}.${db_name}.est.blast"
-
-		"""
-			blastn -db $db_name -evalue $params.blast_evalue -query $est_chunk -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
-		"""
-	}
-
-	// Parse the EST Blast output
-	process Blast2QueryTargetEST {
-
-        	publishDir "${OUTDIR}/evidence/EST/blast", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/EST/minimap/chunks", mode: 'copy'
 
 		input:
-		file(blast_report) from ESTBlastReport.collect()
+		file(est_chunks) from fasta_ests
+		file(genome_rm) from RMGenomeMinimapEst
 
 		output:
-		file(targets) into est_blast_targets
+		file(minimap_gff) into minimap_merge_ests
 
 		script:
-		query_tag = ESTs.baseName
-		targets = "EST.blast.targets.txt"
-
+				
 		"""
-			cat $blast_report >> merged.out
-			blast2exonerate_targets.pl --infile merged.out --max_intron_size $params.max_intron_size > $targets
-		"""
+			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o minimap.bam
+			minimap2_bam2gff.pl minimap.bam > $minimap_gff
+			rm minimap.bam
+		"""	
 
 	}
 
-	// Split EST targets and intersect with the Cdbtools index for fast target retrieval
-	est_blast_targets
-		.splitText( by: params.nexonerate , file: true )
-		.combine(EstDB)
-		.set { est_exonerate_chunk }
-
-	// Run exonerate on the EST Blast chunks
-	process runExonerateEST {
-
-		tag "Chunk ${chunk_name}"
-		// publishDir "${OUTDIR}/evidence/EST/exonerate/chunks", mode: 'copy'
-	
-		scratch true 
+	process runMergeMinimapEsts {
+		
+		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
 
 		input:
-		set file(est_hits_chunk),file(est_fa),file(est_db_index) from est_exonerate_chunk
-		set file(genome),file(genome_index) from RMGenomeIndexEST	
+		file(minimap_gffs) from minimap_merge_ests.collect()
 
 		output:
-		file(results) into (exonerate_result_ests,exonerate_est_chunk_evm)
-	
-		script:	
-		chunk_name = est_hits_chunk.getName().tokenize('.')[-2]
-		results = "EST.${chunk_name}.exonerate.out"	
+		file(minimap_merged_gff) into (minimap_ests_to_hints, minimap_ests_to_evm)
+
+		script:
+		minimap_merged_gff = "ESTs.minimap.merged.gff"
 
 		"""
-			extractMatchTargetsFromIndex.pl --matches $est_hits_chunk --db $est_db_index
-                        exonerate_from_blast_hits.pl --matches $est_hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $est_db_index --analysis est2genome --outfile commands.txt
-                        parallel -j ${task.cpus} < commands.txt
-                        cat *.exonerate.align |  grep "exonerate:est2genome" > merged_exonerate.out
-                        exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $results
-                        rm *.align
-			rm *._target_.fa*
-			rm *._query_.fa*
+			echo "##gff-version 3" > $minimap_merged_gff
+			
+			grep -v "^#" $minimap_gffs | sort -k1,1 -k4,4n -k5,5n -t\$'\t' >> $minimap_merged_gff
+
 		"""
+
 	}
-
+	
 	// Combine exonerate hits and generate hints
-	process Exonerate2HintsEST {
+	process Minimap2HintsEST {
 
-		tag "ALL"
-		publishDir "${OUTDIR}/evidence/EST/exonerate/", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/EST/minimap/", mode: 'copy'
 	
 		input:
-		file(exonerate_result) from exonerate_result_ests.collect()
+		file(minimap_merged_gff) from minimap_ests_to_hints
 	
 		output:
-		file(exonerate_hints) into est_exonerate_hints
+		file(minimap_est_hints) into est_minimap_hints
 	
 		script:
-		exonerate_hints = "ESTs.exonerate.hints.gff"
+		minimap_hints = "ESTs.minimap.hints.gff"
 			
 		"""
-			cat $exonerate_result >> merged.out
-			exonerate2gff.pl --infile merged.out --source est --outfile $exonerate_hints
+			minimap2hints.pl --source minimap_est --infile $minimap_merged_gff --outfile $minimap_hints
 		"""
 	}
 
@@ -733,7 +665,6 @@ if (params.reads) {
 	// trim reads
 	process runFastp {
 
-		tag "${prefix}"
 		publishDir "${OUTDIR}/evidence/rnaseq/fastp", mode: 'copy'
 
 		input:
@@ -765,7 +696,6 @@ if (params.reads) {
 	// Generate an alignment index from the genome sequence
 	process runMakeHisatDB {
 
-		tag "${prefix}"
 		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
 
 		input:
@@ -793,7 +723,6 @@ if (params.reads) {
 
 	process runHisat2 {
 
-		tag "${prefix}"
 		publishDir "${OUTDIR}/evidence/rnaseq/Hisat2/libraries", mode: 'copy'
 	
 		scratch true
@@ -901,7 +830,6 @@ if (params.reads) {
 
 		process runBlastTrinity {
 	
-			tag "Chunk ${chunk_name}"
 			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/blast/chunks"
 	
 			input:
@@ -946,7 +874,6 @@ if (params.reads) {
 		// generate an index for trinity transcripts with cdbtools
 		process runTrinityIndex {
 
-			tag "ALL"
 			publishDir "${OUTDIR}/databases/trinity", mode: 'copy'
 
 			input:
@@ -976,7 +903,6 @@ if (params.reads) {
  
 		process runExonerateTrinity {
 	
-			tag "Chunk ${chunk_name}"
 			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/chunks", mode: 'copy'
 	
 			input:
@@ -1008,7 +934,6 @@ if (params.reads) {
  
 		process Exonerate2HintsTrinity {	
 
-			tag "ALL"
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/", mode: 'copy'
 
 			input:
@@ -1099,7 +1024,7 @@ if (params.training) {
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
 
 			input:
-			set file(transcripts_clean),file(transcripts) from seqclean_to_pasa
+			set file(transcripts_clean),file(minimap_gff) from minimap_to_pasa
 			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
 
 			output:
@@ -1118,7 +1043,7 @@ if (params.training) {
 					-t $transcripts \
 					-I $params.max_intron_size \
 					-g $genome_rm \
-					--ALIGNERS gmap \
+					----IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
 					--CPU ${task.cpus}
 			"""	
 		}
@@ -1236,13 +1161,12 @@ if (params.training) {
 // get all available hints and merge into one file
 process runMergeAllHints {
 
-	tag "ALL"
 	publishDir "${OUTDIR}/evidence/hints", mode: 'copy'
 
 	input:
 	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty(false)
 	file(rnaseq_hint) from rnaseq_hints.ifEmpty(false)
-        file(est_exonerate_hint) from est_exonerate_hints.ifEmpty(false)
+        file(est_exonerate_hint) from est_minimap_hints.ifEmpty(false)
         file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty(false)
 
 	output:
@@ -1294,7 +1218,6 @@ process runHintsToBed {
 // Run against each repeatmasked chunk of the assembly
 process runAugustus {
 
-	tag "Chunk ${chunk_name}"
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
         when:
@@ -1327,7 +1250,6 @@ process runAugustus {
 // Merge all the chunk GFF files into one file
 process runMergeAugustusGff {
 
-	tag "ALL"
 	publishDir "${OUTDIR}/annotation/augustus", mode: 'copy'
 	
 	input:
@@ -1348,7 +1270,6 @@ process runMergeAugustusGff {
 // Dump out proteins for subsequent functional annotation
 process runAugustus2Protein {
 
-	tag "ALL"
         publishDir "${OUTDIR}/annotation/augustus", mode: 'copy'
 
 	input:
@@ -1379,7 +1300,7 @@ if (params.evm) {
 		input:
 		file(augustus_gff) from augustus_to_evm
 		file(proteins) from exonerate_prot_chunk_evm.collectFile()
-		file(est) from exonerate_est_chunk_evm.collectFile()
+		file(est) from minimap_ests_to_evm
 		file(trinity) from exonerate_trinity_chunk_evm.collectFile()
 		file(genome_rm) from RMGenomeEvm
 		file(pasa_models) from PasaToEvm
