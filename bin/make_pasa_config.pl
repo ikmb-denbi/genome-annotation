@@ -22,11 +22,13 @@ perl my_script.pl
 
 my $outfile = undef;
 my $infile = undef;
+my $mysql = undef;
 my $help;
 
 GetOptions(
     "help" => \$help,
     "infile=s" => \$infile,
+    "mysql=s" => \$mysql,
     "outfile=s" => \$outfile);
 
 # Print Help and exit
@@ -46,7 +48,11 @@ foreach my $line (<$IN>) {
 
 	chomp($line);
 	if ($line =~ /^DATABASE.*/) {
-		printf "DATABASE=${wd}/pasa_DB.sqlite\n";
+		if (defined $mysql) {
+			printf "DATABASE=$mysql"
+		} else {
+			printf "DATABASE=${wd}/pasa_DB.sqlite\n";
+		}
 	} else {
 		printf $line . "\n" ;
 	}

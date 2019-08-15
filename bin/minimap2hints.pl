@@ -22,19 +22,19 @@ perl my_script.pl
 
 my $outfile = undef;
 my $infile = undef;
-my $source = undef;
+my $source = "minimap";
 my $GeneID = undef;
 my $help;
 
 my $src = "E";
 my $pri = 4;
-my $source = "minimap";
 my $hintfeature = "exonpart";
 
 my $help;
 
 GetOptions(
     "help" => \$help,
+    "source=s" => \$source,
     "infile=s" => \$infile,
     "outfile=s" => \$outfile);
 

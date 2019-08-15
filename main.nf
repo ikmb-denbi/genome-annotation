@@ -37,6 +37,7 @@ def helpMessage() {
     --trinity		Run transcriptome assembly with Trinity and produce hints from the transcripts [ true (default) | false ]
     --augustus		Run Augustus to predict genes [ true (default) | false ]
     --training		Run de novo model training for Augustus with complete proteins (from Pasa + Transdecoder). Only if RNA-seq data provided. [ true | false ]. You must provide a name for your model with "--model". If you use the name of an existing model, this will be re-trained.
+    --pasa 		Run the transcriptome-based gene builder PASA (also required when running --training). [ true | false (default) ]. Requires --ESTs and/or --reads with --trinity. 
  	
     Programs parameters:
     --rm_species	Species database for RepeatMasker [ default = 'mammal' ]
@@ -122,6 +123,19 @@ if (params.training && !params.model) {
         exit 1; "You requested for a new prediction profile to be trained, but did not provide a name for the model (--model)"
 } else if (params.training && !params.trinity && !params.ESTs) {
         exit 1; "You requested for a new prediction profile to be trained, but we need transcriptome data for that (--trinity and/or --ESTs)"
+} else if (params.training && !params.pasa) {
+	println "You requested a model to be trained; this requires Pasa to be enabled. We will do that for your now."
+	params.pasa = true
+}
+
+// Check if we can run EVM
+if (params.evm && !params.augustus && !params.pasa) {
+	exit 1; "Requested to run EvidenceModeler, but we need gene models for that (--augustus and/or --pasa)."
+}
+
+//Check if we can run Pasa
+if (params.pasa && !params.ESTs && !params.trinity) {
+	exit 1; "Requested to run Pasa, but we need transcriptome data for that (--ESTs or --trinity)"
 }
 
 // Check prereqs for repeatmasking
@@ -186,7 +200,6 @@ if (params.ESTs) {
 	// goes to blasting the ESTs
         Channel
                 .fromPath(ESTs)
-                .splitFasta(by: params.nblast, file: true)
                 .set {fasta_ests}
 
 	// create a cdbtools index for the EST file
@@ -217,22 +230,23 @@ if (params.reads) {
 		.set {read_files_trimming }
 
 	// can use reads without wanting to run a de-novo transcriptome assembly
-	if (params.trinity == false) {
-	        trinity_exonerate_hints = Channel.from(false)
+	if (!params.trinity) {
+	        trinity_minimap_hints = Channel.from(false)
+	 	minimap_trinity_to_evm = Channel.from(false)
 	}
 
 } else {
 	// Trinity hints to Augustus
-	trinity_exonerate_hints = Channel.from(false)
+	trinity_minimap_hints = Channel.from(false)
 	// RNAseq hints to Augustus
 	rnaseq_hints = Channel.from(false)
 	// Trinity assembly to Pasa assembly
 	trinity_to_pasa = Channel.from(false)
 	// Trinity exonerate files to EVM
-	exonerate_trinity_chunk_evm = Channel.from(false)
+	minimap_trinity_to_evm = Channel.from(false)
 }
 
-if (!params.training) {
+if (!params.pasa) {
 	// Pasa models to EVM
 	PasaToEvm = Channel.from(false)
 }
@@ -409,7 +423,7 @@ process runMergeRMGenome {
 
 	output:
 	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
-	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, RMGenomeIndexEST, RMGenomeIndexTrinity, RMGenomePasa, RMGenomeEvm, RMGenomeEvmMerge, RMGenomeMinimap, RMGenomeMinimapEst)
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, genome_to_trinity_minimap, genome_to_pasa, genome_to_evm, genome_to_evm_merge, genome_to_minimap_pasa, RMGenomeMinimapEst)
 
 	script:
 	
@@ -436,7 +450,7 @@ process runMakeBlastDB {
 	file(genome_fa) from RMtoBlastDB
 
 	output:
-	file("${dbName}*.n*") into (blast_db_prots, blast_db_ests, blast_db_trinity)
+	file("${dbName}*.n*") into blast_db_prots
 
 	script:
 	dbName = genome_fa.baseName
@@ -599,13 +613,13 @@ if (params.ESTs) {
 
 		input:
 		file(est_chunks) from fasta_ests
-		file(genome_rm) from RMGenomeMinimapEst
+		set file(genome_rm),file(genome_index) from RMGenomeMinimapEst
 
 		output:
-		file(minimap_gff) into minimap_merge_ests
+		file(minimap_gff) into minimap_est_gff
 
 		script:
-				
+		minimap_gff = "ESTs.minimap.gff"	
 		"""
 			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o minimap.bam
 			minimap2_bam2gff.pl minimap.bam > $minimap_gff
@@ -614,44 +628,22 @@ if (params.ESTs) {
 
 	}
 
-	process runMergeMinimapEsts {
-		
-		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
-
-		input:
-		file(minimap_gffs) from minimap_merge_ests.collect()
-
-		output:
-		file(minimap_merged_gff) into (minimap_ests_to_hints, minimap_ests_to_evm)
-
-		script:
-		minimap_merged_gff = "ESTs.minimap.merged.gff"
-
-		"""
-			echo "##gff-version 3" > $minimap_merged_gff
-			
-			grep -v "^#" $minimap_gffs | sort -k1,1 -k4,4n -k5,5n -t\$'\t' >> $minimap_merged_gff
-
-		"""
-
-	}
-	
 	// Combine exonerate hits and generate hints
 	process Minimap2HintsEST {
 
 		publishDir "${OUTDIR}/evidence/EST/minimap/", mode: 'copy'
 	
 		input:
-		file(minimap_merged_gff) from minimap_ests_to_hints
+		file(minimap_gff) from minimap_est_gff
 	
 		output:
-		file(minimap_est_hints) into est_minimap_hints
+		file(minimap_hints) into est_minimap_hints
 	
 		script:
 		minimap_hints = "ESTs.minimap.hints.gff"
 			
 		"""
-			minimap2hints.pl --source minimap_est --infile $minimap_merged_gff --outfile $minimap_hints
+			minimap2hints.pl --source minimap_est --infile $minimap_gff --outfile $minimap_hints
 		"""
 	}
 
@@ -804,13 +796,13 @@ if (params.reads) {
 	
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
 
-			//scratch true 
+			scratch true 
 	
 			input:
 			file(hisat_bam) from bam2trinity
 
 			output:
-			file "transcriptome_trinity/Trinity-GG.fasta" into trinity_transcripts, trinity_transcripts_2exonerate, trinity_to_index, trinity_to_pasa
+			file "transcriptome_trinity/Trinity-GG.fasta" into (trinity_transcripts, trinity_to_minimap , trinity_to_pasa)
 	
 			script:
 
@@ -826,129 +818,45 @@ if (params.reads) {
 			"""
 		}
 
-		trinity_chunks = trinity_transcripts.splitFasta(by: params.nblast, file: true)
+		process runMinimapTrinity {
 
-		process runBlastTrinity {
-	
-			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/blast/chunks"
-	
+			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
+
 			input:
-			file(query_fa) from trinity_chunks 
-			file(blastdb) from blast_db_trinity
-	
-			output:
-			file(blast_report) into TrinityBlastReport
-	
-			script: 
+			file(trinity_fasta) from trinity_to_minimap
+			set file(genome_rm),file(genome_index) from genome_to_trinity_minimap
 
-			db_name = blastdb[0].baseName
-			chunk_name = query_fa.getName().tokenize('-')[-2]
-			blast_report = "trinity.${chunk_name}.blast"
+			output:
+			file(trinity_gff) into minimap_trinity_gff
+
+			script:
+			trinity_gff = "trinity.minimap.gff"
 
 			"""
-				blastn -db $db_name -query $query_fa -evalue $params.blast_evalue -outfmt "${params.blast_options}" -num_threads ${task.cpus} > $blast_report
+				minimap2 -t ${task.cpus} -ax splice -c $genome_rm $trinity_fasta | samtools sort -O BAM -o minimap.bam
+				minimap2_bam2gff.pl minimap.bam > $trinity_gff
+				rm minimap.bam
 			"""
 		}
 
-		/*
-		 * STEP RNAseq.7 - Parse Blast Output
-		 */
+		process runTrinityHints {
 
-		process BlastTrinity2QueryTarget {
-	
-			publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate", mode: 'copy'
-	
-			input:
-			file(all_blast_results_trinity) from TrinityBlastReport.collectFile()
-	
-			output:
-			file(trinity_targets) into query2target_trinity_uniq_result
-	
-			script:
-			trinity_targets = "trinity.all.targets.txt"
-			"""
-	                        blast2exonerate_targets.pl --infile $all_blast_results_trinity --max_intron_size $params.max_intron_size > $trinity_targets
-			"""
-		} 	
+			publishDir "${OUTDIR}/evidence/EST/minimap/", mode: 'copy'
 
-		// generate an index for trinity transcripts with cdbtools
-		process runTrinityIndex {
+	                input:
+        	        file(trinity_gff) from minimap_trinity_gff
 
-			publishDir "${OUTDIR}/databases/trinity", mode: 'copy'
+                	output:
+	                file(minimap_hints) into trinity_minimap_hints
 
-			input:
-			file(trinity_fa) from trinity_to_index
+        	        script:
+                	minimap_hints = "trinity.minimap.hints.gff"
 
-			output:
-			set file(trinity_fa),file(trinity_db_index) into TrinityDBIndex
-
-			script:
-			trinity_db_index = trinity_fa.getName() + ".cidx"
-		
-			"""
-				cdbfasta $trinity_fa
-			"""
-	
+	                """
+        	                minimap2hints.pl --source minimap_trinity --infile $trinity_gff --outfile $minimap_hints
+                	"""
 		}
 
-		// Split trinity targets and combine with trinity cdbtools index
-		query2target_trinity_uniq_result
-			.splitText(by: params.nexonerate, file: true)
-			.combine(TrinityDBIndex)	
-			.set{query2target_trinity_chunk}	
-
-		/*
-		 * STEP RNAseq.8 - Exonerate
-		 */	
- 
-		process runExonerateTrinity {
-	
-			// publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/chunks", mode: 'copy'
-	
-			input:
-			set file(hits_trinity_chunk),file(transcript_fa),file(transcript_db_index) from query2target_trinity_chunk
-			set file(genome),file(genome_index) from RMGenomeIndexTrinity
-		
-			output:
-			file(exonerate_out) into (exonerate_result_trinity,exonerate_trinity_chunk_evm)
-	
-			script:
-			chunk_name = hits_trinity_chunk.getName().tokenize('.')[-2]
-			exonerate_out = "RNAseq.Trinity.exonerate.${chunk_name}.out"
-			
-			"""
-				extractMatchTargetsFromIndex.pl --matches $hits_trinity_chunk --db $transcript_db_index
-	                        exonerate_from_blast_hits.pl --matches $hits_trinity_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $transcript_db_index --analysis est2genome --outfile commands.txt
-        	                parallel -j ${task.cpus} < commands.txt
-                	        cat *.exonerate.align | grep -v '#' | grep 'exonerate:est2genome' > merged_exonerate.out
-                        	exonerate_offset2genomic.pl --infile merged_exonerate.out --outfile $exonerate_out
-	                        rm *.align
-				rm *._target_.fa*
-				rm *._query_.fa*	
-			"""
-		}
-
-		/*
-		 * STEP RNAseq.9 - Exonerate to Hints
-		 */
- 
-		process Exonerate2HintsTrinity {	
-
-			publishDir "${OUTDIR}/evidence/rnaseq/trinity/exonerate/", mode: 'copy'
-
-			input:
-			file(exonerate_results) from  exonerate_result_trinity.collect()
-
-			output:
-			file(trinity_hints) into trinity_exonerate_hints
-
-			script:
-			trinity_hints = "RNAseq.trinity.hints.gff"
-			"""
-				cat $exonerate_results | grep -v '#' | grep 'exonerate:est2genome' > all_chunks.out
-	                        exonerate2gff.pl --infile all_chunks.out --source trinity --outfile $trinity_hints
-			"""
-		}
 
 	} // Close Trinity loop
 	
@@ -958,7 +866,7 @@ if (params.reads) {
 * RUN PASA WITH TRANSCRIPTS
 */
 
-if (params.training) {
+if (params.pasa) {
 
 	// use trinity transcripts, ESTs or both
 	if (params.trinity || params.ESTs ) {
@@ -996,13 +904,13 @@ if (params.training) {
 		}
 
 		// run minimap fopr fast transcript mapping
-		process runMinimap2 {
+		process runMinimap2Pasa {
 			
 			publishDir "${OUTDIR}/evidence/transcripts/minimap", mode: 'copy'
 		
 			input:
 			set file(transcripts_clean),file(transcripts) from seqclean_to_minimap
-			set file(genome),file(genome_index) from RMGenomeMinimap
+			set file(genome),file(genome_index) from genome_to_minimap_pasa
 			output:
 			set file(transcripts_clean),file(minimap_gff) into minimap_to_pasa
 			file(minimap_bam) 
@@ -1021,11 +929,11 @@ if (params.training) {
 		// Run the PASA pipeline
 		process runPasa {
 		
-			publishDir "${OUTDIR}/evidence/rnaseq/pasa/db/", mode: 'copy'
+			publishDir "${OUTDIR}/evidence/transcripts/pasa/db/", mode: 'copy'
 
 			input:
 			set file(transcripts_clean),file(minimap_gff) from minimap_to_pasa
-			set file(genome_rm),file(genome_rm_index) from RMGenomePasa
+			set file(genome_rm),file(genome_rm_index) from genome_to_pasa
 
 			output:
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into (PasaResults,PasaToEvm)
@@ -1033,18 +941,33 @@ if (params.training) {
 			script:
 			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
 			pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
+			
+			// optional MySQL support
+			// create a config file with credentials, add config file to pasa execute
+			// and somehow check that the DB doesn't already exists
+			mysql_create_options = ""
+			mysql_config_option = ""
+			mysql_db_name = ""
+			if (params.pasa_mysql_user) {
+				mysql_options = "make_pasa_mysql_config.pl --infile \$PASAHOME/pasa_conf/conf.txt --outfile pasa_mysql_conf.txt --user ${params.pasa_mysql_user} --pass ${params.pasa_mysql_pass} --host ${params.pasa_mysql_host} --port ${params.pasa_mysq_port}"
+				mysql_config_option = "-C pasa_mysql_conf.txt"
+				mysql_db_name = "--mysql $run_name"
+			}
+
 			// The pasa sqlite file must have a fully qualified path, the script is a workaround as this seems difficult to do inside 
 			// the script statement
 
 			"""
-				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config
+				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config $mysql_db_name
+				$mysql_create_options
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
-					-t $transcripts \
+					-t $transcripts_clean \
 					-I $params.max_intron_size \
 					-g $genome_rm \
 					----IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
-					--CPU ${task.cpus}
+					--CPU ${task.cpus} \
+					$mysql_config_option
 			"""	
 		}
 
@@ -1057,7 +980,7 @@ if (params.training) {
                         set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
 
 			output:
-			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into pasa_output
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into (pasa_output,pasa_to_training)
 
 			script:
 			pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
@@ -1073,89 +996,95 @@ if (params.training) {
 			"""
 		}
 
-		// Extract full length models for training
-		process runModelsToTraining {
+		if (params.training) {
+			// Extract full length models for training
+			process runModelsToTraining {
 
-                	publishDir "${OUTDIR}/evidence/rnaseq/pasa/training/", mode: 'copy'
+                		publishDir "${OUTDIR}/evidence/rnaseq/pasa/training/", mode: 'copy'
 
-			input:
-			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_output
+				input:
+				set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_to_training
 			
-			output:
-			file(training_gff) into models2train
+				output:
+				file(training_gff) into models2train
 
-			script:
-			training_pep = "transdec.complete.pep"
-			training_gff = "transdec.complete.gff3"
+				script:
+				training_pep = "transdec.complete.pep"
+				training_gff = "transdec.complete.gff3"
 	
-			"""
-				Transdec_complete.pl --fasta_in $pasa_transdecoder_fasta --gff_in $pasa_transdecoder_gff \
-                        	--fasta_out $training_pep --gff_out $training_gff
-			"""
-		}
-
-		// If we have to modify the AUGUSTUS config folder, we must copy it first
-	        process runAugustusConfigFolder {
-
-			publishDir "${OUTDIR}/augustus/", mode: 'copy'
-
-        	        input:
-                	val(config_folder) from augustus_config_folder
-
-	                output:
-        	        val(copied_folder) into (acf_training,acf_training_path)
-
-                	script:
-	                copied_folder = "config_folder"
-
-        	        """
-                	        cp -R $config_folder $copied_folder
-	                """
-        	}
-
-		// Run one of two training routines for model training
-		process runTrainAugustus {
-	
-			publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
-
-			input:
-			file(complete_models) from models2train
-			env AUGUSTUS_CONFIG_PATH from acf_training
-			val(acf_folder) from acf_training_path
-
-			output:
-			file(training_stats)
-			val(acf_folder) into acf_prediction
-
-			script:
-			complete_gb = "complete_peptides.raw.gb"	
-			train_gb = "complete_peptides.raw.gb.train"
-			test_gb = "complete_peptides.raw.gb.test"
-			training_stats = "training_accuracy.out"
-
-			// If the model already exists, do not run new_species.pl
-			model_path = "${acf_training_path}/species/${params.model}"
-			model_file = file(model_path)		
-			
-			options = ""
-			if (!model_file.exists()) {
-				options = "new_species.pl --species=${params.model}"
+				"""
+					Transdec_complete.pl --fasta_in $pasa_transdecoder_fasta --gff_in $pasa_transdecoder_gff \
+	                        	--fasta_out $training_pep --gff_out $training_gff
+				"""
 			}
 
-			"""
-				gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
-				split_training.pl --infile $complete_gb --percent 90
-				$options
-				etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
-				optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off 
-				augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $training_stats
-			"""
-		} 
-	} // close trinity/est loop
+			// If we have to modify the AUGUSTUS config folder, we must copy it first
+		        process runAugustusConfigFolder {
+
+				publishDir "${OUTDIR}/augustus/", mode: 'copy'
+	
+        		        input:
+                		val(config_folder) from augustus_config_folder
+
+	                	output:
+	        	        val(copied_folder) into (acf_training,acf_training_path)
+
+        	        	script:
+		                copied_folder = "config_folder"
+	
+        		        """
+                		        cp -R $config_folder $copied_folder
+	                	"""
+        		}
+
+			// Run one of two training routines for model training
+			process runTrainAugustus {
+	
+				publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
+
+				input:
+				file(complete_models) from models2train
+				env AUGUSTUS_CONFIG_PATH from acf_training
+				val(acf_folder) from acf_training_path
+
+				output:
+				file(training_stats)
+				val(acf_folder) into acf_prediction
+
+				script:
+				complete_gb = "complete_peptides.raw.gb"	
+				train_gb = "complete_peptides.raw.gb.train"
+				test_gb = "complete_peptides.raw.gb.test"
+				training_stats = "training_accuracy.out"
+
+				// If the model already exists, do not run new_species.pl
+				model_path = "${acf_training_path}/species/${params.model}"
+				model_file = file(model_path)		
+			
+				options = ""
+				if (!model_file.exists()) {
+					options = "new_species.pl --species=${params.model}"
+				}
+
+				"""
+					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+					split_training.pl --infile $complete_gb --percent 90
+					$options
+					etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
+					optimize_augustus.pl --species=$params.model $train_gb --cpus=${task.cpus} --UTR=off 
+					augustus --stopCodonExcludedFromCDS=false --species=$params.model $test_gb | tee $training_stats
+				"""
+			} 
+		} else {
+			// Make sure we set the built in augustus config path if no training was done
+		        acf_prediction = augustus_config_folder
+		}// close training loop
+	} // close pasa loop
 } else {
 	// We have to make the AUGUSTUS_CONFIG_PATH a mutable object, so we have to carry through the location of the modifiable 
 	// copy of the original config folder. 
         acf_prediction = augustus_config_folder
+	pasa_output = Channel.from(false)
 }
 
 // get all available hints and merge into one file
@@ -1166,8 +1095,8 @@ process runMergeAllHints {
 	input:
 	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty(false)
 	file(rnaseq_hint) from rnaseq_hints.ifEmpty(false)
-        file(est_exonerate_hint) from est_minimap_hints.ifEmpty(false)
-        file(trinity_exonerate_hint) from trinity_exonerate_hints.ifEmpty(false)
+        file(est_minimap_hint) from est_minimap_hints.ifEmpty(false)
+        file(trinity_minimap_hint) from trinity_minimap_hints.ifEmpty(false)
 
 	output:
 	file(merged_hints) into (mergedHints,mergedHintsSort)
@@ -1180,11 +1109,11 @@ process runMergeAllHints {
 	if (rnaseq_hint  != false || rnaseq_hint != "false" ) {
 		file_list += " ${rnaseq_hint}"
 	}
-	if (est_exonerate_hint != false || est_exonerate_hint != "false" ) {
-		file_list += " ${est_exonerate_hint}"
+	if (est_minimap_hint != false || est_minimap_hint != "false" ) {
+		file_list += " ${est_minimap_hint}"
 	}
-	if (trinity_exonerate_hint != false || trinity_exonerate_hint != "false" ) {
-		file_list += " ${trinity_exonerate_hint}"
+	if (trinity_minimap_hint != false || trinity_minimap_hint != "false" ) {
+		file_list += " ${trinity_minimap_hint}"
 	}
 	merged_hints = "merged.hints.gff"
 	
@@ -1256,7 +1185,7 @@ process runMergeAugustusGff {
 	file(augustus_gffs) from augustus_out_gff.collect()
 
 	output:
-	file(augustus_merged_gff) into (augustus_2prots, augustus_gff2annie, augustus_gff2functions, augustus_to_evm)
+	file(augustus_merged_gff) into (augustus_2prots, augustus_gff2functions, augustus_to_evm)
 
 	script:
 	augustus_merged_gff = "augustus.merged.out.gff"
@@ -1301,8 +1230,8 @@ if (params.evm) {
 		file(augustus_gff) from augustus_to_evm
 		file(proteins) from exonerate_prot_chunk_evm.collectFile()
 		file(est) from minimap_ests_to_evm
-		file(trinity) from exonerate_trinity_chunk_evm.collectFile()
-		file(genome_rm) from RMGenomeEvm
+		file(trinity) from minimap_trinity_to_evm
+		set file(genome_rm),file(genome_index) from genome_to_evm
 		file(pasa_models) from PasaToEvm
 
 		output:
@@ -1349,6 +1278,7 @@ if (params.evm) {
 	evm_command_chunks = outputEvm.splitText(by: 10, file: true)
 
 	process runEvm {
+                publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
 
 		input:
 		file(evm_chunk) from evm_command_chunks
@@ -1360,7 +1290,7 @@ if (params.evm) {
 		script:
 
 		"""
-			$EVM_HOME/EvmUtils/execute_EVM_commands.pl $evm | tee run.log
+			\$EVM_HOME/EvmUtils/execute_EVM_commands.pl $evm | tee run.log
 		"""
 		
 	}
@@ -1368,10 +1298,11 @@ if (params.evm) {
 	// Merge all the separate partition outputs into a final gff file
 	process runEvmMerge {
 	
+		publishDir "${OUTDIR}/annotation/evm", mode: 'copy'
 		input:
 		file(evm_out) from EvmOut.collect()
 		file(partitions) from EvmPartition
-		file(genome_rm) from RMGenomeEvmMerge
+		set file(genome_rm),file(genome_index) from genome_to_evm_merge
 		output:
 		file(evm_final) into EvmResult
 
@@ -1386,103 +1317,98 @@ if (params.evm) {
 
 	}
 
-} // end evm loop
+	Channel
+        	.fromPath(Uniprot)
+	        .set { MakeUniprotDB }
 
-/*
- * STEP Functional Annotation
- */
+	process runMakeUniprotDB {
 
-Channel
-        .fromPath(Uniprot)
-        .set { MakeUniprotDB }
+		publishDir "${OUTDIR}/functional_annotation/BlastDB", mode: 'copy'
 
-process runMakeUniprotDB {
+		input:
+		file(uniprot_fa) from MakeUniprotDB	
 
-	publishDir "${OUTDIR}/functional_annotation/BlastDB", mode: 'copy'
+		output:
+		set file(db_uniprot_phr),file(db_uniprot_pin),file(db_uniprot_psq) into blast_uniprot_db	
 
-	input:
-	file(uniprot_fa) from MakeUniprotDB	
+		script:
+	        dbName_uniprot = uniprot_fa.baseName
+        	db_uniprot_phr = dbName_uniprot + ".phr"
+	        db_uniprot_pin = dbName_uniprot + ".pin"
+        	db_uniprot_psq = dbName_uniprot + ".psq"
 
-	output:
-	set file(db_uniprot_phr),file(db_uniprot_pin),file(db_uniprot_psq) into blast_uniprot_db	
+		"""
+        		makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
+		"""
+	}
 
-	script:
-        dbName_uniprot = uniprot_fa.baseName
-        db_uniprot_phr = dbName_uniprot + ".phr"
-        db_uniprot_pin = dbName_uniprot + ".pin"
-        db_uniprot_psq = dbName_uniprot + ".psq"
+	proteins_annotated_chunk = evm_prots2annie
+        	.splitFasta(by: params.nblast, file: true)
 
-	"""
-        	makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
-	"""
-}
+	// Blast the protein chunks against some reference db in uniprot/swissprot compliant format
+	process runBlastpUniprot {
 
-proteins_annotated_chunk = augustus_prots2annie
-        .splitFasta(by: params.nblast, file: true)
+        	// publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
 
-// Blast the protein chunks against some reference db in uniprot/swissprot compliant format
-process runBlastpUniprot {
+	        input:
+		file(annotated_prots) from proteins_annotated_chunk
+	        set file(blastdb_uniprot_phr),file(blastdb_uniprot_pin),file(blastdb_uniprot_psq) from blast_uniprot_db.collect()
 
-        // publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
+        	output:
+	        file(uniprot_blast_result)
 
-        input:
-	file(annotated_prots) from proteins_annotated_chunk
-        set file(blastdb_uniprot_phr),file(blastdb_uniprot_pin),file(blastdb_uniprot_psq) from blast_uniprot_db.collect()
+	        script:
+        	db_name_uniprot = blastdb_uniprot_phr.baseName
+	        chunk_name_annotated = annotated_prots.baseName
 
-        output:
-        file(uniprot_blast_result)
+        	"""
+           		blastp -query $annotated_prots -db $db_name_uniprot -evalue 0.01 -outfmt 6 -num_threads ${task.cpus} -max_hsps 1 -max_target_seqs 1 > uniprot_blast_result
+	        """
+	}
 
-        script:
-        db_name_uniprot = blastdb_uniprot_phr.baseName
-        chunk_name_annotated = annotated_prots.baseName
+	mergedUniprotBlast = uniprot_blast_result.collectFile(name:'mergedUniprotBlast')
 
-        """
-           	blastp -query $annotated_prots -db db_name_uniprot -evalue 0.01 -outfmt 6 -num_threads ${task.cpus} -max_hsps 1 -max_target_seqs 1 > uniprot_blast_result
-        """
-}
+	// Run a reverse engineered version of the Annie script to map names to ids
+	process runAnnie {
 
-mergedUniprotBlast = uniprot_blast_result.collectFile(name:'mergedUniprotBlast')
+        	publishDir "${OUTDIR}/functional_annotation"
 
-// Run a reverse engineered version of the Annie script to map names to ids
-process runAnnie {
+	        input:
+		file(blast_report) from mergedUniprotBlast
+	        file(augustus_annotated_gff) from augustus_gff2annie
 
-        publishDir "${OUTDIR}/functional_annotation"
+        	output:
+	        file(annie_report) into outputAnnie
 
-        input:
-	file(blast_report) from mergedUniprotBlast
-        file(augustus_annotated_gff) from augustus_gff2annie
+        	script:
+	        annie_report = "blastp.annie"
 
-        output:
-        file(annie_report) into outputAnnie
+        	"""
+           		annie_blastp.py -db $Uniprot -b $blast_report -g $augustus_annotated_gff -o $annie_report
+	        """
+	}
 
-        script:
-        annie_report = "blastp.annie"
+	// add everything into the annotation file
+	process runFunctionsToGffFasta {
 
-        """
-           	annie_blastp.py -db $Uniprot -b $blast_report -g $augustus_annotated_gff -o $annie_report
-        """
-}
+        	publishDir "${OUTDIR}/functional_annotation", mode: 'copy'
 
-// add everything into the annotation file
-process runFunctionsToGffFasta {
+	        input:
+		file(annie) from outputAnnie
+	        file(annotation_gff) from augustus_gff2functions.collect()
+		file(annotation_fasta) from augustus_prots2functions.collect()
+	
+	        output:
+        	set file(annotated_gff),file(annotated_fasta) into AnnieOut
 
-        publishDir "${OUTDIR}/functional_annotation", mode: 'copy'
+	        script:
+        	annotated_gff = "annotation.functions.gff"
+	        annotated_fasta = "annotation.functions.fasta"
 
-        input:
-	file(annie) from outputAnnie
-        file(annotation_gff) from augustus_gff2functions.collect()
-	file(annotation_fasta) from augustus_prots2functions.collect()
-
-        output:
-        set file(annotated_gff),file(annotated_fasta) into AnnieOut
-
-        script:
-        annotated_gff = "annotation.functions.gff"
-        annotated_fasta = "annotation.functions.fasta"
-
-        """
-		gff_fasta_add_annie_functions.pl --gff $annotation_gff --fasta $annotation_fasta --annie $annie --out_gff $annotated_gff --out_fasta $annotated_fasta
-	"""
+        	"""
+			gff_fasta_add_annie_functions.pl --gff $annotation_gff --fasta $annotation_fasta --annie $annie --out_gff $annotated_gff --out_fasta $annotated_fasta
+		"""
+	} // end evm loop
 }
 
 workflow.onComplete {
