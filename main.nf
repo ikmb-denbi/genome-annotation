@@ -941,7 +941,7 @@ if (params.pasa) {
 			set file(genome_rm),file(genome_rm_index) from genome_to_pasa
 
 			output:
-			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into (PasaResults,PasaToEvm)
+			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
 	
 			script:
 			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
@@ -986,6 +986,7 @@ if (params.pasa) {
 
 			output:
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into (pasa_output,pasa_to_training)
+			set file(pasa_transdecoder_gff) into PasaToEvm
 
 			script:
 			pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
@@ -1236,6 +1237,7 @@ if (params.evm) {
 		file(est) from minimap_ests_to_evm.ifEmpty(false)
 		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
 		file(proteins) from exonerate_protein_evm.ifEmpty(false)
+		file(pasa) from PasaToEvm.ifEmpty(false)
 		set file(genome_rm),file(genome_index) from genome_to_evm
 
 		output:
@@ -1260,7 +1262,7 @@ if (params.evm) {
 
 		"""
 			cat $est $trinity | grep -v false >> $transcripts
-			cat $augustus_gff  | grep -v false >> $gene_models
+			cat $augustus_gff $pasa | grep -v false >> $gene_models
 
 			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
 				--gene_predictions $gene_models \
