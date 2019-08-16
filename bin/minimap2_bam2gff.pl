@@ -20,6 +20,12 @@ open BAM,"samtools view $bam |";
 	my %entry = ( "qname" => $sam[0], "flag" => $sam[1], "rname" => $sam[2], "pos" => $sam[3], "mapq" => $sam[4], 
 		"cigar" => $sam[5], "rnext" => $sam[6], "pnext" => $sam[7], "tlen" => $sam[8], "seq" => $sam[9], "qual" => $sam[10] );
 
+
+	# Skip this entry if it has no sequence
+	if ($entry{'seq'} eq '*') {
+		next ; 
+	}
+
 	my $num_mismatches = 0;
 
 	if ( join("\t",@sam) =~ /NM:i:(\d+)/) {
@@ -54,6 +60,7 @@ open BAM,"samtools view $bam |";
             my $trans_coordset_aref = shift @$query_coords_aref;
 
             my ($genome_lend, $genome_rend) = @$genome_coordset_aref;
+	    
             my ($trans_lend, $trans_rend) = sort {$a<=>$b} @$trans_coordset_aref;
 
             push (@genome_n_trans_coords, [ $genome_lend, $genome_rend, $trans_lend, $trans_rend ] );
