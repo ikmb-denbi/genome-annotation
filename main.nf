@@ -146,6 +146,8 @@ if (!params.rm_lib && !params.rm_species) {
 // give this run a name
 run_name = ( !params.run_name) ? "${workflow.sessionId}" : "${params.run_name}"
 
+evm_weights = "${baseDir}/assets/evm/weights.txt"
+
 def summary = [:]
 
 summary['Assembly'] = params.genome
@@ -191,7 +193,7 @@ if (params.proteins) {
 } else {
 	prot_exonerate_hints = Channel.from(false)
 	// Protein Exonerate files to EVM
-	exonerate_protein_chunk_evm = Channel.from(false)
+	exonerate_protein_evm = Channel.from(false)
 }
 
 // if ESTs are provided
@@ -548,7 +550,7 @@ if (params.proteins) {
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) into (exonerate_result_prots, exonerate_prot_chunk_evm)
+		file(exonerate_chunk) into (exonerate_result_prots, exonerate_protein_chunk_evm)
 		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
 	
 		script:
@@ -571,6 +573,8 @@ if (params.proteins) {
 			rm *._query_.fa*
 		"""
 	}
+
+	exonerate_protein_evm = exonerate_protein_chunk_evm.collectFile()
 
 	// merge the exonerate hits and create the hints
 	process Exonerate2HintsProtein {
@@ -616,7 +620,7 @@ if (params.ESTs) {
 		set file(genome_rm),file(genome_index) from RMGenomeMinimapEst
 
 		output:
-		file(minimap_gff) into minimap_est_gff
+		file(minimap_gff) into (minimap_est_gff, minimap_ests_to_evm)
 
 		script:
 		minimap_gff = "ESTs.minimap.gff"	
@@ -827,7 +831,8 @@ if (params.reads) {
 			set file(genome_rm),file(genome_index) from genome_to_trinity_minimap
 
 			output:
-			file(trinity_gff) into minimap_trinity_gff
+			file(trinity_gff) into (minimap_trinity_gff,minimap_trinity_to_evm)
+			
 
 			script:
 			trinity_gff = "trinity.minimap.gff"
@@ -929,7 +934,7 @@ if (params.pasa) {
 		// Run the PASA pipeline
 		process runPasa {
 		
-			publishDir "${OUTDIR}/evidence/transcripts/pasa/db/", mode: 'copy'
+			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
 
 			input:
 			set file(transcripts_clean),file(minimap_gff) from minimap_to_pasa
@@ -974,7 +979,7 @@ if (params.pasa) {
 		// Extract gene models from PASA database
 		process runPasa2Models {
 
-	                publishDir "${OUTDIR}/evidence/rnaseq/pasa/models/", mode: 'copy'
+	                publishDir "${OUTDIR}/annotation/pasa/", mode: 'copy'
 
 			input:
                         set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
@@ -1000,7 +1005,7 @@ if (params.pasa) {
 			// Extract full length models for training
 			process runModelsToTraining {
 
-                		publishDir "${OUTDIR}/evidence/rnaseq/pasa/training/", mode: 'copy'
+                		publishDir "${OUTDIR}/annotation/pasa/training", mode: 'copy'
 
 				input:
 				set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_to_training
@@ -1224,41 +1229,38 @@ if (params.evm) {
 
 	process runEvmPartition {
 
-		publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
 		input:
 		file(augustus_gff) from augustus_to_evm
-		file(proteins) from exonerate_prot_chunk_evm.collectFile()
-		file(est) from minimap_ests_to_evm
-		file(trinity) from minimap_trinity_to_evm
+		file(est) from minimap_ests_to_evm.ifEmpty(false)
+		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
+		file(proteins) from exonerate_protein_evm.ifEmpty(false)
 		set file(genome_rm),file(genome_index) from genome_to_evm
-		file(pasa_models) from PasaToEvm
 
 		output:
-		file(evm_commands) into outputEvm
-		set file(gene_models),file(proteins),file(transcripts) into inputToEvm
+		file(evm_commands) into inputToEvm
 		file(partitions) into EvmPartition
 
 		script:
 
 		partitions = "partitions_list.out"
 		evm_commands = "commands.list"
-
 		transcripts = "transcripts.merged.gff"
                 gene_models = "gene_models.gff"
 
 		protein_options = ""
 		transcript_options = ""
-		if (!proteins.toString() == "false") {
+		if (proteins) {
 			protein_options = "--protein_alignments $proteins"
 		}
-		if (!est.toString() == "false" || !trinity.toString() == "false") {
+		if ( est || trinity ) {
 			transcript_options = "--transcript_alignments $transcripts"
 		}
 
 		"""
-			cat $est $trinity | grep -v "false" >> $transcripts
-			cat $augustus_gff $pasa_models | grep -v "false" >> $gene_models
+			cat $est $trinity | grep -v false >> $transcripts
+			cat $augustus_gff  | grep -v false >> $gene_models
 
 			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
 				--gene_predictions $gene_models \
@@ -1274,23 +1276,24 @@ if (params.evm) {
 			
 	}
 
-	// run 10 commands per chunk
-	evm_command_chunks = outputEvm.splitText(by: 10, file: true)
+	// run n commands per chunk
+	evm_command_chunks = inputToEvm.splitText(by: params.nevm, file: true)
 
+	// The outputs doesn't do nothing here, EVM combines the chunks based on the original partition file
 	process runEvm {
+
                 publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
 
 		input:
 		file(evm_chunk) from evm_command_chunks
-		set file(gene_models),file(proteins),file(transcripts) from inputToEvm.collect()
 
 		output:
-		file(evm_out) into EvmOut
+		file(log_file) into EvmOut
 
 		script:
-
+		log_file = evm_chunk.getBaseName() + ".log"
 		"""
-			\$EVM_HOME/EvmUtils/execute_EVM_commands.pl $evm | tee run.log
+			\$EVM_HOME/EvmUtils/execute_EVM_commands.pl $evm_chunk | tee $log_file
 		"""
 		
 	}
@@ -1299,117 +1302,51 @@ if (params.evm) {
 	process runEvmMerge {
 	
 		publishDir "${OUTDIR}/annotation/evm", mode: 'copy'
+
 		input:
-		file(evm_out) from EvmOut.collect()
+
+		file(evm_logs) from EvmOut.collect()
 		file(partitions) from EvmPartition
 		set file(genome_rm),file(genome_index) from genome_to_evm_merge
+
 		output:
-		file(evm_final) into EvmResult
+		file(partitions) into EvmResult
+		file(done)
 
 		script:
 		evm_final = "evm.out"
-		evm_gff = "EVM.all.gff"
-
+		done = "done.txt"
 		"""
 			\$EVM_HOME/EvmUtils/recombine_EVM_partial_outputs.pl --partitions $partitions --output_file_name evm.out
-			$EVM_HOME/EvmUtils/convert_EVM_outputs_to_GFF3.pl  --partitions $partitions --output evm.out --genome $genome_rm
+			\$EVM_HOME/EvmUtils/convert_EVM_outputs_to_GFF3.pl  --partitions $partitions --output evm.out --genome $genome_rm
+			touch $done
 		"""
 
 	}
 
-	Channel
-        	.fromPath(Uniprot)
-	        .set { MakeUniprotDB }
+	// We merge the partial gffs from the partitions with a perl script, 
+	// since the output folders are not transferred between processes
+	process runEvmGff {
 
-	process runMakeUniprotDB {
-
-		publishDir "${OUTDIR}/functional_annotation/BlastDB", mode: 'copy'
+		publishDir "${OUTDIR}/annotation/evm", mode: 'copy'
 
 		input:
-		file(uniprot_fa) from MakeUniprotDB	
+		file(partitions) from EvmResult
 
 		output:
-		set file(db_uniprot_phr),file(db_uniprot_pin),file(db_uniprot_psq) into blast_uniprot_db	
+		file(evm_gff) into EvmGFF
 
 		script:
-	        dbName_uniprot = uniprot_fa.baseName
-        	db_uniprot_phr = dbName_uniprot + ".phr"
-	        db_uniprot_pin = dbName_uniprot + ".pin"
-        	db_uniprot_psq = dbName_uniprot + ".psq"
+		evm_gff = "annotations.evm.gff"
 
 		"""
-        		makeblastdb -in $uniprot_fa -dbtype prot -out $dbName_uniprot
+			merge_evm_gff.pl --partitions $partitions --gff $evm_gff
 		"""
+
 	}
 
-	proteins_annotated_chunk = evm_prots2annie
-        	.splitFasta(by: params.nblast, file: true)
+} // end evm loop
 
-	// Blast the protein chunks against some reference db in uniprot/swissprot compliant format
-	process runBlastpUniprot {
-
-        	// publishDir "${OUTDIR}/functional_annotation/blast_results/${chunk_name_annotated}", mode: 'copy'
-
-	        input:
-		file(annotated_prots) from proteins_annotated_chunk
-	        set file(blastdb_uniprot_phr),file(blastdb_uniprot_pin),file(blastdb_uniprot_psq) from blast_uniprot_db.collect()
-
-        	output:
-	        file(uniprot_blast_result)
-
-	        script:
-        	db_name_uniprot = blastdb_uniprot_phr.baseName
-	        chunk_name_annotated = annotated_prots.baseName
-
-        	"""
-           		blastp -query $annotated_prots -db $db_name_uniprot -evalue 0.01 -outfmt 6 -num_threads ${task.cpus} -max_hsps 1 -max_target_seqs 1 > uniprot_blast_result
-	        """
-	}
-
-	mergedUniprotBlast = uniprot_blast_result.collectFile(name:'mergedUniprotBlast')
-
-	// Run a reverse engineered version of the Annie script to map names to ids
-	process runAnnie {
-
-        	publishDir "${OUTDIR}/functional_annotation"
-
-	        input:
-		file(blast_report) from mergedUniprotBlast
-	        file(augustus_annotated_gff) from augustus_gff2annie
-
-        	output:
-	        file(annie_report) into outputAnnie
-
-        	script:
-	        annie_report = "blastp.annie"
-
-        	"""
-           		annie_blastp.py -db $Uniprot -b $blast_report -g $augustus_annotated_gff -o $annie_report
-	        """
-	}
-
-	// add everything into the annotation file
-	process runFunctionsToGffFasta {
-
-        	publishDir "${OUTDIR}/functional_annotation", mode: 'copy'
-
-	        input:
-		file(annie) from outputAnnie
-	        file(annotation_gff) from augustus_gff2functions.collect()
-		file(annotation_fasta) from augustus_prots2functions.collect()
-	
-	        output:
-        	set file(annotated_gff),file(annotated_fasta) into AnnieOut
-
-	        script:
-        	annotated_gff = "annotation.functions.gff"
-	        annotated_fasta = "annotation.functions.fasta"
-
-        	"""
-			gff_fasta_add_annie_functions.pl --gff $annotation_gff --fasta $annotation_fasta --annie $annie --out_gff $annotated_gff --out_fasta $annotated_fasta
-		"""
-	} // end evm loop
-}
 
 workflow.onComplete {
   log.info "========================================="
