@@ -424,7 +424,7 @@ process runMergeRMGenome {
 	file(genome_chunks) from RMFastaChunks.collect()
 
 	output:
-	set file(masked_genome),file(masked_genome_index) into (RMtoBlastDB, RMtoPartition)
+	set file(masked_genome),file(masked_genome_index) into (rm_to_blast_db, rm_to_partition)
 	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, genome_to_trinity_minimap, genome_to_pasa, genome_to_evm, genome_to_evm_merge, genome_to_minimap_pasa, RMGenomeMinimapEst)
 
 	script:
@@ -440,7 +440,7 @@ process runMergeRMGenome {
 	"""	
 }
 
-RMtoPartition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; GenomeChunksAugustus}
+rm_to_partition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; genome_chunk_to_augustus }
 
 // Turn genome into a masked blast database
 // Generates a dust mask from softmasked genome sequence
@@ -449,13 +449,13 @@ process runMakeBlastDB {
 	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
 
 	input:
-	file(genome_fa) from RMtoBlastDB
+	set file(genome_fa),file(genome_index) from rm_to_blast_db
 
 	output:
 	file("${dbName}*.n*") into blast_db_prots
 
 	script:
-	dbName = genome_fa.baseName
+	dbName = genome_fa.getBaseName()
 	
 	"""
 		makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -out $dbName 
@@ -1181,7 +1181,7 @@ process runAugustus {
 	env(AUGUSTUS_CONFIG_PATH) from acf_prediction.map { it.toString() }
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
-	set file(genome_chunk),file(genome_index) from GenomeChunksAugustus
+	set file(genome_chunk),file(genome_index) from genome_chunk_to_augustus
 
 	output:
 	file(augustus_result) into augustus_out_gff
@@ -1252,7 +1252,7 @@ if (params.evm) {
 		publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
 		input:
-		file(augustus_gff) from augustus_to_evm
+		file(augustus_gff) from augustus_to_evm.ifEmpty(false)
 		file(est) from minimap_ests_to_evm.ifEmpty(false)
 		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
 		file(proteins) from exonerate_protein_evm.ifEmpty(false)
