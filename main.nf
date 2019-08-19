@@ -424,7 +424,7 @@ process runMergeRMGenome {
 	file(genome_chunks) from RMFastaChunks.collect()
 
 	output:
-	file(masked_genome) into (RMtoBlastDB, RMtoSplit,RMtoPartition)
+	set file(masked_genome),file(masked_genome_index) into (RMtoBlastDB, RMtoPartition)
 	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, genome_to_trinity_minimap, genome_to_pasa, genome_to_evm, genome_to_evm_merge, genome_to_minimap_pasa, RMGenomeMinimapEst)
 
 	script:
@@ -439,8 +439,8 @@ process runMergeRMGenome {
 		rm merged.fa
 	"""	
 }
-GenomeChunksAugustus = RMtoPartition
-	.splitFasta(by: params.nrepeats, file: true)
+
+RMtoPartition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; GenomeChunksAugustus}
 
 // Turn genome into a masked blast database
 // Generates a dust mask from softmasked genome sequence
@@ -931,21 +931,40 @@ if (params.pasa) {
 	
 		}
 		
+		// We parallelize PASA by filtering the minimap alignments per genome chunk
+		process runSplitMinimap4Pasa {
+	
+			input:
+			set file(genome_chunk),file(genome_chunk_index) from genome_to_minimap_chunk
+			set file(minimap_gff),file(transcripts) from minimap_to_pasa
+			
+			output:
+			set file(genome_chunk),file(transcripts_minimap),file(minimap_chunk) into minimap_chunk_to_pasa
+
+			script:
+			minimap_chunk = genome_chunk.getBaseName() + ".minimap.gff"
+			transcripts_minimap = genome_chunk.getBaseName() + ".transcripts.fasta"
+			"""
+				minimap_filter_gff_by_genome_index.pl --genome_idx $genome_chunk_index --gff $minimap_gff --outfile  $minimap_chunk
+				minimap_filter_fasta_by_gff.pl --gff $minimap_chunk --fasta $transcripts --outfile $transcripts_minimap
+			"""
+
+		}
+
 		// Run the PASA pipeline
 		process runPasa {
 		
 			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
 
 			input:
-			set file(transcripts_clean),file(minimap_gff) from minimap_to_pasa
-			set file(genome_rm),file(genome_rm_index) from genome_to_pasa
+			set file(genome_rm),file(transcripts_minimap),file(minimap_chunk_gff) from minimap_chunk_to_pasa
 
 			output:
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
 	
 			script:
-			pasa_assemblies_fasta = "pasa_DB.assemblies.fasta"
-			pasa_assemblies_gff = "pasa_DB.pasa_assemblies.gff3"
+			pasa_assemblies_fasta = "pasa_DB.sqlite.assemblies.fasta"
+			pasa_assemblies_gff = "pasa_DB.sqlite.pasa_assemblies.gff3"
 			
 			// optional MySQL support
 			// create a config file with credentials, add config file to pasa execute
@@ -954,7 +973,7 @@ if (params.pasa) {
 			mysql_config_option = ""
 			mysql_db_name = ""
 			if (params.pasa_mysql_user) {
-				mysql_options = "make_pasa_mysql_config.pl --infile \$PASAHOME/pasa_conf/conf.txt --outfile pasa_mysql_conf.txt --user ${params.pasa_mysql_user} --pass ${params.pasa_mysql_pass} --host ${params.pasa_mysql_host} --port ${params.pasa_mysq_port}"
+				mysql_options = "make_pasa_mysql_config.pl --infile \$PASAHOME/pasa_conf/conf.txt --outfile pasa_mysql_conf.txt --user ${params.pasa_mysql_user} --pass ${params.pasa_mysql_pass} --host ${params.pasa_mysql_host} --port ${params.pasa_mysql_port}"	
 				mysql_config_option = "-C pasa_mysql_conf.txt"
 				mysql_db_name = "--mysql $run_name"
 			}
@@ -970,7 +989,7 @@ if (params.pasa) {
 					-t $transcripts_clean \
 					-I $params.max_intron_size \
 					-g $genome_rm \
-					----IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
+					--IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
 					--CPU ${task.cpus} \
 					$mysql_config_option
 			"""	
@@ -986,7 +1005,7 @@ if (params.pasa) {
 
 			output:
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into (pasa_output,pasa_to_training)
-			set file(pasa_transdecoder_gff) into PasaToEvm
+			file(pasa_transdecoder_gff) into PasaToEvm
 
 			script:
 			pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
@@ -1162,7 +1181,7 @@ process runAugustus {
 	env(AUGUSTUS_CONFIG_PATH) from acf_prediction.map { it.toString() }
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
-	file(genome_chunk) from GenomeChunksAugustus
+	set file(genome_chunk),file(genome_index) from GenomeChunksAugustus
 
 	output:
 	file(augustus_result) into augustus_out_gff
