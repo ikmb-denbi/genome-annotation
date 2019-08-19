@@ -56,38 +56,10 @@ while (<$GFF>) {
 		my ($key,$value) = split("=",$element);
 		if ($key eq "Target") {
 			my $transcript_id = (split " ",$value)[0];
-			unless (grep( /^$transcript_id$/, @transcripts ) ) {
-				push(@transcripts,$transcript_id);
-			}
+			printf $transcript_id . "\n";
 		}
 	}
 }
 
 close($GFF);
 
-open (my $FASTA, '<', $fasta) or die "FATAL: Can't open file: $fasta for reading.\n$!\n";
-
-my $skip = 1;
-
-while (<$FASTA>) {
-
-	chomp;
-	my $line = $_;
-
-	if ($line =~ /^>.*/) {
-		my $definition = (split ">",$line)[-1];
-		my $transcript_id = (split " ",$definition)[0];
-		if ( grep( /^$transcript_id$/, @transcripts ) ) {
-			$skip = 0;
-		} else {
-			$skip = 1;
-		}
-	}
-
-	if ($skip == 0) {
-		printf $line ."\n";
-	}
-		
-}
-
-close ($FASTA);

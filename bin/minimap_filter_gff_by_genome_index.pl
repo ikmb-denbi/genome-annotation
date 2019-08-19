@@ -65,7 +65,6 @@ while (<$GFF>) {
 	my $line = $_;
 
 	my $seq_name = (split "\t",$line)[0];
-
 	if ( grep( /^$seq_name$/, @scaffolds )  ) {
 		printf $line ."\n";
 	}

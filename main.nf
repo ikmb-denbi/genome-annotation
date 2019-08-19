@@ -936,7 +936,7 @@ if (params.pasa) {
 	
 			input:
 			set file(genome_chunk),file(genome_chunk_index) from genome_to_minimap_chunk
-			set file(minimap_gff),file(transcripts) from minimap_to_pasa
+			set file(transcripts),file(minimap_gff) from minimap_to_pasa
 			
 			output:
 			set file(genome_chunk),file(transcripts_minimap),file(minimap_chunk) into minimap_chunk_to_pasa
@@ -944,9 +944,13 @@ if (params.pasa) {
 			script:
 			minimap_chunk = genome_chunk.getBaseName() + ".minimap.gff"
 			transcripts_minimap = genome_chunk.getBaseName() + ".transcripts.fasta"
+
+			// filter the gff file to only contain entries for our scaffolds of interest
+			// them make a list of all transcript ids and extract them from the full transcript fasta
 			"""
-				minimap_filter_gff_by_genome_index.pl --genome_idx $genome_chunk_index --gff $minimap_gff --outfile  $minimap_chunk
-				minimap_filter_fasta_by_gff.pl --gff $minimap_chunk --fasta $transcripts --outfile $transcripts_minimap
+				minimap_filter_gff_by_genome_index.pl --index $genome_chunk_index --gff $minimap_gff --outfile  $minimap_chunk
+				minimap_gcc_to_accs.pl --gff $minimap_chunk --fasta $transcripts | sort -u > list.txt
+				faSomeRecords $transcripts list.txt $transcripts_minimap
 			"""
 
 		}
