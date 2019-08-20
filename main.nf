@@ -426,8 +426,8 @@ process runMergeRMGenome {
 	file(genome_chunks) from RMFastaChunks.collect()
 
 	output:
-	set file(masked_genome),file(masked_genome_index) into (rm_to_blast_db, rm_to_partition)
-	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, genome_to_trinity_minimap, genome_to_pasa, genome_to_evm, genome_to_evm_merge, genome_to_minimap_pasa, RMGenomeMinimapEst)
+	file(masked_genome) into (rm_to_blast_db, rm_to_partition)
+	set file(masked_genome),file(masked_genome_index) into (RMGenomeIndexProtein, genome_to_trinity_minimap, genome_to_pasa, genome_to_evm, genome_to_evm_merge, RMGenomeMinimapEst, genome_to_minimap_pasa)
 
 	script:
 	
@@ -442,7 +442,7 @@ process runMergeRMGenome {
 	"""	
 }
 
-rm_to_partition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; genome_chunk_to_augustus }
+rm_to_partition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; genome_chunk_to_augustus}
 
 // Turn genome into a masked blast database
 // Generates a dust mask from softmasked genome sequence
@@ -451,7 +451,7 @@ process runMakeBlastDB {
 	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
 
 	input:
-	set file(genome_fa),file(genome_index) from rm_to_blast_db
+	file(genome_fa) from rm_to_blast_db
 
 	output:
 	file("${dbName}*.n*") into blast_db_prots
@@ -937,8 +937,8 @@ if (params.pasa) {
 		process runSplitMinimap4Pasa {
 	
 			input:
-			set file(genome_chunk),file(genome_chunk_index) from genome_to_minimap_chunk
-			set file(transcripts),file(minimap_gff) from minimap_to_pasa
+			file(genome_chunk) from genome_to_minimap_chunk
+			set file(transcripts),file(minimap_gff) from minimap_to_pasa.collect()
 			
 			output:
 			set file(genome_chunk),file(transcripts_minimap),file(minimap_chunk) into minimap_chunk_to_pasa
@@ -946,10 +946,11 @@ if (params.pasa) {
 			script:
 			minimap_chunk = genome_chunk.getBaseName() + ".minimap.gff"
 			transcripts_minimap = genome_chunk.getBaseName() + ".transcripts.fasta"
-
+			genome_chunk_index = genome_chunk + ".fai"
 			// filter the gff file to only contain entries for our scaffolds of interest
 			// then make a list of all transcript ids and extract them from the full transcript fasta
 			"""
+				samtools faidx $genome_chunk
 				minimap_filter_gff_by_genome_index.pl --index $genome_chunk_index --gff $minimap_gff --outfile  $minimap_chunk
 				minimap_gff_to_accs.pl --gff $minimap_chunk | sort -u > list.txt
 				faSomeRecords $transcripts list.txt $transcripts_minimap
