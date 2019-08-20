@@ -11,8 +11,6 @@ perl my_script.pl
   Input:
     [--gff filename]
 		The name of the GFF file to read. 
-    [--fasta filename]
-		The name of the fasta file
 
   Ouput:    
     [--outfile filename]
@@ -22,13 +20,11 @@ perl my_script.pl
 
 my $outfile = undef;
 my $gff = undef;
-my $fasta = undef;
 my $help;
 
 GetOptions(
     "help" => \$help,
     "gff=s" => \$gff,
-    "fasta=s" => \$fasta,
     "outfile=s" => \$outfile);
 
 # Print Help and exit

@@ -174,8 +174,8 @@ Channel.fromPath(Genome)
 // Split the genome for parallel processing
 Channel
 	.fromPath(Genome)
-	.splitFasta(by: params.nrepeats, file: true)
-	.set { FastaRM }
+	.splitFasta( by: params.nrepeats, file: true)
+	.set { fasta_chunk_for_rm_lib }
 
 // if proteins are provided
 if (params.proteins) {
@@ -316,7 +316,9 @@ def check_file_size(fasta) {
         }
 }
 
+// ************************************
 // Model Repeats if nothing is provided
+// ************************************
 
 if (!params.rm_lib && !params.rm_species) {
 
@@ -369,21 +371,21 @@ process createRMLib {
 	"""
 }
 
-// ---------------------------
-// RUN REPEATMASKER
-//----------------------------
+// To get the repeat library path combined with each genome chunk, we do this...
+// toString() is needed as RM touches the location each time it runs and thus modifies it. 
+rm_lib_path = RMLibPath
+	.map { it.toString() }
+	.combine(fasta_chunk_for_rm_lib)
 
 // generate a soft-masked sequence for each assembly chunk
-// toString is needed because RM modifies the library each time it touches it.
 // if nothing was masked, return the original genome sequence instead and an empty gff file. 
 process runRepeatMasker {
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(genome_fa) from FastaRM
-	file(repeats) from repeats_fa
-	env REPEATMASKER_LIB_DIR from RMLibPath.map { it.toString() } 
+	file(repeats) from repeats_fa.collect()
+	set env(REPEATMASKER_LIB_DIR),file(genome_fa) from rm_lib_path
 
 	output:
 	file(genome_rm) into RMFastaChunks
@@ -946,10 +948,10 @@ if (params.pasa) {
 			transcripts_minimap = genome_chunk.getBaseName() + ".transcripts.fasta"
 
 			// filter the gff file to only contain entries for our scaffolds of interest
-			// them make a list of all transcript ids and extract them from the full transcript fasta
+			// then make a list of all transcript ids and extract them from the full transcript fasta
 			"""
 				minimap_filter_gff_by_genome_index.pl --index $genome_chunk_index --gff $minimap_gff --outfile  $minimap_chunk
-				minimap_gcc_to_accs.pl --gff $minimap_chunk --fasta $transcripts | sort -u > list.txt
+				minimap_gff_to_accs.pl --gff $minimap_chunk | sort -u > list.txt
 				faSomeRecords $transcripts list.txt $transcripts_minimap
 			"""
 
@@ -990,10 +992,10 @@ if (params.pasa) {
 				$mysql_create_options
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
-					-t $transcripts_clean \
+					-t $transcripts_minimap \
 					-I $params.max_intron_size \
 					-g $genome_rm \
-					--IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_gff \
+					--IMPORT_CUSTOM_ALIGNMENTS_GFF3 $minimap_chunk_gff \
 					--CPU ${task.cpus} \
 					$mysql_config_option
 			"""	
