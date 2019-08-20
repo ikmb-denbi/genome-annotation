@@ -26,14 +26,20 @@ open BAM,"samtools view $bam |";
 		next ; 
 	}
 
+	// query is unmapped
+	if ($entry{'flag'} & 0x0004) {
+		next;
+	}
+
 	my $num_mismatches = 0;
 
 	if ( join("\t",@sam) =~ /NM:i:(\d+)/) {
 		$num_mismatches = $1;
         }
 
+	// get the strand of the alignment	
+	my $strand = ($entry{"flag"} & 0x0010) ? "-" : "+" ;
 	
-	my $strand = ($entry{"flag"} & 16) ? "-" : "+" ;
 	$entry{"strand"} = $strand ;
 	
 	my $read_name = $entry{"qname"} ;
