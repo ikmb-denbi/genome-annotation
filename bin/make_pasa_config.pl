@@ -14,6 +14,8 @@ perl my_script.pl
   Input:
     [--infile filename]
 		The name of the file to read. 
+    [--trunk name]
+		Trunk name of the db
   Ouput:    
     [--outfile filename]
         The name of the output file. By default the output is the
@@ -22,12 +24,14 @@ perl my_script.pl
 
 my $outfile = undef;
 my $infile = undef;
+my $trunk = undef;
 my $mysql = undef;
 my $help;
 
 GetOptions(
     "help" => \$help,
     "infile=s" => \$infile,
+    "trunk=s" => \$trunk,
     "mysql=s" => \$mysql,
     "outfile=s" => \$outfile);
 
@@ -51,7 +55,7 @@ foreach my $line (<$IN>) {
 		if (defined $mysql) {
 			printf "DATABASE=$mysql"
 		} else {
-			printf "DATABASE=${wd}/pasa_DB.sqlite\n";
+			printf "DATABASE=${wd}/pasa_DB_${trunk}.sqlite\n";
 		}
 	} else {
 		printf $line . "\n" ;

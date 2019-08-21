@@ -26,7 +26,7 @@ open BAM,"samtools view $bam |";
 		next ; 
 	}
 
-	// query is unmapped
+	# query is unmapped
 	if ($entry{'flag'} & 0x0004) {
 		next;
 	}
@@ -37,7 +37,7 @@ open BAM,"samtools view $bam |";
 		$num_mismatches = $1;
         }
 
-	// get the strand of the alignment	
+	# get the strand of the alignment	
 	my $strand = ($entry{"flag"} & 0x0010) ? "-" : "+" ;
 	
 	$entry{"strand"} = $strand ;

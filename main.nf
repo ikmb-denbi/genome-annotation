@@ -250,7 +250,7 @@ if (params.reads) {
 
 if (!params.pasa) {
 	// Pasa models to EVM
-	PasaToEvm = Channel.from(false)
+	pasa_to_evm = Channel.from(false)
 }
 // Trigger de-novo repeat prediction of no repeats were provided
 if (params.rm_lib == false && params.rm_species == false) {
@@ -970,8 +970,9 @@ if (params.pasa) {
 			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) into PasaResults
 	
 			script:
-			pasa_assemblies_fasta = "pasa_DB.sqlite.assemblies.fasta"
-			pasa_assemblies_gff = "pasa_DB.sqlite.pasa_assemblies.gff3"
+			trunk = genome_rm.getBaseName()
+			pasa_assemblies_fasta = "pasa_DB_${trunk}.sqlite.assemblies.fasta"
+			pasa_assemblies_gff = "pasa_DB_${trunk}.sqlite.pasa_assemblies.gff3"
 			
 			// optional MySQL support
 			// create a config file with credentials, add config file to pasa execute
@@ -989,7 +990,7 @@ if (params.pasa) {
 			// the script statement
 
 			"""
-				make_pasa_config.pl --infile $pasa_config --outfile pasa_DB.config $mysql_db_name
+				make_pasa_config.pl --infile $pasa_config --trunk $trunk --outfile pasa_DB.config $mysql_db_name
 				$mysql_create_options
 				\$PASAHOME/Launch_PASA_pipeline.pl \
 					-c pasa_DB.config -C -R \
@@ -1011,12 +1012,11 @@ if (params.pasa) {
                         set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
 
 			output:
-			set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into (pasa_output,pasa_to_training)
-			file(pasa_transdecoder_gff) into PasaToEvm
+			set file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into pasa_model_chunk
 
 			script:
-			pasa_transdecoder_fasta = "pasa_DB.assemblies.fasta.transdecoder.pep"
-			pasa_transdecoder_gff = "pasa_DB.assemblies.fasta.transdecoder.genome.gff3"
+			pasa_transdecoder_fasta = pasa_assemblies_fasta + ".transdecoder.pep"
+			pasa_transdecoder_gff = pasa_assemblies_fasta + ".transdecoder.genome.gff3"
 
 			script:
 
@@ -1027,6 +1027,31 @@ if (params.pasa) {
                         	
 			"""
 		}
+		
+		process runPasaMergeModels {
+
+			publishDir "${OUTDIR}/annotation/pasa", mode: 'copy'
+
+			input:
+			set file(transdecoder_fasta),file(transdecoder_gff) from pasa_model_chunk.collect()
+
+			output:
+			set file(fasta_merged),file(gff_merged) into pasa_to_training
+			file(gff_merged) into pasa_to_evm
+
+			script:
+			fasta_merged = "pasa.transdecoder.models.fasta"
+			gff_merged = "pasa.transdecoder.models.gff"
+
+			"""
+				cat $transdecoder_fasta > $fasta_merged
+
+				echo '###gff-version 3' >> $gff_merged
+				cat $transdecoder_gff >> tmp
+				grep -v "#" tmp | sort -k1,1 -k4,4n -k5,5n -t\$'\t' >> $gff_merged
+			"""
+
+		}
 
 		if (params.training) {
 			// Extract full length models for training
@@ -1035,7 +1060,7 @@ if (params.pasa) {
                 		publishDir "${OUTDIR}/annotation/pasa/training", mode: 'copy'
 
 				input:
-				set file(pasa_assemblies_fasta),file(pasa_assemblies_gff),file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_to_training
+				set file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_to_training
 			
 				output:
 				file(training_gff) into models2train
@@ -1188,7 +1213,7 @@ process runAugustus {
 	env(AUGUSTUS_CONFIG_PATH) from acf_prediction.map { it.toString() }
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
-	set file(genome_chunk),file(genome_index) from genome_chunk_to_augustus
+	file(genome_chunk) from genome_chunk_to_augustus
 
 	output:
 	file(augustus_result) into augustus_out_gff
@@ -1263,7 +1288,7 @@ if (params.evm) {
 		file(est) from minimap_ests_to_evm.ifEmpty(false)
 		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
 		file(proteins) from exonerate_protein_evm.ifEmpty(false)
-		file(pasa) from PasaToEvm.ifEmpty(false)
+		file(pasa) from pasa_to_evm.ifEmpty(false)
 		set file(genome_rm),file(genome_index) from genome_to_evm
 
 		output:
