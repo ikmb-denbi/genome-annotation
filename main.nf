@@ -1012,8 +1012,8 @@ if (params.pasa) {
                         set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
 
 			output:
-			set file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) into pasa_model_chunk
-
+			file(pasa_transdecoder_fasta) into pasa_pep_chunk
+			file (pasa_transdecoder_gff) into pasa_gff_chunk
 			script:
 			pasa_transdecoder_fasta = pasa_assemblies_fasta + ".transdecoder.pep"
 			pasa_transdecoder_gff = pasa_assemblies_fasta + ".transdecoder.genome.gff3"
@@ -1033,7 +1033,8 @@ if (params.pasa) {
 			publishDir "${OUTDIR}/annotation/pasa", mode: 'copy'
 
 			input:
-			set file(transdecoder_fasta),file(transdecoder_gff) from pasa_model_chunk.collect()
+			file(transdecoder_fasta) from pasa_pep_chunk.collect()
+			file(transdecoder_gff) from pasa_gff_chunk.collect()
 
 			output:
 			set file(fasta_merged),file(gff_merged) into pasa_to_training
@@ -1044,7 +1045,7 @@ if (params.pasa) {
 			gff_merged = "pasa.transdecoder.models.gff"
 
 			"""
-				cat $transdecoder_fasta > $fasta_merged
+				cat $transdecoder_fasta >> $fasta_merged
 
 				echo '###gff-version 3' >> $gff_merged
 				cat $transdecoder_gff >> tmp
@@ -1084,7 +1085,7 @@ if (params.pasa) {
                 		val(config_folder) from augustus_config_folder
 
 	                	output:
-	        	        val(copied_folder) into (acf_training,acf_training_path)
+	        	        file(copied_folder) into (acf_training,acf_training_path)
 
         	        	script:
 		                copied_folder = "config_folder"
@@ -1115,8 +1116,8 @@ if (params.pasa) {
 				training_stats = "training_accuracy.out"
 
 				// If the model already exists, do not run new_species.pl
-				model_path = "${acf_training_path}/species/${params.model}"
-				model_file = file(model_path)		
+				//model_path = "${acf_training_path}/species/${params.model}"
+				model_file = file("${acf_folder}/species/${params.model}")
 			
 				options = ""
 				if (!model_file.exists()) {
@@ -1124,6 +1125,7 @@ if (params.pasa) {
 				}
 
 				"""
+					echo ${acf_folder.toString()} >> training.txt
 					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
 					split_training.pl --infile $complete_gb --percent 90
 					$options
