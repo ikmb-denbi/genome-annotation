@@ -1033,23 +1033,18 @@ if (params.pasa) {
 			publishDir "${OUTDIR}/annotation/pasa", mode: 'copy'
 
 			input:
-			file(transdecoder_fasta) from pasa_pep_chunk.collect()
 			file(transdecoder_gff) from pasa_gff_chunk.collect()
 
 			output:
-			set file(fasta_merged),file(gff_merged) into pasa_to_training
+			file(gff_merged) into pasa_to_training
 			file(gff_merged) into pasa_to_evm
 
 			script:
-			fasta_merged = "pasa.transdecoder.models.fasta"
 			gff_merged = "pasa.transdecoder.models.gff"
 
 			"""
-				cat $transdecoder_fasta >> $fasta_merged
-
 				echo '###gff-version 3' >> $gff_merged
-				cat $transdecoder_gff >> tmp
-				grep -v "#" tmp | sort -k1,1 -k4,4n -k5,5n -t\$'\t' >> $gff_merged
+				cat $transdecoder_gff | grep -v '^#' | grep -v '^\$' >> $gff_merged
 			"""
 
 		}
@@ -1061,18 +1056,16 @@ if (params.pasa) {
                 		publishDir "${OUTDIR}/annotation/pasa/training", mode: 'copy'
 
 				input:
-				set file(pasa_transdecoder_fasta),file(pasa_transdecoder_gff) from pasa_to_training
+				file(pasa_transdecoder_gff) from pasa_to_training
 			
 				output:
 				file(training_gff) into models2train
 
 				script:
-				training_pep = "transdec.complete.pep"
 				training_gff = "transdec.complete.gff3"
 	
 				"""
-					Transdec_complete.pl --fasta_in $pasa_transdecoder_fasta --gff_in $pasa_transdecoder_gff \
-	                        	--fasta_out $training_pep --gff_out $training_gff
+					pasa_gff_select_complete_models.pl --infile $pasa_transdecoder_gff >> $training_gff
 				"""
 			}
 
