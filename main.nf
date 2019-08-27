@@ -511,7 +511,7 @@ if (params.proteins) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			tblastn -db $db_name -query $protein_chunk -evalue $params.blast_evalue -outfmt "${params.blast_options}" > $protein_blast_report
+			tblastn -db $db_name -query $protein_chunk -num_threads ${task.cpus} -evalue $params.blast_evalue -outfmt "${params.blast_options}" > $protein_blast_report
 		"""
 	}
 
