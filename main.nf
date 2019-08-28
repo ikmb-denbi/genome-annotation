@@ -43,6 +43,7 @@ def helpMessage() {
     --rm_species	Species database for RepeatMasker [ default = 'mammal' ]
     --rm_lib		Additional repeatmasker library in FASTA format [ default = 'false' ]
     --train_perc	What percentage of complete proteins (from Pasa + Transdecoder) should be used for training. The rest will be used for testing model accuracy [ default = 90 ]]
+    --training_models	How many PASA gene models to select for training [ default = 1000 ]
     --model		Species model for Augustus [ default = 'human' ]. If "--training true" and you want to do de novo training, give a NEW name to your species
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]

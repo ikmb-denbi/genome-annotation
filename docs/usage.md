@@ -123,6 +123,9 @@ Perform training of an Augustus prediction profile. Use this option if you want 
 or train a new model from scratch (--model does not specify an existing Augustus profile). This requires the RNA-seq gene builder PASA to be run, so you
 have to provide either RNA-seq reads (and --trinity) or a reasonably sized set of ESTs/assembled transcripts (or both).
 
+#### `--training_models [ default = 1000 ]
+Defines how many of the gene models reconstructed by PASA and flagged as "complete" are to be used in the training of AUGUSTUS. The default of 1000 is usually fine. 
+
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
 Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline. 
     

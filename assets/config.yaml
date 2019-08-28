@@ -6,6 +6,7 @@ rm_species: false
 reads: ""
 trinity: false
 training: false
+training_models: 1000
 pasa: false
 augustus: false
 model: "human"

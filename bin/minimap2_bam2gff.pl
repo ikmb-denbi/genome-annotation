@@ -37,8 +37,16 @@ open BAM,"samtools view $bam |";
 		$num_mismatches = $1;
         }
 
-	# get the strand of the alignment	
-	my $strand = ($entry{"flag"} & 0x0010) ? "-" : "+" ;
+	# get the strand of the alignment
+	my $strand = undef;
+	if ($entry{"flag"} == 0) {
+		$strand = "+" ;
+	} else if ($entry{"flag"} == 16 {
+		$strand = "-" ;
+	# Flag suggests other factors, will ignore this mapping
+	} else {
+		next;
+	}	
 	
 	$entry{"strand"} = $strand ;
 	
@@ -113,7 +121,6 @@ open BAM,"samtools view $bam |";
         
         
 }
-
 
 sub get_aligned_coords {
 
