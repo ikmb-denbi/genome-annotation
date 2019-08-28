@@ -1066,7 +1066,7 @@ if (params.pasa) {
 				training_gff = "transdec.complete.gff3"
 	
 				"""
-					pasa_gff_select_complete_models.pl --infile $pasa_transdecoder_gff >> $training_gff
+					pasa_select_training_models.pl --nmodels $params.training_models --infile $pasa_transdecoder_gff >> $training_gff
 				"""
 			}
 

@@ -41,7 +41,7 @@ open BAM,"samtools view $bam |";
 	my $strand = undef;
 	if ($entry{"flag"} == 0) {
 		$strand = "+" ;
-	} else if ($entry{"flag"} == 16 {
+	} elsif ($entry{"flag"} == 16) {
 		$strand = "-" ;
 	# Flag suggests other factors, will ignore this mapping
 	} else {
@@ -64,6 +64,11 @@ open BAM,"samtools view $bam |";
 	next if ($align_len eq 0);
 
 	my $per_id = sprintf("%.1f", 100 - $num_mismatches/$align_len * 100); 
+
+	# discard all mappings below 80%
+	if ($per_id < 80.0) {
+		next;
+	}
 
 	my $align_counter = "$read_name.p" . ++$PATH_COUNTER{$read_name};
 
