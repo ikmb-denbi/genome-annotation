@@ -236,6 +236,7 @@ if (params.reads) {
 	if (!params.trinity) {
 	        trinity_minimap_hints = Channel.from(false)
 	 	minimap_trinity_to_evm = Channel.from(false)
+	        trinity_to_pasa = Channel.from(false)
 	}
 
 } else {
