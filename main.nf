@@ -676,8 +676,8 @@ if (params.reads) {
 
 		script:
 		prefix = reads[0].toString().split("_R1")[0]
-		json = file(reads[0]).getBaseName() + ".fastp.json"
-		html = file(reads[0]).getBaseName() + ".fastp.html"
+		json = prefix + ".fastp.json"
+		html = prefix + ".fastp.html"
 
 		if (params.singleEnd) {
 			left = file(reads[0]).getBaseName() + "_trimmed.fastq.gz"
@@ -1006,51 +1006,38 @@ if (params.pasa) {
 		}
 
 		// Extract gene models from PASA database
+		// All chunks are merged using a perl script into the base name pasa_db_merged
+		// this is not...ideal. 
 		process runPasa2Models {
 
 	                publishDir "${OUTDIR}/annotation/pasa/", mode: 'copy'
 
 			input:
-                        set file(pasa_assemblies_fasta),file(pasa_assemblies_gff) from PasaResults
+                        file(pasa_assemblies) from PasaResults.collect()
 
 			output:
-			file(pasa_transdecoder_fasta) into pasa_pep_chunk
-			file (pasa_transdecoder_gff) into pasa_gff_chunk
+			file(pasa_transdecoder_fasta) 
+			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_to_evm)
+
 			script:
-			pasa_transdecoder_fasta = pasa_assemblies_fasta + ".transdecoder.pep"
-			pasa_transdecoder_gff = pasa_assemblies_fasta + ".transdecoder.genome.gff3"
+			base_name = "pasa_db_merged"
+			merged_fasta = base_name + ".assemblies.fasta"
+			merged_gff = base_name + ".pasa_assemblies.gff"
+			pasa_transdecoder_fasta = merged_fasta + ".transdecoder.pep"
+			pasa_transdecoder_gff = merged_fasta + ".transdecoder.genome.gff3"
 
 			script:
 
 			"""
+				pasa_merge_chunks.pl --base $base_name
+
 				\$PASAHOME/scripts/pasa_asmbls_to_training_set.dbi \
-				--pasa_transcripts_fasta $pasa_assemblies_fasta \
-				--pasa_transcripts_gff3 $pasa_assemblies_gff
+				--pasa_transcripts_fasta $merged_fasta \
+				--pasa_transcripts_gff3 $merged_gff \
                         	
 			"""
 		}
 		
-		process runPasaMergeModels {
-
-			publishDir "${OUTDIR}/annotation/pasa", mode: 'copy'
-
-			input:
-			file(transdecoder_gff) from pasa_gff_chunk.collect()
-
-			output:
-			file(gff_merged) into pasa_to_training
-			file(gff_merged) into pasa_to_evm
-
-			script:
-			gff_merged = "pasa.transdecoder.models.gff"
-
-			"""
-				echo '###gff-version 3' >> $gff_merged
-				cat $transdecoder_gff | grep -v '^#' | grep -v '^\$' >> $gff_merged
-			"""
-
-		}
-
 		if (params.training) {
 			// Extract full length models for training
 			process runModelsToTraining {
@@ -1199,6 +1186,11 @@ process runHintsToBed {
  * STEP Augustus.1 - Genome Annotation
  */
 // Run against each repeatmasked chunk of the assembly
+
+augustus_input_chunk = acf_prediction
+	.map { it.toString() }
+	.combine(genome_chunk_to_augustus)
+
 process runAugustus {
 
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
@@ -1207,10 +1199,9 @@ process runAugustus {
         params.augustus != false
 
 	input:
-	env(AUGUSTUS_CONFIG_PATH) from acf_prediction.map { it.toString() }
+	set env(AUGUSTUS_CONFIG_PATH),file(genome_chunk) from augustus_input_chunk
 	file(regions) from HintRegions.collect()
 	file(hints) from mergedHints.collect()
-	file(genome_chunk) from genome_chunk_to_augustus
 
 	output:
 	file(augustus_result) into augustus_out_gff
@@ -1301,7 +1292,8 @@ if (params.evm) {
 
 		protein_options = ""
 		transcript_options = ""
-		if (proteins) {
+		if (proteins == "false" || proteins == false || proteins =~ /input.*/) {
+		} else {
 			protein_options = "--protein_alignments $proteins"
 		}
 		if ( est || trinity ) {
