@@ -457,12 +457,16 @@ process runMakeBlastDB {
 
 	output:
 	file("${dbName}*.n*") into blast_db_prots
-
+	
 	script:
 	dbName = genome_fa.getBaseName()
-	
+	mask = dbName + ".asnb"
 	"""
-		makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -out $dbName 
+		convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat \
+			-masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin \
+ 			-out $mask
+
+                makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -mask_data $mask -out $dbName
 	"""
 }
 
@@ -513,7 +517,7 @@ if (params.proteins) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			cat $protein_chunk | parallel -j ${task.cpus} --block 10k --recstart '>' --pipe tblastn -evalue ${params.blast_evalue} -outfmt \\"${params.blast_options}\\" -db $db_name -query - > $protein_blast_report
+			cat $protein_chunk | parallel -j ${task.cpus} --block 1k --recstart '>' --pipe tblastn -evalue ${params.blast_evalue} -outfmt \\"${params.blast_options}\\" -db $db_name -query - > $protein_blast_report
 		"""
 	}
 
