@@ -29,8 +29,7 @@ reads: "/path/to/*_R{1,2}_001.fastq.gz"
 trinity: false
 augustus: true
 model: "human"
-UTR: "off"
-isof: false
+training: false
 augCfg: false
 nblast: 200
 blast_evalue: 0.001
@@ -64,7 +63,9 @@ Please note the following requirements:
 3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
 
 #### `--ESTs` 
-Location of a single FASTA file with all EST sequences or assembled transcriptome(s) from the species of interest. If you have multiple files, concatenate them before into a single file. 
+Location of a single FASTA file with all EST sequences or assembled transcriptome(s) from the species of interest. If you have multiple files, concatenate 
+them into a single file first and make sure that the sequence names are not duplicated (this happens when you try to merge two Trinity assemblies, 
+for example). 
 
 #### `--proteins` 
 Location of a single FASTA file with protein sequences from related species. If you have multiple files, concatenate them before into a single file. 
@@ -117,11 +118,13 @@ short read assemblies tend to collapse repeats. In this case, the pipeline will 
 #### `--model` [ default = 'human' ]
 Species model for Augustus. A list of valid identifiers can be found [here](https://github.com/Gaius-Augustus/Augustus/blob/master/docs/RUNNING-AUGUSTUS.md).
 
-#### `--UTR` [ 'on' | 'off' (default) ] 
-Allow Augustus to predict UTRs (results are not optimal and takes much longer - not recommended). 
+#### `--training` [ true | false (default) ]
+Perform training of an Augustus prediction profile. Use this option if you want to fine-tune an existing model (--model specifies an existing Augustus profile)
+or train a new model from scratch (--model does not specify an existing Augustus profile). This requires the RNA-seq gene builder PASA to be run, so you
+have to provide either RNA-seq reads (and --trinity) or a reasonably sized set of ESTs/assembled transcripts (or both).
 
-#### `--isof` [ 'true' | 'false' (default) ] 
-Allow Augustus to predict multiple isoforms  (results are not optimal and takes much longer - not recommended). 
+#### `--training_models [ default = 1000 ]
+Defines how many of the gene models reconstructed by PASA and flagged as "complete" are to be used in the training of AUGUSTUS. The default of 1000 is usually fine. 
 
 #### `--augCfg` [ default = 'bin/augustus_default.cfg' ]
 Location of Augustus configuration file. By default, this pipeline uses config file that we found to work well for predicting gene models in mammalian genomes using the kinds of extrinsic hints constructed by this pipeline. 
