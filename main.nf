@@ -517,7 +517,7 @@ if (params.proteins) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			cat $protein_chunk | parallel -j ${task.cpus} --block 1k --recstart '>' --pipe tblastn -evalue ${params.blast_evalue} -outfmt \\"${params.blast_options}\\" -db $db_name -query - > $protein_blast_report
+			tblastn -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
 		"""
 	}
 
