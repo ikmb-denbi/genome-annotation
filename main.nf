@@ -21,7 +21,7 @@ def helpMessage() {
 
   The typical command for running the pipeline is as follows:
 
-  nextflow run main.nf --genome 'Genome.fasta' --prots 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c nextflow.config
+  nextflow run ikmb-denbi/genome-annotation --genome 'Genome.fasta' --proteins 'Proteins.fasta' --reads 'data/*_R{1,2}.fastq' -c nextflow.config
 
   Mandatory arguments:
   --genome		Genome reference
@@ -76,9 +76,16 @@ if (params.help){
 // -----------------------------
 
 OUTDIR = params.outdir
-pasa_config = "$workflow.projectDir/assets/pasa/alignAssembly.config"
 
-uniprot_path = "$workflow.projectDir/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
+pasa_config = "${baseDir}/assets/pasa/alignAssembly.config"
+evm_weights = "${baseDir}/assets/evm/weights.txt"
+uniprot_path = "${baseDir}/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
+
+if (params.pasa) {
+	PASA_CONFIG = file(pasa_config)
+	if ( !PASA_CONFIG.exists()) exit 1; "Could not find the pasa config file that should be bundled with this pipeline, exiting..."
+}
+
 Uniprot = file(uniprot_path)
 if ( !Uniprot.exists()) exit 1; "Could not find the Uniprot data that should be bundled with this pipeline, exiting...."
 
@@ -125,7 +132,7 @@ if (params.training && !params.model) {
 } else if (params.training && !params.trinity && !params.ESTs) {
         exit 1; "You requested for a new prediction profile to be trained, but we need transcriptome data for that (--trinity and/or --ESTs)"
 } else if (params.training && !params.pasa) {
-	println "You requested a model to be trained; this requires Pasa to be enabled. We will do that for your now."
+	println "You requested a model to be trained; this requires Pasa to be enabled. We will do that for your now..."
 	params.pasa = true
 }
 
@@ -146,8 +153,6 @@ if (!params.rm_lib && !params.rm_species) {
 
 // give this run a name
 run_name = ( !params.run_name) ? "${workflow.sessionId}" : "${params.run_name}"
-
-evm_weights = "${baseDir}/assets/evm/weights.txt"
 
 def summary = [:]
 
@@ -192,9 +197,9 @@ if (params.proteins) {
 	.fromPath(Proteins)
 	.set { index_prots }
 } else {
-	prot_exonerate_hints = Channel.from(false)
+	prot_exonerate_hints = Channel.from()
 	// Protein Exonerate files to EVM
-	exonerate_protein_evm = Channel.from(false)
+	exonerate_protein_evm = Channel.from()
 }
 
 // if ESTs are provided
@@ -211,11 +216,11 @@ if (params.ESTs) {
 		.into { ests_index; est_to_pasa }
 } else {
 	// EST hints to Augustus
-	est_minimap_hints = Channel.from(false)
+	est_minimap_hints = Channel.from()
 	// EST file to Pasa assembly
-	est_to_pasa = Channel.from(false)
+	est_to_pasa = Channel.from()
 	// EST exonerate files to EVM
-	minimap_ests_to_evm = Channel.from(false)
+	minimap_ests_to_evm = Channel.from()
 }
 
 // if RNAseq reads are provided
@@ -234,25 +239,25 @@ if (params.reads) {
 
 	// can use reads without wanting to run a de-novo transcriptome assembly
 	if (!params.trinity) {
-	        trinity_minimap_hints = Channel.from(false)
-	 	minimap_trinity_to_evm = Channel.from(false)
-	        trinity_to_pasa = Channel.from(false)
+	        trinity_minimap_hints = Channel.from()
+	 	minimap_trinity_to_evm = Channel.from()
+	        trinity_to_pasa = Channel.from()
 	}
 
 } else {
 	// Trinity hints to Augustus
-	trinity_minimap_hints = Channel.from(false)
+	trinity_minimap_hints = Channel.from()
 	// RNAseq hints to Augustus
-	rnaseq_hints = Channel.from(false)
+	rnaseq_hints = Channel.from()
 	// Trinity assembly to Pasa assembly
-	trinity_to_pasa = Channel.from(false)
+	trinity_to_pasa = Channel.from()
 	// Trinity exonerate files to EVM
-	minimap_trinity_to_evm = Channel.from(false)
+	minimap_trinity_to_evm = Channel.from()
 }
 
 if (!params.pasa) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.from(false)
+	pasa_to_evm = Channel.from()
 }
 // Trigger de-novo repeat prediction of no repeats were provided
 if (params.rm_lib == false && params.rm_species == false) {
@@ -260,7 +265,7 @@ if (params.rm_lib == false && params.rm_species == false) {
 		.fromPath(Genome)
 		.set { inputRepeatModeler }
 } else {
-        repeats_fa = Channel.from(false)
+        repeats_fa = Channel.from()
 }
 
 // Provide the path to the augustus config folder
@@ -517,7 +522,7 @@ if (params.proteins) {
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			tblastn -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
+			tblastn -num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
 		"""
 	}
 
@@ -621,7 +626,7 @@ if (params.ESTs) {
 	// Align all ESTs against the masked genome
 	process runMinimapEst {
 		
-		publishDir "${OUTDIR}/evidence/EST/minimap/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
 
 		input:
 		file(est_chunks) from fasta_ests
@@ -629,13 +634,14 @@ if (params.ESTs) {
 
 		output:
 		file(minimap_gff) into (minimap_est_gff, minimap_ests_to_evm)
+		file(minimap_bam)
 
 		script:
-		minimap_gff = "ESTs.minimap.gff"	
+		minimap_gff = "ESTs.minimap.gff"
+		minimap_bam = "ESTS.minimap.bam"
 		"""
-			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o minimap.bam
-			minimap2_bam2gff.pl minimap.bam > $minimap_gff
-			rm minimap.bam
+			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o $minimap_bam
+			minimap2_bam2gff.pl $minimap_bam > $minimap_gff
 		"""	
 
 	}
@@ -916,7 +922,7 @@ if (params.pasa) {
 			"""		
 		}
 
-		// run minimap fopr fast transcript mapping
+		// run minimap for fast transcript mapping
 		process runMinimap2Pasa {
 			
 			publishDir "${OUTDIR}/evidence/transcripts/minimap", mode: 'copy'
