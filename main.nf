@@ -189,8 +189,7 @@ if (params.proteins != false ) {
 	// goes to blasting of proteins
         Channel
         .fromPath(Proteins)
-        .splitFasta(by: params.nblast, file: true)
-        .set { fasta_prots }
+        .set { protein_to_blast_db }
 
 	// create a cdbtools index for the protein file
 	Channel
@@ -450,30 +449,6 @@ process runMergeRMGenome {
 
 rm_to_partition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; genome_chunk_to_augustus}
 
-// Turn genome into a masked blast database
-// Generates a dust mask from softmasked genome sequence
-process runMakeBlastDB {
-	
-	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
-
-	input:
-	file(genome_fa) from rm_to_blast_db
-
-	output:
-	file("${dbName}*.n*") into blast_db_prots
-	
-	script:
-	dbName = genome_fa.getBaseName()
-	mask = dbName + ".asnb"
-	"""
-		convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat \
-			-masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin \
- 			-out $mask
-
-                makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -mask_data $mask -out $dbName
-	"""
-}
-
 // ---------------------
 // PROTEIN DATA PROCESSING
 // ---------------------
@@ -481,6 +456,46 @@ if (params.proteins) {
 	// ----------------------------
 	// Protein BLAST against genome
 	// ----------------------------
+
+	// Split the genome into smaller chunks for Blastx
+	process runSplitAssembly {
+
+		input:
+		file(genome_fa) from rm_to_blast_db
+
+		output:
+		file(genome_chunks) into genome_chunks_blast
+		file(genome_agp) into genome_chunks_agp
+
+		script:
+
+		genome_chunks = genome_fa + ".chunk"
+		genome_agp = genome_fa + ".agp"
+
+		"""
+			chromosome_chunk.pl -fasta_file $genome_fa 
+		"""
+	}
+
+	genome_chunks_blast_split = genome_chunks_blast.splitFasta(by: params.nblast, file: true)
+
+	// Make a blast database
+	process runMakeBlastDB {
+
+        	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
+
+	        input:
+        	file(protein_fa) from protein_to_blast_db
+
+	        output:
+        	file("${dbName}*.p*") into blast_db_prots
+
+	        script:
+        	dbName = protein_fa.getBaseName()
+	        """
+	                makeblastdb -in $protein_fa -parse_seqids -dbtype prot -out $dbName
+        	"""
+	}
 
 	// create a cdbtools compatible  index
 	// we need this to do very focused exonerate searches later
@@ -502,7 +517,7 @@ if (params.proteins) {
 		"""
 	}
 
-	// Blast each protein chunk against the soft-masked genome
+	// Blast each genome chunk against the protein database
 	// This is used to define targets for exhaustive exonerate alignments
 	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
 	// Will instead run multi-threaded if run inside a container with standalone blast. 
@@ -511,23 +526,23 @@ if (params.proteins) {
 		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
-		file(protein_chunk) from fasta_prots
-		file(blastdb_files) from blast_db_prots
+		file(genome_chunk) from genome_chunks_blast_split
+		file(blastdb_files) from blast_db_prots.collect()
 
 		output:
 		file(protein_blast_report) into ProteinBlastReport
 
 		script:
 		db_name = blastdb_files[0].baseName
-		chunk_name = protein_chunk.getName().tokenize('.')[-2]
-		protein_blast_report = "${protein_chunk.baseName}.blast"
+		chunk_name = genome_chunk.getName().tokenize('.')[-2]
+		protein_blast_report = "${genome_chunk.baseName}.blast"
 		if (!workflow.containerEngine) {
 			"""
-				tblastn -num_threads 1 -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
+				blastx -num_threads 1 -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $genome_chunk > $protein_blast_report
 			"""
 		} else {
 			"""
-				/opt/blast/2.9.0/bin/tblastn --num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
+				/opt/blast/2.9.0/bin/blastx -num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $genome_chunk > $protein_blast_report
 			"""
 		}
 	}
@@ -539,6 +554,7 @@ if (params.proteins) {
 
 		input:
 		file(blast_reports) from ProteinBlastReport.collect()
+		file(genome_agp) from genome_chunks_agp
 
 		output:
 		file(query2target_result_uniq_targets) into query2target_uniq_result_prots
@@ -549,7 +565,8 @@ if (params.proteins) {
 	
 		"""
 			cat $blast_reports > merged.txt
-			blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+			blast_chunk_to_toplevel.pl --blast merged.txt --agp $genome_agp > merged.translated.txt
+			blast2exonerate_targets.pl --infile merged.translated.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 		"""
 	}
 
