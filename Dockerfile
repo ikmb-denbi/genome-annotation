@@ -12,6 +12,5 @@ ENV EVM_HOME /opt/conda/envs/genome-annotation-1.0/opt/evidencemodeler-1.1.1
 RUN mkdir -p /ifs
 RUN cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/conf.txt
 
-RUN cd /opt && mkdir -p blast && cd blast 
-RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.9.0/ncbi-blast-2.9.0+-x64-linux.tar.gz
+RUN mkdir -p /opt/blast && cd /opt/blast && wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.9.0/ncbi-blast-2.9.0+-x64-linux.tar.gz
 RUN tar -xvf ncbi-blast-2.9.0+-x64-linux.tar.gz && mv ncbi-blast-2.9.0+ 2.9.0 && rm ncbi-blast-2.9.0+-x64-linux.tar.gz
