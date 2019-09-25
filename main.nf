@@ -184,7 +184,7 @@ Channel
 	.set { fasta_chunk_for_rm_lib }
 
 // if proteins are provided
-if (params.proteins) {
+if (params.proteins != false ) {
 
 	// goes to blasting of proteins
         Channel
@@ -197,14 +197,13 @@ if (params.proteins) {
 	.fromPath(Proteins)
 	.set { index_prots }
 } else {
-	prot_exonerate_hints = Channel.from()
+	prot_exonerate_hints = Channel.from('')
 	// Protein Exonerate files to EVM
-	exonerate_protein_evm = Channel.from()
+	exonerate_protein_evm = Channel.from('')
 }
 
 // if ESTs are provided
-if (params.ESTs) {
-
+if (params.ESTs != false) {
 	// goes to blasting the ESTs
         Channel
                 .fromPath(ESTs)
@@ -216,15 +215,15 @@ if (params.ESTs) {
 		.into { ests_index; est_to_pasa }
 } else {
 	// EST hints to Augustus
-	est_minimap_hints = Channel.from()
+	est_minimap_hints = Channel.from('')
 	// EST file to Pasa assembly
-	est_to_pasa = Channel.from()
+	est_to_pasa = Channel.from('')
 	// EST exonerate files to EVM
-	minimap_ests_to_evm = Channel.from()
+	minimap_ests_to_evm = Channel.from('')
 }
 
 // if RNAseq reads are provided
-if (params.reads) {
+if (params.reads != false) {
 
 	// Make a HiSat index
 	Channel
@@ -239,33 +238,33 @@ if (params.reads) {
 
 	// can use reads without wanting to run a de-novo transcriptome assembly
 	if (!params.trinity) {
-	        trinity_minimap_hints = Channel.from()
-	 	minimap_trinity_to_evm = Channel.from()
-	        trinity_to_pasa = Channel.from()
+	        trinity_minimap_hints = Channel.from('')
+	 	minimap_trinity_to_evm = Channel.from('')
+	        trinity_to_pasa = Channel.from('')
 	}
 
 } else {
 	// Trinity hints to Augustus
-	trinity_minimap_hints = Channel.from()
+	trinity_minimap_hints = Channel.from('')
 	// RNAseq hints to Augustus
-	rnaseq_hints = Channel.from()
+	rnaseq_hints = Channel.from('')
 	// Trinity assembly to Pasa assembly
-	trinity_to_pasa = Channel.from()
+	trinity_to_pasa = Channel.from('')
 	// Trinity exonerate files to EVM
-	minimap_trinity_to_evm = Channel.from()
+	minimap_trinity_to_evm = Channel.from('')
 }
 
 if (!params.pasa) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.from()
+	pasa_to_evm = Channel.from('')
 }
 // Trigger de-novo repeat prediction of no repeats were provided
-if (params.rm_lib == false && params.rm_species == false) {
+if (!params.rm_lib  && !params.rm_species ) {
 	Channel
 		.fromPath(Genome)
 		.set { inputRepeatModeler }
 } else {
-        repeats_fa = Channel.from()
+        repeats_fa = Channel.from('')
 }
 
 // Provide the path to the augustus config folder
@@ -391,7 +390,7 @@ process runRepeatMasker {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(repeats) from repeats_fa.collect()
+	file(repeats) from repeats_fa.ifEmpty('')
 	set env(REPEATMASKER_LIB_DIR),file(genome_fa) from rm_lib_path
 
 	output:
@@ -506,6 +505,7 @@ if (params.proteins) {
 	// Blast each protein chunk against the soft-masked genome
 	// This is used to define targets for exhaustive exonerate alignments
 	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
+	// Will instead run multi-threaded if run inside a container with standalone blast. 
 	process runBlastProteins {
 
 		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
@@ -521,9 +521,15 @@ if (params.proteins) {
 		db_name = blastdb_files[0].baseName
 		chunk_name = protein_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${protein_chunk.baseName}.blast"
-		"""
-			tblastn -num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
-		"""
+		if (!workflow.containerEngine) {
+			"""
+				tblastn -num_threads 1 -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
+			"""
+		} else {
+			"""
+				/opt/blast/2.9.0/bin/tblastn --num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
+			"""
+		}
 	}
 
 	// Parse Protein Blast output for exonerate processing
@@ -1144,28 +1150,21 @@ process runMergeAllHints {
 	publishDir "${OUTDIR}/evidence/hints", mode: 'copy'
 
 	input:
-	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty(false)
-	file(rnaseq_hint) from rnaseq_hints.ifEmpty(false)
-        file(est_minimap_hint) from est_minimap_hints.ifEmpty(false)
-        file(trinity_minimap_hint) from trinity_minimap_hints.ifEmpty(false)
+	file(protein_exonerate_hint) from prot_exonerate_hints.ifEmpty('')
+	file(rnaseq_hint) from rnaseq_hints.ifEmpty('')
+        file(est_minimap_hint) from est_minimap_hints.ifEmpty('')
+        file(trinity_minimap_hint) from trinity_minimap_hints.ifEmpty('')
 
 	output:
 	file(merged_hints) into (mergedHints,mergedHintsSort)
 
 	script:
 	def file_list = ""
-	if (protein_exonerate_hint != false || protein_exonerate_hint != "false" ) {
-		file_list += " ${protein_exonerate_hint}"
-	}
-	if (rnaseq_hint  != false || rnaseq_hint != "false" ) {
-		file_list += " ${rnaseq_hint}"
-	}
-	if (est_minimap_hint != false || est_minimap_hint != "false" ) {
-		file_list += " ${est_minimap_hint}"
-	}
-	if (trinity_minimap_hint != false || trinity_minimap_hint != "false" ) {
-		file_list += " ${trinity_minimap_hint}"
-	}
+	file_list += !protein_exonerate_hint.empty() ? " ${protein_exonerate_hint}" : ""
+	file_list += !rnaseq_hint.empty() ? " ${rnaseq_hint}" : ""
+	file_list += !est_minimap_hint.empty() ? " ${est_minimap_hint}" : ""
+	file_list += !trinity_minimap_hint.empty() ? " ${trinity_minimap_hint}" : ""
+
 	merged_hints = "merged.hints.gff"
 	
 	"""
