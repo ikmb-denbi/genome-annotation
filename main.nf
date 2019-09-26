@@ -254,7 +254,7 @@ if (params.reads != false) {
 	minimap_trinity_to_evm = Channel.from('')
 }
 
-if (!params.pasa) {
+if (params.pasa == false) {
 	// Pasa models to EVM
 	pasa_to_evm = Channel.from('')
 }
@@ -311,7 +311,7 @@ log.info "Chunk size for Blast:			${params.nblast}"
 log.info "Chunk size for Exonerate:		${params.nexonerate}"
 log.info "Chunk size for RepeatMasker:		${params.nrepeats}"
 log.info "-----------------------------------------"
-log.info "Nextflow Version:             $workflow.nextflow.version"
+log.info "Nextflow Version:		$workflow.nextflow.version"
 log.info "Command Line:			$workflow.commandLine"
 log.info "Run name: 			${params.run_name}"
 log.info "========================================="
@@ -490,12 +490,12 @@ if (params.proteins) {
         	file(protein_fa) from protein_to_blast_db
 
 	        output:
-        	file("${dbName}*.p*") into blast_db_prots
+        	file("${dbName}.dmnd") into blast_db_prots
 
 	        script:
         	dbName = protein_fa.getBaseName()
 	        """
-	                makeblastdb -in $protein_fa -parse_seqids -dbtype prot -out $dbName
+			diamond makedb -in $protein_fa --db $dbName
         	"""
 	}
 
@@ -525,7 +525,7 @@ if (params.proteins) {
 	// Will instead run multi-threaded if run inside a container with standalone blast. 
 	process runBlastProteins {
 
-		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
 
 		input:
 		file(genome_chunk) from genome_chunks_blast_split
@@ -538,15 +538,9 @@ if (params.proteins) {
 		db_name = blastdb_files[0].baseName
 		chunk_name = genome_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${genome_chunk.baseName}.blast"
-		if (!workflow.containerEngine) {
-			"""
-				blastx -num_threads 1 -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $genome_chunk > $protein_blast_report
-			"""
-		} else {
-			"""
-				/opt/blast/2.9.0/bin/blastx -num_threads ${task.cpus} -evalue ${params.blast_evalue} -outfmt \"${params.blast_options}\" -db $db_name -query $genome_chunk > $protein_blast_report
-			"""
-		}
+		"""
+			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt \"${params.blast_options}\" --db $db_name --uery $genome_chunk --out $protein_blast_report
+		"""
 	}
 
 	// Parse Protein Blast output for exonerate processing
@@ -659,7 +653,6 @@ if (params.ESTs) {
 
 		output:
 		file(minimap_gff) into (minimap_est_gff, minimap_ests_to_evm)
-		file(minimap_bam)
 
 		script:
 		minimap_gff = "ESTs.minimap.gff"
@@ -742,14 +735,11 @@ if (params.reads) {
 		script:
 		dbName = genome.baseName
 		dbName_1 = dbName + ".1.ht2"
-		target = file(dbName_1)
 		
 		prefix = dbName
-		if (!target.exists()) {
-			"""
-			hisat2-build $genome $dbName -p ${task.cpus}
-			"""
-		}	
+		"""
+		hisat2-build $genome $dbName -p ${task.cpus}
+		"""
 	}
 
 	/*
@@ -913,7 +903,7 @@ if (params.reads) {
 if (params.pasa) {
 
 	// use trinity transcripts, ESTs or both
-	if (params.trinity || params.ESTs ) {
+	if (params.trinity != false || params.ESTs != false ) {
 
 		// Clean transcripts
 		// This is a place holder until we figure out how to make Seqclean work within Nextflow
@@ -922,8 +912,8 @@ if (params.pasa) {
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
 
 			input:
-			file(trinity) from trinity_to_pasa
-			file(ests) from est_to_pasa
+			file(trinity) from trinity_to_pasa.ifEmpty('')
+			file(ests) from est_to_pasa.ifEmpty('')
 
 			output:
 			set file(transcripts_clean),file(transcripts) into (seqclean_to_pasa,seqclean_to_minimap)
@@ -957,7 +947,6 @@ if (params.pasa) {
 			set file(genome),file(genome_index) from genome_to_minimap_pasa
 			output:
 			set file(transcripts_clean),file(minimap_gff) into minimap_to_pasa
-			file(minimap_bam) 
 
 			script:
 			minimap_gff = "minimap.transcripts.gff"	
