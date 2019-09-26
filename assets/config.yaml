@@ -12,13 +12,13 @@ augustus: false
 model: "human"
 augCfg: false
 uniprot: false
+chunk_size: 50000
 nblast: 200
 blast_evalue: 0.001
 nexonerate: 100
 nrepeats: 20
 singleEnd: false
 rnaseq_stranded: false
-outdir: "output"
 run_name: "evidences"
 max_intron_size: 100000
 email: false

@@ -49,9 +49,10 @@ def helpMessage() {
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
  	
     How to split programs:
-    --nblast		Chunks (# of sequences) to divide Blast jobs [ default = 500 ]
+    --nblast		Chunks (# of sequences) to divide genome for blastx jobs [ default = 100 ]
     --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
     --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
+    --chunk_size 	Size of sub-regions of the genome on which to run Blastx jobs [ default = 50000 ]
 
     Other options:
     --singleEnd		Specifies that the input is single end reads [ true | false (default) ]
@@ -305,6 +306,7 @@ if (params.training) {
 }
 log.info "-----------------------------------------"
 log.info "Parallelization settings"
+log.info "Chunk size for assembly:		${params.chunk_size}"
 log.info "Chunk size for Blast:			${params.nblast}"
 log.info "Chunk size for Exonerate:		${params.nexonerate}"
 log.info "Chunk size for RepeatMasker:		${params.nrepeats}"
@@ -473,7 +475,7 @@ if (params.proteins) {
 		genome_agp = genome_fa + ".agp"
 
 		"""
-			chromosome_chunk.pl -fasta_file $genome_fa 
+			chromosome_chunk.pl -fasta_file $genome_fa -size $params.chunk_size
 		"""
 	}
 
