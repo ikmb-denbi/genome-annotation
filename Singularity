@@ -22,3 +22,6 @@ apt-get -y install procps
 
 # Create mount point for RZCluster
 mkdir -p /ifs
+
+# Create the default config file
+cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/conf.txt

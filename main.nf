@@ -381,7 +381,7 @@ process createRMLib {
 // To get the repeat library path combined with each genome chunk, we do this...
 // toString() is needed as RM touches the location each time it runs and thus modifies it. 
 rm_lib_path = RMLibPath
-	.map { it.toString() }
+        .map { it.toString() }
 	.combine(fasta_chunk_for_rm_lib)
 
 // generate a soft-masked sequence for each assembly chunk
@@ -391,7 +391,7 @@ process runRepeatMasker {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(repeats) from repeats_fa.ifEmpty('')
+	file(repeats) from repeats_fa.ifEmpty('').collect()
 	set env(REPEATMASKER_LIB_DIR),file(genome_fa) from rm_lib_path
 
 	output:
@@ -495,7 +495,7 @@ if (params.proteins) {
 	        script:
         	dbName = protein_fa.getBaseName()
 	        """
-			diamond makedb -in $protein_fa --db $dbName
+			diamond makedb --in $protein_fa --db $dbName
         	"""
 	}
 
@@ -539,7 +539,7 @@ if (params.proteins) {
 		chunk_name = genome_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${genome_chunk.baseName}.blast"
 		"""
-			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt \"${params.blast_options}\" --db $db_name --uery $genome_chunk --out $protein_blast_report
+			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt ${params.blast_options} --db $db_name --query $genome_chunk --out $protein_blast_report
 		"""
 	}
 
@@ -563,6 +563,7 @@ if (params.proteins) {
 			cat $blast_reports > merged.txt
 			blast_chunk_to_toplevel.pl --blast merged.txt --agp $genome_agp > merged.translated.txt
 			blast2exonerate_targets.pl --infile merged.translated.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
+			rm merged.*.txt
 		"""
 	}
 
@@ -869,7 +870,6 @@ if (params.reads) {
 			"""
 				minimap2 -t ${task.cpus} -ax splice -c $genome_rm $trinity_fasta | samtools sort -O BAM -o minimap.bam
 				minimap2_bam2gff.pl minimap.bam > $trinity_gff
-				rm minimap.bam
 			"""
 		}
 
@@ -1286,7 +1286,7 @@ if (params.evm) {
 
 	process runEvmPartition {
 
-		publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
+		//publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
 		input:
 		file(augustus_gff) from augustus_to_evm.ifEmpty(false)
@@ -1341,7 +1341,7 @@ if (params.evm) {
 	// The outputs doesn't do nothing here, EVM combines the chunks based on the original partition file
 	process runEvm {
 
-                publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
+                //publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
 
 		input:
 		file(evm_chunk) from evm_command_chunks
