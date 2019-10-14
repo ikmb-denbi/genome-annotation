@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-
+# Return Minimap alignments overlapping regions defined in a fasta index
 use strict;
 use Getopt::Long;
 

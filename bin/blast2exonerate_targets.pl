@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# A script to convert a BLAST report to a target list for Exonerate
 
 use strict;
 use Getopt::Long;

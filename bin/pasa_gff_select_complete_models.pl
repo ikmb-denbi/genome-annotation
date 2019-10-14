@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+Return transcript models flagged as complete by PASA
 
 use strict;
 use Getopt::Long;

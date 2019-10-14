@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# Run exonerate based on regions detected with blast
 
 use strict;
 use Getopt::Long;

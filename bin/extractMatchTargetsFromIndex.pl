@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Get proteins in FASTA format from a cdb index using a list
 
 use strict;
 use Getopt::Long;

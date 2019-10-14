@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Merge PASA cDNA alignments across chunks and make new valid IDs
 
 use strict;
 use Getopt::Long;

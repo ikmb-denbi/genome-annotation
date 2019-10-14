@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# A script to convert blast hits on a sub-partitioned assembly back to the top level coordinates
 
 use strict;
 use Getopt::Long;

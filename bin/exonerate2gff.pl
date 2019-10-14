@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-
+# Converts Exonerate output to GFF3 hints
 use strict;
 use Getopt::Long;
 
