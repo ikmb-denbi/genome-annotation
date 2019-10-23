@@ -17,6 +17,15 @@ ERROR ~ Cannot find any reads matching: *{1,2}.fastq.gz
 
 Note that if your sample name is "messy" then you have to be very particular with your glob specification. A file name like `L1-1-D-2h_S1_L002_R1_001.fastq.gz` can be difficult enough for a human to read. Specifying `*{1,2}*.gz` wont work give you what you want Whilst `*{R1,R2}*.gz` will.
 
+## RNA-seq consists of mixed library types - what to do?!
+
+We found that, for novel genome projects, the generation of dedicated mRNA-seq data is generally recommended and a fairly typical step in the planning. However, 
+you may be in a situation where you have to rely on "mixed" RNAseq data - say, stranded and unstranded reads, or paired versus single-end reads. Due to how ESGA is designed,
+this is not easily supported. We want to make sure that the execution of the workflow is "mostly simple", but in order to accomodate a range of RNA-seq types, we'd have to force you to
+use some sort of sample sheet to let the pipeline know about the various characteristics of your input data. For the time being, we have decided to not do that - but would consider adding something
+like this later if there is demand for it. For now, this simply means that you won't be able to feed your "mixed" RNA-seq data into ESGA - but you could devise an assembly strategy with Trinity outside 
+of our pipeline and feed the resulting FASTA file as EST (--ESTs) evidence. However, please note that Trinity too is not exactly designed to assembly mixed data like that. 
+
 ## Pipeline is very slow
 
 The performance of the pipeline can be tuned in a number of ways. We have observed long run times for highly fragmented genomes or if the number of sequences
@@ -27,7 +36,7 @@ Your genome assembly should, at most, contain thousands of scaffolds - ideally m
 or long reads make this a feasible goal for many organisms. It is also advisable to exclude very short scaffolds (<5kb) from your assembly prior to annotation;
 usually these will not contain any useful information but can increase the run time dramatically. 
 
-### Size if evidence data
+### Size of evidence data
 Another critical factor is of course the amount of sequence data that is used for annotation. Especially
 the processing of RNA-seq reads can be very demanding on the compute infrastructure. So as a general recommendation, we suggest to work with "tens of
 thousands of proteins", "hundreds of thousands of EST/Transcripts" and "tens of millions of RNA-seq reads".
@@ -39,7 +48,7 @@ This is a "known" issue with very deep directory trees under linux. The typical 
 As an alternative, try this:
 
 ```bash
-mkdir -p empty_folder
+mkdir -p empty_dir
 rsync -a --delete empty_dir/ work/
 rm -Rf empty_dir work
 ```

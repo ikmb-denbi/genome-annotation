@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# GFF from Minimap to hints format for augustus
 
 use strict;
 use Getopt::Long;

@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Merge outputs from EVM 
 
 use strict;
 use Getopt::Long;

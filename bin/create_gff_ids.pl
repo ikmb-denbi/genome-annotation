@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Script to generate new, standardized IDs for features in a GFF file
 
 use strict;
 use Getopt::Long;

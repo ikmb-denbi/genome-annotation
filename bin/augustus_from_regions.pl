@@ -9,8 +9,14 @@ perl my_script.pl
     [--help]
 
   Input:
-    [--infile filename]
-		The name of the file to read. 
+    [--genome_fai filename]
+		The name of the assembly fasta index
+    [--bed filename]
+		A bed file of target regions
+    [--hints filename]
+		A hints file in GFF format
+    [--aug_conf filename]
+		An augustus custom config file with hint weights
   Ouput:    
     [--outfile filename]
         The name of the output file. By default the output is the
