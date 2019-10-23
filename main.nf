@@ -329,7 +329,7 @@ def check_file_size(fasta) {
 
 if (!params.rm_lib && !params.rm_species) {
 
-	process runRepeatModeler {
+	process repeatModel {
 
 	        publishDir "${OUTDIR}/repeatmodeler/", mode: 'copy'
 
@@ -362,7 +362,9 @@ if (!params.rm_lib && !params.rm_species) {
 //----------------------------
 
 // RepeatMasker library needs ot be writable. Need to do this so we can work with locked containers
-process createRMLib {
+process repeatLib {
+
+	label 'short_running'
 
 	publishDir "${OUTDIR}/repeatmasker/", mode: 'copy'
 
@@ -386,7 +388,7 @@ rm_lib_path = RMLibPath
 
 // generate a soft-masked sequence for each assembly chunk
 // if nothing was masked, return the original genome sequence instead and an empty gff file. 
-process runRepeatMasker {
+process repeatMask {
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
@@ -425,7 +427,9 @@ process runRepeatMasker {
 }
 
 // Merge the repeat-masked assembly chunks
-process runMergeRMGenome {
+process repeatMerge {
+
+	label 'short_running'
 
         publishDir "${OUTDIR}/repeatmasker", mode: 'copy'
 
@@ -460,7 +464,9 @@ if (params.proteins) {
 	// ----------------------------
 
 	// Split the genome into smaller chunks for Blastx
-	process runSplitAssembly {
+	process prepSplitAssembly {
+
+		label 'short_running'
 
 		input:
 		file(genome_fa) from rm_to_blast_db
@@ -482,7 +488,9 @@ if (params.proteins) {
 	genome_chunks_blast_split = genome_chunks_blast.splitFasta(by: params.nblast, file: true)
 
 	// Make a blast database
-	process runMakeBlastDB {
+	process protMakeDB {
+
+		label 'medium_running'
 
         	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
 
@@ -501,7 +509,9 @@ if (params.proteins) {
 
 	// create a cdbtools compatible  index
 	// we need this to do very focused exonerate searches later
-	process runIndexProteinDB {
+	process protIndex {
+
+		label 'short_running'
 
 		publishDir "${OUTDIR}/databases/cdbtools/proteins", mode: 'copy'
 
@@ -523,7 +533,7 @@ if (params.proteins) {
 	// This is used to define targets for exhaustive exonerate alignments
 	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
 	// Will instead run multi-threaded if run inside a container with standalone blast. 
-	process runBlastProteins {
+	process protDiamondx {
 
 		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
 
@@ -544,7 +554,9 @@ if (params.proteins) {
 	}
 
 	// Parse Protein Blast output for exonerate processing
-	process Blast2QueryTargetProts {
+	process protDiamondToTargets {
+
+		label 'short_running'
 
 	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
@@ -574,7 +586,7 @@ if (params.proteins) {
 		.set{ query2target_chunk_prots }
 
 	// Run Exonerate on the blast regions
-	process runExonerateProts {
+	process protExonerate {
 
 		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
@@ -610,7 +622,9 @@ if (params.proteins) {
 	exonerate_protein_evm = exonerate_protein_chunk_evm.collectFile()
 
 	// merge the exonerate hits and create the hints
-	process Exonerate2HintsProtein {
+	process protExonerateToHints {
+
+		label 'medium_running'
 
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/", mode: 'copy'
 
@@ -644,8 +658,8 @@ if (params.ESTs) {
 	*/
 
 	// Align all ESTs against the masked genome
-	process runMinimapEst {
-		
+	process estMinimap {
+
 		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
 
 		input:
@@ -666,7 +680,9 @@ if (params.ESTs) {
 	}
 
 	// Combine exonerate hits and generate hints
-	process Minimap2HintsEST {
+	process estMinimapToHints {
+
+		label 'short_running'
 
 		publishDir "${OUTDIR}/evidence/EST/minimap/", mode: 'copy'
 	
@@ -692,7 +708,7 @@ if (params.ESTs) {
 if (params.reads) {
 
 	// trim reads
-	process runFastp {
+	process rseqTrim {
 
 		publishDir "${OUTDIR}/evidence/rnaseq/fastp", mode: 'copy'
 
@@ -723,7 +739,9 @@ if (params.reads) {
 	}
 
 	// Generate an alignment index from the genome sequence
-	process runMakeHisatDB {
+	process rseqMakeDB {
+
+		label 'long_running'
 
 		publishDir "${OUTDIR}/databases/HisatDB", mode: 'copy'
 
@@ -747,7 +765,7 @@ if (params.reads) {
 	 * STEP RNAseq.3 - Hisat2
 	 */
 
-	process runHisat2 {
+	process rseqMap {
 
 		publishDir "${OUTDIR}/evidence/rnaseq/Hisat2/libraries", mode: 'copy'
 	
@@ -778,7 +796,7 @@ if (params.reads) {
 	}
 
 	// Combine all BAM files for hint generation
-	process mergeHisatBams {
+	process rseqMergeBams {
 
 		publishDir "${OUTDIR}/evidence/rnaseq/Hisat2", mode: 'copy'
 
@@ -802,8 +820,8 @@ if (params.reads) {
 	/*
 	 * STEP RNAseq.4 - Hisat2 into Hints
 	 */	
-	process Hisat2Hints {
-	
+	process rseqHints {
+
 		// publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
 
 		input:
@@ -826,7 +844,7 @@ if (params.reads) {
 
 	if (params.trinity) {
 
-		process runTrinity {
+		process rseqTrinity {
 	
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
 
@@ -852,7 +870,7 @@ if (params.reads) {
 			"""
 		}
 
-		process runMinimapTrinity {
+		process rseqMinimapTrinity {
 
 			publishDir "${OUTDIR}/evidence/rnaseq/trinity", mode: 'copy'
 
@@ -873,7 +891,9 @@ if (params.reads) {
 			"""
 		}
 
-		process runTrinityHints {
+		process rseqTrinityToHints {
+
+			label 'short_running'
 
 			publishDir "${OUTDIR}/evidence/EST/minimap/", mode: 'copy'
 
@@ -907,7 +927,9 @@ if (params.pasa) {
 
 		// Clean transcripts
 		// This is a place holder until we figure out how to make Seqclean work within Nextflow
-		process runSeqclean {
+		process transSeqclean {
+
+			label 'short_running'
 
 			publishDir "${OUTDIR}/evidence/rnaseq/pasa/seqclean/", mode: 'copy'
 
@@ -938,8 +960,8 @@ if (params.pasa) {
 		}
 
 		// run minimap for fast transcript mapping
-		process runMinimap2Pasa {
-			
+		process transPasaMinimap {
+
 			publishDir "${OUTDIR}/evidence/transcripts/minimap", mode: 'copy'
 		
 			input:
@@ -960,8 +982,10 @@ if (params.pasa) {
 		}
 		
 		// We parallelize PASA by filtering the minimap alignments per genome chunk
-		process runSplitMinimap4Pasa {
+		process transPasaMinimapSplit {
 	
+			label 'short_running'
+
 			input:
 			file(genome_chunk) from genome_to_minimap_chunk
 			set file(transcripts),file(minimap_gff) from minimap_to_pasa.collect()
@@ -985,8 +1009,8 @@ if (params.pasa) {
 		}
 
 		// Run the PASA pipeline
-		process runPasa {
-		
+		process transPasa {
+			
 			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
 
 			input:
@@ -1032,7 +1056,9 @@ if (params.pasa) {
 		// Extract gene models from PASA database
 		// All chunks are merged using a perl script into the base name pasa_db_merged
 		// this is not...ideal. 
-		process runPasa2Models {
+		process transPasaToModels {
+
+			label 'long_running'
 
 	                publishDir "${OUTDIR}/annotation/pasa/", mode: 'copy'
 
@@ -1064,7 +1090,9 @@ if (params.pasa) {
 		
 		if (params.training) {
 			// Extract full length models for training
-			process runModelsToTraining {
+			process transModelsToTraining {
+
+				label 'short_running'
 
                 		publishDir "${OUTDIR}/annotation/pasa/training", mode: 'copy'
 
@@ -1083,7 +1111,9 @@ if (params.pasa) {
 			}
 
 			// If we have to modify the AUGUSTUS config folder, we must copy it first
-		        process runAugustusConfigFolder {
+		        process prepAugustusConfig {
+
+				label 'short_running'
 
 				publishDir "${OUTDIR}/augustus/", mode: 'copy'
 	
@@ -1102,7 +1132,9 @@ if (params.pasa) {
         		}
 
 			// Run one of two training routines for model training
-			process runTrainAugustus {
+			process trainAugustus {
+
+				label 'extra_long_running'
 	
 				publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
 
@@ -1153,7 +1185,9 @@ if (params.pasa) {
 }
 
 // get all available hints and merge into one file
-process runMergeAllHints {
+process prepMergeHints {
+
+	label 'short_running'
 
 	publishDir "${OUTDIR}/evidence/hints", mode: 'copy'
 
@@ -1180,7 +1214,9 @@ process runMergeAllHints {
 	"""
 }
 
-process runHintsToBed {
+process prepHintsToBed {
+
+	label 'short_running'
 
 	input:
 	file(hints) from mergedHintsSort
@@ -1208,7 +1244,7 @@ augustus_input_chunk = acf_prediction
 	.map { it.toString() }
 	.combine(genome_chunk_to_augustus)
 
-process runAugustus {
+process predAugustus {
 
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
@@ -1239,7 +1275,9 @@ process runAugustus {
 }
 
 // Merge all the chunk GFF files into one file
-process runMergeAugustusGff {
+process prepMergeAugustus {
+
+	label 'short_running'
 
 	publishDir "${OUTDIR}/annotation/augustus", mode: 'copy'
 	
@@ -1259,7 +1297,9 @@ process runMergeAugustusGff {
 }
 
 // Dump out proteins for subsequent functional annotation
-process runAugustus2Protein {
+process prepAugustusToProtein {
+
+	label 'short_running'
 
         publishDir "${OUTDIR}/annotation/augustus", mode: 'copy'
 
@@ -1284,7 +1324,9 @@ process runAugustus2Protein {
 
 if (params.evm) {
 
-	process runEvmPartition {
+	process predEvmPartition {
+
+		label 'long_running'
 
 		//publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
@@ -1339,7 +1381,9 @@ if (params.evm) {
 	evm_command_chunks = inputToEvm.splitText(by: params.nevm, file: true)
 
 	// The outputs doesn't do nothing here, EVM combines the chunks based on the original partition file
-	process runEvm {
+	process predEvm {
+
+		label 'long_running'
 
                 //publishDir "${OUTDIR}/annotation/evm/chunks", mode: 'copy'
 
@@ -1358,8 +1402,10 @@ if (params.evm) {
 	}
 	
 	// Merge all the separate partition outputs into a final gff file
-	process runEvmMerge {
+	process predEvmMerge {
 	
+		label 'long_running'
+
 		publishDir "${OUTDIR}/annotation/evm", mode: 'copy'
 
 		input:
@@ -1385,7 +1431,9 @@ if (params.evm) {
 
 	// We merge the partial gffs from the partitions with a perl script, 
 	// since the output folders are not transferred between processes
-	process runEvmGff {
+	process predEvmToGff {
+
+		label 'medium_running'
 
 		publishDir "${OUTDIR}/annotation/evm", mode: 'copy'
 
