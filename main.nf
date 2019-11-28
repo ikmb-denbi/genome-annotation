@@ -375,7 +375,7 @@ process repeatLib {
 
 	"""
 		mkdir -p Library
-		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
+		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/
 		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
 }
@@ -393,7 +393,7 @@ process repeatMask {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(repeats) from repeats_fa.ifEmpty('').collect()
+	file(repeats) from repeats_fa.collect().ifEmpty('')
 	set env(REPEATMASKER_LIB_DIR),file(genome_fa) from rm_lib_path
 
 	output:
