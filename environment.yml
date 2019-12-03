@@ -30,4 +30,4 @@ dependencies:
  - ucsc-fasomerecords=377
  - perl-uri
  - perl-bioperl=1.6.924
- - diamond=0.8.38
+ - diamond=0.9.10
