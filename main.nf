@@ -372,12 +372,25 @@ process repeatLib {
 	file("Library") into RMLibPath
 
 	script:
+	
+	if (params.rm_lib) {
+	"""
+		cp ${baseDir}/assets/repeatmasker/my_genome.fa .
+		cp ${baseDir}/assets/repeatmasker/repeats.fa .
+		mkdir -p Library
+                cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/
+                gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
+		export REPEATMASKER_LIB_DIR=\$PWD/Library
+		RepeatMasker -lib repeats.fa my_genome.fa > out
+	"""	
+	} else {
 
 	"""
 		mkdir -p Library
 		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/
 		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
+	}
 }
 
 // To get the repeat library path combined with each genome chunk, we do this...
@@ -419,6 +432,7 @@ process repeatMask {
 	rm_gff = "${genome_fa.getName()}.out.gff"
 	
 	"""
+		echo \$REPEATMASKER_LIB_DIR > lib_dir.txt
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa
 
 		test -f ${genome_rm} || cp $genome_fa $genome_rm && touch $rm_gff
