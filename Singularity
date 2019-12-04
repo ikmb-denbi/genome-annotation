@@ -1,5 +1,5 @@
 Bootstrap:docker  
-From:continuumio/anaconda
+From:nfcore/base
 
 %labels
     MAINTAINER Marc Hoeppner <m.hoeppner@ikmb.uni-kiel.de>
