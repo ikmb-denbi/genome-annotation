@@ -258,7 +258,7 @@ if (params.pasa == false) {
 	// Pasa models to EVM
 	pasa_to_evm = Channel.from('')
 }
-// Trigger de-novo repeat prediction of no repeats were provided
+// Trigger de-novo repeat prediction if no repeats were provided
 if (!params.rm_lib  && !params.rm_species ) {
 	Channel
 		.fromPath(Genome)
@@ -545,8 +545,6 @@ if (params.proteins) {
 
 	// Blast each genome chunk against the protein database
 	// This is used to define targets for exhaustive exonerate alignments
-	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
-	// Will instead run multi-threaded if run inside a container with standalone blast. 
 	process protDiamondx {
 
 		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
@@ -747,7 +745,7 @@ if (params.reads) {
 			left = file(reads[0]).getBaseName() + "_trimmed.fastq.gz"
 			right = file(reads[1]).getBaseName() + "_trimmed.fastq.gz"
 			"""
-				fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $left --out2 $right -w ${task.cpus} -j $json -h $html
+				fastp --detect_adapter_for_pe --in1 ${reads[0]} --in2 ${reads[1]} --out1 $left --out2 $right -w ${task.cpus} -j $json -h $html
 			"""
 		}
 	}

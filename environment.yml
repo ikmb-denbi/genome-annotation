@@ -15,7 +15,7 @@ dependencies:
  - exonerate=2.4.0 
  - trinity=2.8.4
  - fastqc=0.11.7
- - fastp=0.19.5
+ - fastp=0.20.0
  - augustus=3.2.3
  - hisat2=2.1.0
  - multiqc=1.6
