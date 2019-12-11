@@ -52,9 +52,9 @@ while (<$IN>) {
 	
 	
 	my $fa_clean = "$query_clean._query_.fa" ;
-	printf "Will try to extract $query to $fa_clean\n";
 
 	unless (-e $fa_clean) {
+		printf "Will extract $query to $fa_clean\n";
 		system("cdbyank $db -a \"${query}\" > $fa_clean");
 	}
 }

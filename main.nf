@@ -607,8 +607,8 @@ if (params.proteins) {
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) into (exonerate_result_prots, exonerate_protein_chunk_evm)
-		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
+		file(exonerate_chunk) optional true into (exonerate_result_prots, exonerate_protein_chunk_evm)
+		file("merged.${chunk_name}.exonerate.out") optional true into exonerate_raw_results
 	
 		script:
 		query_tag = protein_db.baseName

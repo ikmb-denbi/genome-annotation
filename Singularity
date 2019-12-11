@@ -7,8 +7,14 @@ From:nfcore/base
     VERSION 0.1
 
 %environment
-    PATH=/opt/conda/envs/genome-annotation-1.0/bin:$PATH
+    PATH=/opt/conda/envs/genome-annotation-1.0/bin:/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:$PATH
     export PATH
+
+    PASAHOME=/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3
+    export PASAHOME
+
+    EVM_HOME=/opt/conda/envs/genome-annotation-1.0/opt/evidencemodeler-1.1.1
+    export EVM_HOME
 
 %files
     environment.yml /
