@@ -23,6 +23,7 @@ From:nfcore/base
     /opt/conda/bin/conda env create -f /environment.yml
     /opt/conda/bin/conda clean -a
 
+   cpan -i URI::Encode
 # Prereqs for Nextflow
 apt-get -y install procps 
 

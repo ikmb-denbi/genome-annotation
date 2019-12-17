@@ -980,7 +980,7 @@ if (params.pasa) {
 			set file(transcripts_clean),file(transcripts) from seqclean_to_minimap
 			set file(genome),file(genome_index) from genome_to_minimap_pasa
 			output:
-			set file(transcripts_clean),file(minimap_gff) into minimap_to_pasa
+			set file(transcripts_clean),file(minimap_gff) optional true into minimap_to_pasa
 
 			script:
 			minimap_gff = "minimap.transcripts.gff"	
@@ -988,7 +988,11 @@ if (params.pasa) {
 
 			"""
 				minimap2 -t ${task.cpus} -ax splice -c $genome $transcripts_clean  | samtools sort -O BAM -o $minimap_bam
-				minimap2_bam2gff.pl $minimap_bam > $minimap_gff
+				minimap2_bam2gff.pl $minimap_bam > out.gff
+				if [ -s out.gff ] ; then 
+					mv out.gff $minimap_gff
+				fi 
+					
 			"""
 	
 		}
