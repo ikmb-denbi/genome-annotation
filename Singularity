@@ -24,7 +24,7 @@ From:nfcore/base
     /opt/conda/bin/conda clean -a
 
 # Prereqs for Nextflow
-apt-get -y install procps liburi-encode-perl make
+apt-get -y install procps make
 
 cpan -i URI::Encode
 # Create mount point for RZCluster
