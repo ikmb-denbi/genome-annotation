@@ -10,6 +10,9 @@ From:nfcore/base
     PATH=/opt/conda/envs/genome-annotation-1.0/bin:/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:$PATH
     export PATH
 
+    PERL5LIB=$PERL5LIB:/usr/local/share/perl/5.24.1
+    export PERL5LIB
+
     PASAHOME=/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3
     export PASAHOME
 
