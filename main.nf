@@ -1180,7 +1180,7 @@ if (params.pasa) {
 
 				"""
 					echo ${acf_folder.toString()} >> training.txt
-					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+					gff2gbSmallDNA.pl $complete_models $Genome 1000 $complete_gb
 					split_training.pl --infile $complete_gb --percent 90
 					$options
 					etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
