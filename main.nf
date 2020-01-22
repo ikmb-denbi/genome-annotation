@@ -197,9 +197,9 @@ if (params.proteins != false ) {
 	.fromPath(Proteins)
 	.set { index_prots }
 } else {
-	prot_exonerate_hints = Channel.from('')
+	prot_exonerate_hints = Channel.empty()
 	// Protein Exonerate files to EVM
-	exonerate_protein_evm = Channel.from('')
+	exonerate_protein_evm = Channel.empty()
 }
 
 // if ESTs are provided
@@ -215,11 +215,11 @@ if (params.ESTs != false) {
 		.into { ests_index; est_to_pasa }
 } else {
 	// EST hints to Augustus
-	est_minimap_hints = Channel.from('')
+	est_minimap_hints = Channel.empty()
 	// EST file to Pasa assembly
-	est_to_pasa = Channel.from('')
+	est_to_pasa = Channel.empty()
 	// EST exonerate files to EVM
-	minimap_ests_to_evm = Channel.from('')
+	minimap_ests_to_evm = Channel.empty()
 }
 
 // if RNAseq reads are provided
@@ -238,25 +238,25 @@ if (params.reads != false) {
 
 	// can use reads without wanting to run a de-novo transcriptome assembly
 	if (!params.trinity) {
-	        trinity_minimap_hints = Channel.from('')
-	 	minimap_trinity_to_evm = Channel.from('')
-	        trinity_to_pasa = Channel.from('')
+	        trinity_minimap_hints = Channel.empty()
+	 	minimap_trinity_to_evm = Channel.empty()
+	        trinity_to_pasa = Channel.empty()
 	}
 
 } else {
 	// Trinity hints to Augustus
-	trinity_minimap_hints = Channel.from('')
+	trinity_minimap_hints = Channel.empty()
 	// RNAseq hints to Augustus
-	rnaseq_hints = Channel.from('')
+	rnaseq_hints = Channel.empty()
 	// Trinity assembly to Pasa assembly
-	trinity_to_pasa = Channel.from('')
+	trinity_to_pasa = Channel.empty()
 	// Trinity exonerate files to EVM
-	minimap_trinity_to_evm = Channel.from('')
+	minimap_trinity_to_evm = Channel.empty()
 }
 
 if (params.pasa == false) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.from('')
+	pasa_to_evm = Channel.empty()
 }
 // Trigger de-novo repeat prediction if no repeats were provided
 if (!params.rm_lib  && !params.rm_species ) {
@@ -264,7 +264,7 @@ if (!params.rm_lib  && !params.rm_species ) {
 		.fromPath(Genome)
 		.set { inputRepeatModeler }
 } else {
-        repeats_fa = Channel.from('')
+        repeats_fa = Channel.empty()
 }
 
 // Provide the path to the augustus config folder
@@ -1197,7 +1197,7 @@ if (params.pasa) {
 	// We have to make the AUGUSTUS_CONFIG_PATH a mutable object, so we have to carry through the location of the modifiable 
 	// copy of the original config folder. 
         acf_prediction = augustus_config_folder
-	pasa_output = Channel.from(false)
+	pasa_output = Channel.empty()
 }
 
 // get all available hints and merge into one file
