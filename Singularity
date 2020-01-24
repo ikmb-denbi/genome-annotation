@@ -1,5 +1,5 @@
 Bootstrap:docker  
-From:continuumio/anaconda
+From:nfcore/base
 
 %labels
     MAINTAINER Marc Hoeppner <m.hoeppner@ikmb.uni-kiel.de>
@@ -7,8 +7,17 @@ From:continuumio/anaconda
     VERSION 0.1
 
 %environment
-    PATH=/opt/conda/envs/genome-annotation-1.0/bin:$PATH
+    PATH=/opt/conda/envs/genome-annotation-1.0/bin:/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:$PATH
     export PATH
+
+    PERL5LIB=$PERL5LIB:/usr/local/share/perl/5.24.1
+    export PERL5LIB
+
+    PASAHOME=/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3
+    export PASAHOME
+
+    EVM_HOME=/opt/conda/envs/genome-annotation-1.0/opt/evidencemodeler-1.1.1
+    export EVM_HOME
 
 %files
     environment.yml /
@@ -18,8 +27,9 @@ From:continuumio/anaconda
     /opt/conda/bin/conda clean -a
 
 # Prereqs for Nextflow
-apt-get -y install procps 
+apt-get -y install procps make
 
+cpan -i URI::Encode
 # Create mount point for RZCluster
 mkdir -p /ifs
 

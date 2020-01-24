@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Run exonerate based on regions detected with blast
 
 use strict;
@@ -56,6 +56,8 @@ if (!defined $max_intron_size){
 if ($outfile) {
     open(STDOUT, ">$outfile") or die("Cannot open $outfile");
 }
+
+print STDERR "Preparing exonerate jobs!\n" ;
 
 open (my $IN, '<', $matches) or die "FATAL: Can't open file: $matches for reading.\n$!\n";
 

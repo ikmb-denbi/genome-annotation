@@ -197,9 +197,9 @@ if (params.proteins != false ) {
 	.fromPath(Proteins)
 	.set { index_prots }
 } else {
-	prot_exonerate_hints = Channel.from('')
+	prot_exonerate_hints = Channel.empty()
 	// Protein Exonerate files to EVM
-	exonerate_protein_evm = Channel.from('')
+	exonerate_protein_evm = Channel.empty()
 }
 
 // if ESTs are provided
@@ -215,11 +215,11 @@ if (params.ESTs != false) {
 		.into { ests_index; est_to_pasa }
 } else {
 	// EST hints to Augustus
-	est_minimap_hints = Channel.from('')
+	est_minimap_hints = Channel.empty()
 	// EST file to Pasa assembly
-	est_to_pasa = Channel.from('')
+	est_to_pasa = Channel.empty()
 	// EST exonerate files to EVM
-	minimap_ests_to_evm = Channel.from('')
+	minimap_ests_to_evm = Channel.empty()
 }
 
 // if RNAseq reads are provided
@@ -238,33 +238,33 @@ if (params.reads != false) {
 
 	// can use reads without wanting to run a de-novo transcriptome assembly
 	if (!params.trinity) {
-	        trinity_minimap_hints = Channel.from('')
-	 	minimap_trinity_to_evm = Channel.from('')
-	        trinity_to_pasa = Channel.from('')
+	        trinity_minimap_hints = Channel.empty()
+	 	minimap_trinity_to_evm = Channel.empty()
+	        trinity_to_pasa = Channel.empty()
 	}
 
 } else {
 	// Trinity hints to Augustus
-	trinity_minimap_hints = Channel.from('')
+	trinity_minimap_hints = Channel.empty()
 	// RNAseq hints to Augustus
-	rnaseq_hints = Channel.from('')
+	rnaseq_hints = Channel.empty()
 	// Trinity assembly to Pasa assembly
-	trinity_to_pasa = Channel.from('')
+	trinity_to_pasa = Channel.empty()
 	// Trinity exonerate files to EVM
-	minimap_trinity_to_evm = Channel.from('')
+	minimap_trinity_to_evm = Channel.empty()
 }
 
 if (params.pasa == false) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.from('')
+	pasa_to_evm = Channel.empty()
 }
-// Trigger de-novo repeat prediction of no repeats were provided
+// Trigger de-novo repeat prediction if no repeats were provided
 if (!params.rm_lib  && !params.rm_species ) {
 	Channel
 		.fromPath(Genome)
 		.set { inputRepeatModeler }
 } else {
-        repeats_fa = Channel.from('')
+        repeats_fa = Channel.empty()
 }
 
 // Provide the path to the augustus config folder
@@ -372,12 +372,25 @@ process repeatLib {
 	file("Library") into RMLibPath
 
 	script:
+	
+	if (params.rm_lib) {
+	"""
+		cp ${baseDir}/assets/repeatmasker/my_genome.fa .
+		cp ${baseDir}/assets/repeatmasker/repeats.fa .
+		mkdir -p Library
+                cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/
+                gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
+		export REPEATMASKER_LIB_DIR=\$PWD/Library
+		RepeatMasker -lib repeats.fa my_genome.fa > out
+	"""	
+	} else {
 
 	"""
 		mkdir -p Library
-		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/ 
+		cp ${baseDir}/assets/repeatmasker/DfamConsensus.embl Library/
 		gunzip -c ${baseDir}/assets/repeatmasker/taxonomy.dat.gz > Library/taxonomy.dat
 	"""
+	}
 }
 
 // To get the repeat library path combined with each genome chunk, we do this...
@@ -393,7 +406,7 @@ process repeatMask {
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
-	file(repeats) from repeats_fa.ifEmpty('').collect()
+	file(repeats) from repeats_fa.collect().ifEmpty('')
 	set env(REPEATMASKER_LIB_DIR),file(genome_fa) from rm_lib_path
 
 	output:
@@ -419,6 +432,7 @@ process repeatMask {
 	rm_gff = "${genome_fa.getName()}.out.gff"
 	
 	"""
+		echo \$REPEATMASKER_LIB_DIR > lib_dir.txt
 		RepeatMasker $options -gff -xsmall -q -pa ${task.cpus} $genome_fa
 
 		test -f ${genome_rm} || cp $genome_fa $genome_rm && touch $rm_gff
@@ -531,8 +545,6 @@ if (params.proteins) {
 
 	// Blast each genome chunk against the protein database
 	// This is used to define targets for exhaustive exonerate alignments
-	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
-	// Will instead run multi-threaded if run inside a container with standalone blast. 
 	process protDiamondx {
 
 		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
@@ -595,8 +607,8 @@ if (params.proteins) {
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) into (exonerate_result_prots, exonerate_protein_chunk_evm)
-		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
+		file(exonerate_chunk) optional true into (exonerate_result_prots, exonerate_protein_chunk_evm)
+		file("merged.${chunk_name}.exonerate.out") optional true into exonerate_raw_results
 	
 		script:
 		query_tag = protein_db.baseName
@@ -733,7 +745,7 @@ if (params.reads) {
 			left = file(reads[0]).getBaseName() + "_trimmed.fastq.gz"
 			right = file(reads[1]).getBaseName() + "_trimmed.fastq.gz"
 			"""
-				fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $left --out2 $right -w ${task.cpus} -j $json -h $html
+				fastp --detect_adapter_for_pe --in1 ${reads[0]} --in2 ${reads[1]} --out1 $left --out2 $right -w ${task.cpus} -j $json -h $html
 			"""
 		}
 	}
@@ -968,7 +980,7 @@ if (params.pasa) {
 			set file(transcripts_clean),file(transcripts) from seqclean_to_minimap
 			set file(genome),file(genome_index) from genome_to_minimap_pasa
 			output:
-			set file(transcripts_clean),file(minimap_gff) into minimap_to_pasa
+			set file(transcripts_clean),file(minimap_gff) optional true into minimap_to_pasa
 
 			script:
 			minimap_gff = "minimap.transcripts.gff"	
@@ -976,7 +988,11 @@ if (params.pasa) {
 
 			"""
 				minimap2 -t ${task.cpus} -ax splice -c $genome $transcripts_clean  | samtools sort -O BAM -o $minimap_bam
-				minimap2_bam2gff.pl $minimap_bam > $minimap_gff
+				minimap2_bam2gff.pl $minimap_bam > out.gff
+				if [ -s out.gff ] ; then 
+					mv out.gff $minimap_gff
+				fi 
+					
 			"""
 	
 		}
@@ -1164,7 +1180,7 @@ if (params.pasa) {
 
 				"""
 					echo ${acf_folder.toString()} >> training.txt
-					gff2gbSmallDNA.pl $complete_models $params.genome 1000 $complete_gb
+					gff2gbSmallDNA.pl $complete_models $Genome 1000 $complete_gb
 					split_training.pl --infile $complete_gb --percent 90
 					$options
 					etraining --species=$params.model --stopCodonExcludedFromCDS=false $train_gb
@@ -1181,7 +1197,7 @@ if (params.pasa) {
 	// We have to make the AUGUSTUS_CONFIG_PATH a mutable object, so we have to carry through the location of the modifiable 
 	// copy of the original config folder. 
         acf_prediction = augustus_config_folder
-	pasa_output = Channel.from(false)
+	pasa_output = Channel.empty()
 }
 
 // get all available hints and merge into one file
