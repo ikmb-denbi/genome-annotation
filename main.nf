@@ -332,7 +332,7 @@ process splitGenome {
 	file(genome_fa) from genome_for_splitting
 
 	output:
-	file("*_chunk_*") into fasta_chunk_for_rm_lib
+	file("*_chunk_*") into fasta_chunks
 
 	script:
 
@@ -341,6 +341,9 @@ process splitGenome {
 	"""
 
 }
+
+// We split the list of chunks into channel emissions
+fasta_chunk_for_rm_lib = fasta_chunks.flatMap()
 
 // ************************************
 // Model Repeats if nothing is provided
