@@ -51,7 +51,7 @@ def helpMessage() {
     How to split programs:
     --nblast		Chunks (# of sequences) to divide genome for blastx jobs [ default = 100 ]
     --nexonerate	Chunks (# of blast hits) to divide Exonerate jobs [ default = 200 ]
-    --nrepeats		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
+    --nchunks		Chunks (# of scaffolds) to divide RepeatMasker and Augustus jobs [ default = 30 ]
     --chunk_size 	Size of sub-regions of the genome on which to run Blastx jobs [ default = 50000 ]
 
     Other options:
@@ -181,8 +181,7 @@ Channel.fromPath(Genome)
 // Split the genome for parallel processing
 Channel
 	.fromPath(Genome)
-	.splitFasta( by: params.nrepeats, file: true)
-	.set { fasta_chunk_for_rm_lib }
+	.set { genome_for_splitting }
 
 // if proteins are provided
 if (params.proteins != false ) {
@@ -309,7 +308,7 @@ log.info "Parallelization settings"
 log.info "Chunk size for assembly:		${params.chunk_size}"
 log.info "Chunk size for Blast:			${params.nblast}"
 log.info "Chunk size for Exonerate:		${params.nexonerate}"
-log.info "Chunk size for RepeatMasker:		${params.nrepeats}"
+log.info "Chunk size for RepeatMasker:		${params.nchunks}"
 log.info "-----------------------------------------"
 log.info "Nextflow Version:		$workflow.nextflow.version"
 log.info "Command Line:			$workflow.commandLine"
@@ -321,6 +320,26 @@ def check_file_size(fasta) {
         if (file(fasta).isEmpty()) {
                 log.info "No repeats were modelled, will use the built-in repeat library that ships with RepeatMasker"
         }
+}
+
+// *******************************************
+// Split Genome in parts of roughly equal size
+// *******************************************
+
+process splitGenome {
+
+	input:
+	file(genome_fa) from genome_for_splitting
+
+	output:
+	file("*_chunk_*") into fasta_chunk_for_rm_lib
+
+	script:
+
+	"""
+		fastasplit -f $genome_fa -c ${params.nchunks} -o .
+	"""
+
 }
 
 // ************************************
@@ -411,6 +430,7 @@ process repeatMask {
 
 	output:
 	file(genome_rm) into RMFastaChunks
+	file(genome_rm) into (genome_to_minimap_chunk,genome_chunk_to_augustus)
 	file(rm_gff) into RMGFF
 
 	script:
@@ -466,8 +486,6 @@ process repeatMerge {
 		rm merged.fa
 	"""	
 }
-
-rm_to_partition.splitFasta(by: params.nrepeats, file: true).into{ genome_to_minimap_chunk; genome_chunk_to_augustus}
 
 // ---------------------
 // PROTEIN DATA PROCESSING
