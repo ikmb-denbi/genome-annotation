@@ -63,6 +63,8 @@ while (my $file = readdir(DIR)) {
 		$bucket_gff{$num} = $file ;
 		
 	} elsif ($file =~ m/\.fasta$/) {
+		// Make sure we don't get an infinite regression
+		next if ($file =~ $fasta) ;
 		$bucket_fa{$num} = $file ;
 	}
 }
@@ -92,6 +94,8 @@ foreach ( sort {$a<=>$b} keys %bucket_fa) {
 	}
 	close($fh);
 }
+
+close(FASTA_OUT);
 
 # Running ID for assemblies
 my $asmbl_id = 1;
@@ -180,7 +184,6 @@ foreach ( sort {$a<=>$b} keys %bucket_gff) {
 }
 
 close(GFF_OUT);
-close(FASTA_OUT);
 
 closedir(DIR);
 exit 0;

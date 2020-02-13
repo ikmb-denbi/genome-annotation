@@ -280,7 +280,7 @@ if (!workflow.containerEngine) {
 
 // Header log info
 log.info "========================================="
-log.info "IKMB Genome Annotation Pipeline v${workflow.manifest.version}"
+log.info "ESGA Genome Annotation Pipeline v${workflow.manifest.version}"
 log.info "Genome assembly: 		${params.genome}"
 if (params.rm_lib) {
 	log.info "Repeatmasker lib:		${params.rm_lib}"
@@ -570,6 +570,8 @@ if (params.proteins) {
 
 		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
 
+		scratch true
+
 		input:
 		file(genome_chunk) from genome_chunks_blast_split
 		file(blastdb_files) from blast_db_prots.collect()
@@ -622,6 +624,8 @@ if (params.proteins) {
 	process protExonerate {
 
 		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+
+		scratch true
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
@@ -695,6 +699,8 @@ if (params.ESTs) {
 
 		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
 
+		scratch true
+
 		input:
 		file(est_chunks) from fasta_ests
 		set file(genome_rm),file(genome_index) from RMGenomeMinimapEst
@@ -744,6 +750,8 @@ if (params.reads) {
 	process rseqTrim {
 
 		publishDir "${OUTDIR}/evidence/rnaseq/fastp", mode: 'copy'
+
+		scratch true 
 
 		input:
 		set val(name), file(reads) from read_files_trimming
@@ -855,7 +863,7 @@ if (params.reads) {
 	 */	
 	process rseqHints {
 
-		// publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/rnaseq/hints", mode: 'copy'
 
 		input:
 		file(bam) from Hisat2Hints
@@ -1048,6 +1056,8 @@ if (params.pasa) {
 		// Run the PASA pipeline
 		process transPasa {
 			
+			scratch true
+			
 			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
 
 			input:
@@ -1094,6 +1104,8 @@ if (params.pasa) {
 		// All chunks are merged using a perl script into the base name pasa_db_merged
 		// this is not...ideal. 
 		process transPasaToModels {
+
+			scratch true
 
 			label 'long_running'
 
@@ -1172,6 +1184,8 @@ if (params.pasa) {
 			process trainAugustus {
 
 				label 'extra_long_running'
+
+				scratch true
 	
 				publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
 
