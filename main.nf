@@ -255,7 +255,8 @@ if (params.reads != false) {
 
 if (params.pasa == false) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.empty()
+	pasa_genes_to_evm = Channel.empty()
+	pasa_align_to_evm = Channel.empty()
 }
 // Trigger de-novo repeat prediction if no repeats were provided
 if (!params.rm_lib  && !params.rm_species ) {
@@ -1118,7 +1119,8 @@ if (params.pasa) {
 
 			output:
 			file(pasa_transdecoder_fasta) 
-			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_to_evm)
+			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_genes_to_evm)
+			file(merged_gff) into pasa_align_to_evm)
 
 			script:
 			base_name = "pasa_db_merged"
@@ -1390,9 +1392,10 @@ if (params.evm) {
 		input:
 		file(augustus_gff) from augustus_to_evm.ifEmpty(false)
 		file(est) from minimap_ests_to_evm.ifEmpty(false)
+		file(pasa_align) from pasa_align_to_evm.ifEmpty(false)
 		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
 		file(proteins) from exonerate_protein_evm.ifEmpty(false)
-		file(pasa) from pasa_to_evm.ifEmpty(false)
+		file(pasa_genes) from pasa_genes_to_evm.ifEmpty(false)
 		set file(genome_rm),file(genome_index) from genome_to_evm
 
 		output:
@@ -1417,8 +1420,8 @@ if (params.evm) {
 		}
 
 		"""
-			cat $est $trinity | grep -v false >> $transcripts
-			cat $augustus_gff $pasa | grep -v false >> $gene_models
+			cat $est $trinity $pasa_align | grep -v false >> $transcripts
+			cat $augustus_gff $pasa_genes | grep -v false >> $gene_models
 
 			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
 				--gene_predictions $gene_models \
