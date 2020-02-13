@@ -425,6 +425,8 @@ rm_lib_path = RMLibPath
 // if nothing was masked, return the original genome sequence instead and an empty gff file. 
 process repeatMask {
 
+	scratch true
+
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
 	input: 
@@ -1299,6 +1301,8 @@ process predAugustus {
 
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
+	scratch true 
+
         when:
         params.augustus != false
 
@@ -1379,6 +1383,8 @@ if (params.evm) {
 
 		label 'long_running'
 
+		scratch true
+
 		//publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
 		input:
@@ -1433,6 +1439,8 @@ if (params.evm) {
 
 	// The outputs doesn't do nothing here, EVM combines the chunks based on the original partition file
 	process predEvm {
+
+		scratch true
 
 		label 'long_running'
 
