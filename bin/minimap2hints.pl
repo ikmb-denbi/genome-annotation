@@ -27,7 +27,7 @@ my $source = "minimap";
 my $GeneID = undef;
 my $help;
 
-my $src = "E";
+my $src = "T";
 my $pri = 4;
 my $hintfeature = "exonpart";
 

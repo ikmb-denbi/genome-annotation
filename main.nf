@@ -255,7 +255,8 @@ if (params.reads != false) {
 
 if (params.pasa == false) {
 	// Pasa models to EVM
-	pasa_to_evm = Channel.empty()
+	pasa_genes_to_evm = Channel.empty()
+	pasa_align_to_evm = Channel.empty()
 }
 // Trigger de-novo repeat prediction if no repeats were provided
 if (!params.rm_lib  && !params.rm_species ) {
@@ -280,7 +281,7 @@ if (!workflow.containerEngine) {
 
 // Header log info
 log.info "========================================="
-log.info "IKMB Genome Annotation Pipeline v${workflow.manifest.version}"
+log.info "ESGA Genome Annotation Pipeline v${workflow.manifest.version}"
 log.info "Genome assembly: 		${params.genome}"
 if (params.rm_lib) {
 	log.info "Repeatmasker lib:		${params.rm_lib}"
@@ -424,6 +425,8 @@ rm_lib_path = RMLibPath
 // generate a soft-masked sequence for each assembly chunk
 // if nothing was masked, return the original genome sequence instead and an empty gff file. 
 process repeatMask {
+
+	scratch true
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
@@ -570,6 +573,8 @@ if (params.proteins) {
 
 		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
 
+		scratch true
+
 		input:
 		file(genome_chunk) from genome_chunks_blast_split
 		file(blastdb_files) from blast_db_prots.collect()
@@ -622,6 +627,8 @@ if (params.proteins) {
 	process protExonerate {
 
 		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+
+		scratch true
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
@@ -695,6 +702,8 @@ if (params.ESTs) {
 
 		publishDir "${OUTDIR}/evidence/EST/minimap", mode: 'copy'
 
+		scratch true
+
 		input:
 		file(est_chunks) from fasta_ests
 		set file(genome_rm),file(genome_index) from RMGenomeMinimapEst
@@ -744,6 +753,8 @@ if (params.reads) {
 	process rseqTrim {
 
 		publishDir "${OUTDIR}/evidence/rnaseq/fastp", mode: 'copy'
+
+		scratch true 
 
 		input:
 		set val(name), file(reads) from read_files_trimming
@@ -855,7 +866,7 @@ if (params.reads) {
 	 */	
 	process rseqHints {
 
-		// publishDir "${OUTDIR}/evidence/rnaseq/hints/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/rnaseq/hints", mode: 'copy'
 
 		input:
 		file(bam) from Hisat2Hints
@@ -1048,6 +1059,8 @@ if (params.pasa) {
 		// Run the PASA pipeline
 		process transPasa {
 			
+			scratch true
+			
 			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
 
 			input:
@@ -1095,6 +1108,8 @@ if (params.pasa) {
 		// this is not...ideal. 
 		process transPasaToModels {
 
+			scratch true
+
 			label 'long_running'
 
 	                publishDir "${OUTDIR}/annotation/pasa/", mode: 'copy'
@@ -1104,7 +1119,8 @@ if (params.pasa) {
 
 			output:
 			file(pasa_transdecoder_fasta) 
-			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_to_evm)
+			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_genes_to_evm)
+			file(merged_gff) into pasa_align_to_evm)
 
 			script:
 			base_name = "pasa_db_merged"
@@ -1172,6 +1188,8 @@ if (params.pasa) {
 			process trainAugustus {
 
 				label 'extra_long_running'
+
+				scratch true
 	
 				publishDir "${OUTDIR}/augustus/training/", mode: 'copy'
 
@@ -1285,6 +1303,8 @@ process predAugustus {
 
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
+	scratch true 
+
         when:
         params.augustus != false
 
@@ -1365,14 +1385,17 @@ if (params.evm) {
 
 		label 'long_running'
 
+		scratch true
+
 		//publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
 		input:
 		file(augustus_gff) from augustus_to_evm.ifEmpty(false)
 		file(est) from minimap_ests_to_evm.ifEmpty(false)
+		file(pasa_align) from pasa_align_to_evm.ifEmpty(false)
 		file(trinity) from minimap_trinity_to_evm.ifEmpty(false)
 		file(proteins) from exonerate_protein_evm.ifEmpty(false)
-		file(pasa) from pasa_to_evm.ifEmpty(false)
+		file(pasa_genes) from pasa_genes_to_evm.ifEmpty(false)
 		set file(genome_rm),file(genome_index) from genome_to_evm
 
 		output:
@@ -1397,8 +1420,8 @@ if (params.evm) {
 		}
 
 		"""
-			cat $est $trinity | grep -v false >> $transcripts
-			cat $augustus_gff $pasa | grep -v false >> $gene_models
+			cat $est $trinity $pasa_align | grep -v false >> $transcripts
+			cat $augustus_gff $pasa_genes | grep -v false >> $gene_models
 
 			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
 				--gene_predictions $gene_models \
@@ -1419,6 +1442,8 @@ if (params.evm) {
 
 	// The outputs doesn't do nothing here, EVM combines the chunks based on the original partition file
 	process predEvm {
+
+		scratch true
 
 		label 'long_running'
 

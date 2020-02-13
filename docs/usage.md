@@ -145,8 +145,8 @@ Number of sequences in each Blast job. Larger values will usually create longer 
 #### `--nexonerate` [ default = 200 ]
 Number of alignments to compute in each Exonerate job. Larger values will usually create longer run times, but decrease the number of parallel jobs and load on the file system.
 
-#### `--nrepeats` [ default = 30 ]
-Number of scaffolds/chromosomes in each chunk to divide RepeatMasker and Augustus jobs. If your assembly is highly contiguous, this number can be quite small (for the human genome, 1 or 2 would be ok).
+#### `--nchunks` [ default = 10 ]
+Number of pieces to split the genome assembly into before running RepeatMasker and Augustus jobs. For example, if you want to annotate the human genome, a chunk size of 23 would place each chromosome into one chunk. Chunks cannot be smaller than individual scaffolds/chromosomes.
 
 ### 7. Other options 
 
