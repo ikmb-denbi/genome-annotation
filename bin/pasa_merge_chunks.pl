@@ -63,7 +63,6 @@ while (my $file = readdir(DIR)) {
 		$bucket_gff{$num} = $file ;
 		
 	} elsif ($file =~ m/\.fasta$/) {
-		// Make sure we don't get an infinite regression
 		next if ($file =~ $fasta) ;
 		$bucket_fa{$num} = $file ;
 	}
@@ -124,6 +123,8 @@ foreach ( sort {$a<=>$b} keys %bucket_gff) {
 
 		my ($seq,$source,$feature,$start,$stop,$phase,$strand,$score,$info) = split("\t",$line);
 
+		$source = "PASA_transcript_assemblies" ;
+
                 my @attributes ;
 
 		# Split the GFF attributes
@@ -154,14 +155,14 @@ foreach ( sort {$a<=>$b} keys %bucket_gff) {
 
 	                        printf "original: $original_asmbl_id This: $tmp\n";
 				if (!defined $original_asmbl_id) {
-					printf "No id defined, starting new one\n";
+					#printf "No id defined, starting new one\n";
                                         $original_asmbl_id = $tmp;
                                         $id = "asmbl_$asmbl_id";
                                 } elsif ( $original_asmbl_id eq $tmp) {
-					printf "Is the same asmbl id, not changing\n";
+					#printf "Is the same asmbl id, not changing\n";
                                         $id = "asmbl_$asmbl_id";
                                 } else {
-					printf "Is a different asmbl id, upping counter\n";
+					#printf "Is a different asmbl id, upping counter\n";
                                         $original_asmbl_id = $tmp;
                                         $id = "asmbl_$asmbl_id";
                                         $asmbl_id += 1;

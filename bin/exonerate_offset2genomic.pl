@@ -50,6 +50,7 @@ while (<$IN>) {
 		my $target_base = @info[0];
 		my $adjusted_start = $start+$offset-1;
 		my $adjusted_stop =$stop+$offset-1 ;
+		my $method = "protein2genome" ;
 		printf "$target_base\t$method\t$feature\t$adjusted_start\t$adjusted_stop\t$score\t$strand\t$frame\t$attributes\n";
 	}
 }

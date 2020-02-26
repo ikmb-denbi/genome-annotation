@@ -100,3 +100,8 @@ while (<$IN>) {
 	
 	$previous_start = $this_start;
 }
+
+# finish and print block
+$this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
+$this_block{'stop'} = ($this_block{'stop'}+$max_intron);
+printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";

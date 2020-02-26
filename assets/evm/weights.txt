@@ -1,6 +1,5 @@
 ABINITIO_PREDICTION      AUGUSTUS       2
 OTHER_PREDICTION	transdecoder	5
-PROTEIN         exonerate:protein2genome:local 1
+PROTEIN         protein2genome 5
 TRANSCRIPT      est2genome      5
-TRANSCRIPT	genome	5
 TRANSCRIPT      PASA_transcript_assemblies      10

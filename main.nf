@@ -47,6 +47,8 @@ def helpMessage() {
     --model		Species model for Augustus [ default = 'human' ]. If "--training true" and you want to do de novo training, give a NEW name to your species
     --augCfg		Location of augustus configuration file [ default = 'bin/augustus_default.cfg' ]
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
+    --evm		Whether to run EvicenceModeler at the end to produce a consensus gene build [true | false (default) ]
+    --evm_weights	Custom weights file for EvidenceModeler (overrides the internal default)
  	
     How to split programs:
     --nblast		Chunks (# of sequences) to divide genome for blastx jobs [ default = 100 ]
@@ -79,7 +81,10 @@ if (params.help){
 OUTDIR = params.outdir
 
 pasa_config = "${baseDir}/assets/pasa/alignAssembly.config"
-evm_weights = "${baseDir}/assets/evm/weights.txt"
+
+evm_weights = params.evm_weights ?: "${baseDir}/assets/evm/weights.txt"
+EVM_WEIGHTS = file(evm_weights)
+
 uniprot_path = "${baseDir}/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
 
 if (params.pasa) {
@@ -124,7 +129,7 @@ if (params.trinity && !params.reads ) {
 if (params.augustus  && !params.augCfg ) {
 	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
 } else if (params.augustus) {
-	AUG_CONF = params.augCfg
+	AUG_CONF = file(params.augCfg)
 }
 
 // Check prereqs for training a new model
@@ -184,7 +189,7 @@ Channel
 	.set { genome_for_splitting }
 
 // if proteins are provided
-if (params.proteins != false ) {
+if (params.proteins ) {
 
 	// goes to blasting of proteins
         Channel
@@ -202,7 +207,7 @@ if (params.proteins != false ) {
 }
 
 // if ESTs are provided
-if (params.ESTs != false) {
+if (params.ESTs) {
 	// goes to blasting the ESTs
         Channel
                 .fromPath(ESTs)
@@ -222,7 +227,7 @@ if (params.ESTs != false) {
 }
 
 // if RNAseq reads are provided
-if (params.reads != false) {
+if (params.reads) {
 
 	// Make a HiSat index
 	Channel
@@ -253,8 +258,8 @@ if (params.reads != false) {
 	minimap_trinity_to_evm = Channel.empty()
 }
 
-if (params.pasa == false) {
-	// Pasa models to EVM
+if (!params.pasa) {
+	// Pasa data to EVM
 	pasa_genes_to_evm = Channel.empty()
 	pasa_align_to_evm = Channel.empty()
 }
@@ -298,7 +303,7 @@ log.info "RNA-seq:			${params.reads}"
 if (params.augustus) {
 	log.info "Augustus profile		${params.model}"
 }
-if (params.augCfg) {
+if (params.augustus && AUG_CONF) {
 	log.info "Augustus config file		${AUG_CONF}"
 }
 if (params.training) {
@@ -1120,7 +1125,7 @@ if (params.pasa) {
 			output:
 			file(pasa_transdecoder_fasta) 
 			file (pasa_transdecoder_gff) into (pasa_to_training, pasa_genes_to_evm)
-			file(merged_gff) into pasa_align_to_evm)
+			file(merged_gff) into pasa_align_to_evm
 
 			script:
 			base_name = "pasa_db_merged"
@@ -1385,7 +1390,8 @@ if (params.evm) {
 
 		label 'long_running'
 
-		scratch true
+		// CANNOT USE SCRATCH FOR THIS!
+		//scratch true
 
 		//publishDir "${OUTDIR}/annotation/evm/jobs", mode: 'copy'
 
@@ -1413,10 +1419,10 @@ if (params.evm) {
 		transcript_options = ""
 		if (proteins == "false" || proteins == false || proteins =~ /input.*/) {
 		} else {
-			protein_options = "--protein_alignments $proteins"
+			protein_options = "--protein_alignments $proteins "
 		}
-		if ( est || trinity ) {
-			transcript_options = "--transcript_alignments $transcripts"
+		if ( est || trinity || pasa_align ) {
+			transcript_options = "--transcript_alignments $transcripts "
 		}
 
 		"""
@@ -1425,11 +1431,11 @@ if (params.evm) {
 
 			\$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome $genome_rm \
 				--gene_predictions $gene_models \
-				--segmentSize 100000 --overlapSize 10000 --partition_listing $partitions \
+				--segmentSize 2000000 --overlapSize 200000 --partition_listing $partitions \
 				$protein_options $transcript_options
 				
 			\$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome $genome_rm \
-				--weights $evm_weights \
+				--weights $EVM_WEIGHTS \
 				--gene_predictions $gene_models \
 				--output_file_name evm.out \
 				--partitions $partitions > $evm_commands

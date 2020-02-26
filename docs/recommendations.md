@@ -58,3 +58,22 @@ automatic training routine. This will use available transcriptome data to either
 (--model does not yet exist). This is somewhat experimental and depends a lot on the quality of the input data. It also takes a pretty long time (several
 days for larger genomes) as it needs to first re-construct gene models from the aligned transcriptome data, select all the models that are probably
 full length and finally use these gene structures to train Augustus. 
+
+## Improving an initial gene build
+
+Chances are the first run of the pipeline will not produce satisfactory results. Apart from trying to add additional data (e.g. more RNAseq, or ESTs, etc), an obvious
+aspect is the tuning of parameters for AUGUSTUS and EvidenceModeler. Both tools require files that control their behavior. 
+
+Changes to these files will force parts of the pipeline to rerun that rely on stages that make use of these files. EVM and AUGUSTUS are at the very end of the ESGA workflow, so resumeing the pipeline with
+modified config files typically does not take too long. You can thus try to improve your annotation iteratively by just playing with these files. More below. 
+
+### Augustus
+AUGUSTUS uses extrinsic hints to guide the gene finding. These hints are produced by the ESGA pipeline from provided evidence. How these hints are weighted inside AUGUSTUS however are 
+controlled by a config file. 
+
+Please see [here](https://github.com/Gaius-Augustus/Augustus/blob/master/config/extrinsic/extrinsic.cfg) for instructions on how to tweak these parameters for optiomal performance. ESGA uses, by default,
+an extrinsic config file that we have set up to work for our typical projects. You can however pass a modified version from the command line instead using the `--augCfg` option together with `-resume`. 
+
+## EVM
+ESGA produces several types of inputs (all of them optional) that are then combined by EVM into a consensus gene buid. The weight given to each type of input is controlled by the [weights.txt](../assets/evm/weights.txt) file. 
+EVM uses weights between 1 and 10 to determine which evidence to consider first. To pass your own, modified version of the weights file, use the `--evm_weights my_weights.txt` syntax together with the `-resume` option. 

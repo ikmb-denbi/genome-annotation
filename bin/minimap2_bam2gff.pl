@@ -114,7 +114,7 @@ open BAM,"samtools view $bam |";
             my ($genome_lend, $genome_rend, $trans_lend, $trans_rend) = @$coordset_ref;
             print join("\t",
                        $scaff_name,
-                       "genome",
+                       "est2genome",
                        "cDNA_match",
                        $genome_lend, $genome_rend,
                        $per_id,
