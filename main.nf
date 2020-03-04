@@ -130,6 +130,7 @@ if (params.augustus  && !params.augCfg ) {
 	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
 } else if (params.augustus) {
 	AUG_CONF = file(params.augCfg)
+	if (!AUG_CONF.exists() ) exit 1, "The AUGUSTUS config file you provided does not exist!"
 }
 
 // Check prereqs for training a new model
