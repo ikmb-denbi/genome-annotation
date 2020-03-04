@@ -46,7 +46,8 @@ open (my $IN, '<', $infile) or die "FATAL: Can't open file: $infile for reading.
 
 my $this_start = 0;
 my $previous_start = 0;
-
+my $padding = 2*$max_intron ;
+my $margin = 4*$max_intron ;
 my %this_block = undef;
 
 while (<$IN>) {
@@ -70,17 +71,22 @@ while (<$IN>) {
 	        die "File not coordinate sorted! Previous start was $previous_start and this start is $this_start\n" if ($this_start < $previous_start );
 	
 		# Within range of the previous range
-		if ($this_block{'stop'} >= ($start-$max_intron)) {
+		if ($this_block{'stop'} >= ($start-$margin)) {
 			$this_block{'stop'} = $stop;
 		# out of range
 		} else {
 
 			my $gap = ($start - $this_block{'stop'});
+			#printf "Block gap from $this_block{'stop'} to $start is too long!\n";
 			#printf "Starting a new block - gap of $gap\n";
 
 			# finish and print block
-			$this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
-			$this_block{'stop'} = ($this_block{'stop'}+$max_intron);
+			if ($this_block{'start'} - $padding < 0) {
+				$this_block{'start'} = 1 ;
+			} else {
+				$this_block{'start'} = $this_block{'start'}-$padding ;
+			}
+			$this_block{'stop'} = ($this_block{'stop'}+$padding);
 			printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";
 
 			# start a new block
@@ -91,8 +97,12 @@ while (<$IN>) {
 	} else {
 		
 		# finish and print block
-                $this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
-                $this_block{'stop'} = ($this_block{'stop'}+$max_intron);
+		if ($this_block{'start'} - $padding < 0) {
+                	$this_block{'start'} = 1 ;
+                } else {
+                	$this_block{'start'} = $this_block{'start'}-$padding ;
+                }
+                $this_block{'stop'} = ($this_block{'stop'}+$padding);
                 printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";
 		
 		%this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
@@ -102,6 +112,6 @@ while (<$IN>) {
 }
 
 # finish and print block
-$this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
-$this_block{'stop'} = ($this_block{'stop'}+$max_intron);
+$this_block{'start'} = 1 if ($this_block{'start'} - $padding < 0);
+$this_block{'stop'} = ($this_block{'stop'}+$padding);
 printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";

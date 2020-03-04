@@ -127,7 +127,7 @@ if (params.trinity && !params.reads ) {
 
 // Use a default config file for Augustus if none is provided
 if (params.augustus  && !params.augCfg ) {
-	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
+	AUG_CONF = "$workflow.projectDir/assets/augustus/augustus_default.cfg"
 } else if (params.augustus) {
 	AUG_CONF = file(params.augCfg)
 }
@@ -545,6 +545,7 @@ if (params.proteins) {
 
 	        script:
         	dbName = protein_fa.getBaseName()
+
 	        """
 			diamond makedb --in $protein_fa --db $dbName
         	"""
@@ -576,7 +577,7 @@ if (params.proteins) {
 	// This is used to define targets for exhaustive exonerate alignments
 	process protDiamondx {
 
-		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
+		// publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
 
 		scratch true
 
@@ -591,6 +592,7 @@ if (params.proteins) {
 		db_name = blastdb_files[0].baseName
 		chunk_name = genome_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${genome_chunk.baseName}.blast"
+
 		"""
 			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt ${params.blast_options} --db $db_name --query $genome_chunk --out $protein_blast_report
 		"""
@@ -601,7 +603,7 @@ if (params.proteins) {
 
 		label 'short_running'
 
-	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
+	        // publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
 		file(blast_reports) from ProteinBlastReport.collect()
@@ -682,9 +684,10 @@ if (params.proteins) {
 		script:
 		query_tag = Proteins.baseName
 		exonerate_gff = "proteins.exonerate.${query_tag}.hints.gff"
+
 		"""
 			cat $chunks > all_chunks.out
-			exonerate2gff.pl --infile all_chunks.out --source protein --outfile $exonerate_gff
+			exonerate2gff.pl --pri ${params.pri_protein} --infile all_chunks.out --outfile $exonerate_gff
 		"""
 	}
 
@@ -719,6 +722,7 @@ if (params.ESTs) {
 		script:
 		minimap_gff = "ESTs.minimap.gff"
 		minimap_bam = "ESTS.minimap.bam"
+
 		"""
 			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o $minimap_bam
 			minimap2_bam2gff.pl $minimap_bam > $minimap_gff
@@ -743,7 +747,7 @@ if (params.ESTs) {
 		minimap_hints = "ESTs.minimap.hints.gff"
 			
 		"""
-			minimap2hints.pl --source minimap_est --infile $minimap_gff --outfile $minimap_hints
+			minimap2hints.pl --pri ${params.pri_est} --infile $minimap_gff --outfile $minimap_hints
 		"""
 	}
 
@@ -883,7 +887,7 @@ if (params.reads) {
 		hisat_hints = "RNAseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$bam --out=$hisat_hints
+			bam2hints --intronsonly 0 -p ${params.pri_rnaseq} -s 'E' --in=$bam --out=$hisat_hints
 		"""
 	}
 
@@ -956,7 +960,7 @@ if (params.reads) {
                 	minimap_hints = "trinity.minimap.hints.gff"
 
 	                """
-        	                minimap2hints.pl --source minimap_trinity --infile $trinity_gff --outfile $minimap_hints
+        	                minimap2hints.pl --pri ${params.pri_est} --infile $trinity_gff --outfile $minimap_hints
                 	"""
 		}
 
@@ -1066,8 +1070,6 @@ if (params.pasa) {
 			
 			scratch true
 			
-			publishDir "${OUTDIR}/annotation/pasa/models", mode: 'copy'
-
 			input:
 			set file(genome_rm),file(transcripts_minimap),file(minimap_chunk_gff) from minimap_chunk_to_pasa
 
@@ -1258,23 +1260,28 @@ process prepMergeHints {
         file(trinity_minimap_hint) from trinity_minimap_hints.ifEmpty('')
 
 	output:
-	file(merged_hints) into (mergedHints,mergedHintsSort)
+	file(clean_hints) into (mergedHints,mergedHintsSort)
 
 	script:
 	def file_list = ""
+
 	file_list += !protein_exonerate_hint.empty() ? " ${protein_exonerate_hint}" : ""
 	file_list += !rnaseq_hint.empty() ? " ${rnaseq_hint}" : ""
 	file_list += !est_minimap_hint.empty() ? " ${est_minimap_hint}" : ""
 	file_list += !trinity_minimap_hint.empty() ? " ${trinity_minimap_hint}" : ""
 
 	merged_hints = "merged.hints.gff"
-	
+	clean_hints = "merged.hints.clean.gff"	
+
 	"""
 		cat $file_list | grep -v "false" >> $merged_hints
+                clean_hints.pl --infile $merged_hints --outfile $clean_hints
 	"""
 }
 
 process prepHintsToBed {
+
+	publishDir "${OUTDIR}/annotation/augustus/calling_regions"
 
 	label 'short_running'
 
@@ -1286,7 +1293,7 @@ process prepHintsToBed {
 
 	script:
 
-	bed = "regions.bed"
+	bed = "regions.max_intron_${params.max_intron_size}.bed"
 
 	"""
                 grep -v "#" $hints | grep -v "false" | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
@@ -1295,6 +1302,7 @@ process prepHintsToBed {
 }
 
 // execute Augustus
+
 /*
  * STEP Augustus.1 - Genome Annotation
  */
