@@ -32,7 +32,7 @@ my $matches = undef;
 my $assembly_index = undef;
 my $max_intron_size = undef;
 my $query_index = undef;
-my $analysis = undef;
+my $analysis = "protein2genome";
 my $help;
 
 GetOptions(

@@ -196,6 +196,7 @@ if (params.proteins ) {
 	Channel.fromPath(Proteins)
         .splitFasta(by: params.nblast, file: true)
         .set { fasta_prots }
+
 	// create a cdbtools index for the protein file
 	Channel
 	.fromPath(Proteins)
