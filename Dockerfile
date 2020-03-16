@@ -12,4 +12,5 @@ RUN apt-get -y install liburi-encode-perl make
 RUN cpan -i URI::Encode
 RUN mkdir -p /ifs
 RUN cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/conf.txt
-
+RUN mkdir /opt/blast+ && cd /opt/blast+ && wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/ncbi-blast-2.10.0+-x64-linux.tar.gz && tar -xvf ncbi-blast-2.10.0+-x64-linux.tar.gz && \
+rm *.tar.gz && mv ncbi-blast-2.10.0+ 2.10.0

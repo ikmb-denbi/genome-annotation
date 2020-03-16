@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-# A script to convert a BLAST report to a target list for Exonerate
 
 use strict;
 use Getopt::Long;
@@ -30,8 +29,8 @@ perl my_script.pl
 my $outfile = undef;
 my $infile = undef;
 my %targets;
-my $min_bit = 50.0; # bit score of the match must be at least this high
-my $min_id = 60.0; # match must be at least this similar
+my $min_bit = 25.0; # bit score of the match must be at least this high
+my $min_id = 60; # match must be at least this similar
 my $length_percent = 0.6; # At least this much of the query has to align
 my $max_intron_size = undef;
 
@@ -42,7 +41,7 @@ GetOptions(
     "infile=s" => \$infile,
     "max_intron_size=i" => \$max_intron_size,
     "min_bit=i" => \$min_bit,
-    "min_id=f" => \$min_id,
+    "min_id=i" => \$min_id,
     "length_percent=i" => \$length_percent,
     "outfile=s" => \$outfile);
 
@@ -68,9 +67,7 @@ while(<$IN>) {
 	
 	chomp; 
 	my $line = $_; 
-	# I       Y74C9A.5.1      120     344     474     97.778  50000   30443   79768   225     5       0       2.72e-146       467
 	my ($qseqid, $sseqid, $sstart, $send, $slen, $pident, $qlen, $qstart, $qend, $length, $mismatch, $gapopen, $evalue, $bitscore) = split("\t", $line);
-
 	my %entry = (
 		"query_id" => $qseqid,
 		"target_id" => $sseqid,
@@ -81,7 +78,6 @@ while(<$IN>) {
 		"query_start" => $qstart,
 		"query_end" => $qend,
 		"aln_length" => $length,
-		"pident" => $pident,
 		"mismatch" => $mismatch,
 		"gapopen" => $gapopen,
 		"evalue" => $evalue,
@@ -103,14 +99,14 @@ while(<$IN>) {
 	}
 
 	# add to our inventory ( a hash of hashes using the query and target id as keys)
-	if ( exists $bucket{$sseqid} ) {
-		if (exists $bucket{$sseqid}{$qseqid}) {
-			push( @{ $bucket{$sseqid}{$qseqid} }, \%entry ); 
+	if ( exists $bucket{$qseqid} ) {
+		if (exists $bucket{$qseqid}{$sseqid}) {
+			push( @{ $bucket{$qseqid}{$sseqid} }, \%entry ); 
 		} else {
-			$bucket{$sseqid}{$qseqid} = [ \%entry ];
+			$bucket{$qseqid}{$sseqid} = [ \%entry ];
 		}
 	} else {
-		$bucket{$sseqid}{$qseqid} = [ \%entry ] ;
+		$bucket{$qseqid}{$sseqid} = [ \%entry ] ;
 	}
 
 }
@@ -124,44 +120,41 @@ foreach my $query ( keys %bucket ) {
 
 	# every protein - chromosome/scaffold relationship
 	# Our target are the outer most mapping coordinates +/- twice the max intron size
-	# Iterating over each mapped scaffold...
 	foreach my $target ( keys %$data ) {
 		
+	
 		# Sort the query/target specific matches based on their starting position
 		my $matches = $bucket{$query}{$target};
 
-		my @sorted_matches = sort { $a->{"query_start"} <=> $b->{"query_start"} } @{$matches};
-		my @sorted_query_matches = sort { $a->{"target_start"} <=> $b->{"target_start"} } @{$matches};
+		my @sorted_matches = sort { $a->{"target_start"} <=> $b->{"target_start"} } @{$matches};
+		my @sorted_query_matches = sort { $a->{"query_start"} <=> $b->{"query_start"} } @{$matches};
 
 		# Sorted by query (protein) positions to determine how much of the query sequence is aligned in this scaffold
 		my $first_query_entry = @sorted_query_matches[0];
 		my $last_query_entry = @sorted_query_matches[-1];
 
-		# How much of the protein aligns against the genome
-		my $query_length = $first_query_entry->{"target_length"};
-		my $match_length = $last_query_entry->{"target_end"} - $first_query_entry->{"target_start"};
+		my $query_length = $first_query_entry->{"query_length"};
+		my $match_length = $last_query_entry->{"query_end"} - $first_query_entry->{"query_start"};
 		my $fraction = $match_length/$query_length;
-
+	
 		# Sorted by target positions to determine the genomic boundaries for subsequent exonerate alignments
 		my $first_entry = @sorted_matches[0];
 		my $last_entry = @sorted_matches[-1];
-	
-		# is this overall a valid match?
 
-		#printf $first_entry->{"bitscore"} . "\t" . $last_entry->{"bitscore"} . "\t" . $fraction . "\n";
+		# is this overall a valid match?
 		if ($first_entry->{"bitscore"} >= $min_bit && $last_entry->{"bitscore"} >= $min_bit && $fraction >= $length_percent ) {
 
-			my $this_start = $first_entry->{"query_start"} ;
-			my $this_end = $last_entry->{"query_end"} ;
+			my $this_start = $first_entry->{"target_start"} ;
+			my $this_end = $last_entry->{"target_end"} ;
 
 			my $target_start;
 			my $target_end; 
 
 			# Define the final genomic coordinates adding twice the maximum intron size as flanking regions (or start/end of scaffold, whichever comes first)
 			my $target_start = ($this_start <=  $max_intron_size*2) ? 1 : ($this_start-$max_intron_size*2);
-                	my $target_end = ($this_end+$max_intron_size*2) >= $first_entry->{"query_length"} ? $first_entry->{"query_length"} : ($this_end+$max_intron_size*2);
+                	my $target_end = ($this_end+$max_intron_size*2) >= $first_entry->{"target_length"} ? $first_entry->{"target_length"} : ($this_end+$max_intron_size*2);
 		
-			printf $first_entry->{"target_id"} . "\t" . $first_entry->{"query_id"} . "\t" . $target_start . "\t" . $target_end . "\n";
+			 printf $first_entry->{"query_id"} . "\t" . $first_entry->{"target_id"} . "\t" . $target_start . "\t" . $target_end . "\n";
 		}
 
 	}

@@ -160,6 +160,8 @@ if (!params.rm_lib && !params.rm_species) {
 // give this run a name
 run_name = ( !params.run_name) ? "${workflow.sessionId}" : "${params.run_name}"
 
+BLAST_LOCAL_PATH = "/opt/blast+/2.10.0/bin"
+
 def summary = [:]
 
 summary['Assembly'] = params.genome
@@ -192,10 +194,11 @@ Channel
 if (params.proteins ) {
 
 	// goes to blasting of proteins
-        Channel
+	Channel
         .fromPath(Proteins)
-        .set { protein_to_blast_db }
-
+        .splitFasta(by: params.nblast, file: true)
+        .set { fasta_prots }
+	
 	// create a cdbtools index for the protein file
 	Channel
 	.fromPath(Proteins)
@@ -498,63 +501,41 @@ process repeatMerge {
 	"""	
 }
 
+// Turn genome into a masked blast database
+// Generates a dust mask from softmasked genome sequence
+process runMakeBlastDB {
+	
+	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
+
+	input:
+	file(genome_fa) from rm_to_blast_db
+
+	output:
+	file("${dbName}*.n*") into blast_db_prots
+	
+	script:
+	dbName = genome_fa.getBaseName()
+	mask = dbName + ".asnb"
+	"""
+		$BLAST_LOCAL_PATH/convert2blastmask -in $genome_fa -parse_seqids -masking_algorithm repeat \
+			-masking_options "repeatmasker, default" -outfmt maskinfo_asn1_bin \
+ 			-out $mask
+                $BLAST_LOCAL_PATH/makeblastdb -in $genome_fa -parse_seqids -dbtype nucl -mask_data $mask -out $dbName
+	"""
+}
+
 // ---------------------
 // PROTEIN DATA PROCESSING
 // ---------------------
 if (params.proteins) {
+
 	// ----------------------------
 	// Protein BLAST against genome
 	// ----------------------------
 
-	// Split the genome into smaller chunks for Blastx
-	process prepSplitAssembly {
-
-		label 'short_running'
-
-		input:
-		file(genome_fa) from rm_to_blast_db
-
-		output:
-		file(genome_chunks) into genome_chunks_blast
-		file(genome_agp) into genome_chunks_agp
-
-		script:
-
-		genome_chunks = genome_fa + ".chunk"
-		genome_agp = genome_fa + ".agp"
-
-		"""
-			chromosome_chunk.pl -fasta_file $genome_fa -size $params.chunk_size
-		"""
-	}
-
-	genome_chunks_blast_split = genome_chunks_blast.splitFasta(by: params.nblast, file: true)
-
-	// Make a blast database
-	process protMakeDB {
-
-		label 'medium_running'
-
-        	publishDir "${OUTDIR}/databases/blast/", mode: 'copy'
-
-	        input:
-        	file(protein_fa) from protein_to_blast_db
-
-	        output:
-        	file("${dbName}.dmnd") into blast_db_prots
-
-	        script:
-        	dbName = protein_fa.getBaseName()
-	        """
-			diamond makedb --in $protein_fa --db $dbName
-        	"""
-	}
-
 	// create a cdbtools compatible  index
 	// we need this to do very focused exonerate searches later
-	process protIndex {
-
-		label 'short_running'
+	process runIndexProteinDB {
 
 		publishDir "${OUTDIR}/databases/cdbtools/proteins", mode: 'copy'
 
@@ -572,40 +553,37 @@ if (params.proteins) {
 		"""
 	}
 
-	// Blast each genome chunk against the protein database
+
+	// Blast each protein chunk against the soft-masked genome
 	// This is used to define targets for exhaustive exonerate alignments
-	process protDiamondx {
+	// has to run single-threaded due to bug in blast+ 2.5.0 (comes with Repeatmaster in Conda)
+	process runBlastProteins {
 
-		publishDir "${OUTDIR}/evidence/proteins/blastx/chunks", mode: 'copy'
-
-		scratch true
+		publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
-		file(genome_chunk) from genome_chunks_blast_split
-		file(blastdb_files) from blast_db_prots.collect()
+		file(protein_chunk) from fasta_prots
+		file(blastdb_files) from blast_db_prots
 
 		output:
 		file(protein_blast_report) into ProteinBlastReport
 
 		script:
 		db_name = blastdb_files[0].baseName
-		chunk_name = genome_chunk.getName().tokenize('.')[-2]
-		protein_blast_report = "${genome_chunk.baseName}.blast"
+		chunk_name = protein_chunk.getName().tokenize('.')[-2]
+		protein_blast_report = "${protein_chunk.baseName}.blast"
 		"""
-			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt ${params.blast_options} --db $db_name --query $genome_chunk --out $protein_blast_report
+			$BLAST_LOCAL_PATH/blastn -num_threads ${task.cpus} -evalue ${params.blast_evalue} -db_soft_mask 40 -max_intron_length ${params.max_intron_size} -outfmt \"${params.blast_options}\" -db $db_name -query $protein_chunk > $protein_blast_report
 		"""
 	}
 
-	// Parse Protein Blast output for exonerate processing
-	process protDiamondToTargets {
-
-		label 'short_running'
+// Parse Protein Blast output for exonerate processing
+	process Blast2QueryTargetProts {
 
 	        publishDir "${OUTDIR}/evidence/proteins/tblastn/chunks", mode: 'copy'
 
 		input:
 		file(blast_reports) from ProteinBlastReport.collect()
-		file(genome_agp) from genome_chunks_agp
 
 		output:
 		file(query2target_result_uniq_targets) into query2target_uniq_result_prots
@@ -616,9 +594,7 @@ if (params.proteins) {
 	
 		"""
 			cat $blast_reports > merged.txt
-			blast_chunk_to_toplevel.pl --blast merged.txt --agp $genome_agp > merged.translated.txt
-			blast2exonerate_targets.pl --infile merged.translated.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
-			rm merged.*.txt
+			blast2exonerate_targets.pl --infile merged.txt --max_intron_size $params.max_intron_size > $query2target_result_uniq_targets
 		"""
 	}
 
@@ -629,19 +605,17 @@ if (params.proteins) {
 		.set{ query2target_chunk_prots }
 
 	// Run Exonerate on the blast regions
-	process protExonerate {
+	process runExonerateProts {
 
 		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
-
-		scratch true
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) optional true into (exonerate_result_prots, exonerate_protein_chunk_evm)
-		file("merged.${chunk_name}.exonerate.out") optional true into exonerate_raw_results
+		file(exonerate_chunk) into (exonerate_result_prots, exonerate_protein_chunk_evm)
+		file("merged.${chunk_name}.exonerate.out") into exonerate_raw_results
 	
 		script:
 		query_tag = protein_db.baseName
@@ -667,9 +641,7 @@ if (params.proteins) {
 	exonerate_protein_evm = exonerate_protein_chunk_evm.collectFile()
 
 	// merge the exonerate hits and create the hints
-	process protExonerateToHints {
-
-		label 'medium_running'
+	process Exonerate2HintsProtein {
 
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/", mode: 'copy'
 
@@ -684,9 +656,10 @@ if (params.proteins) {
 		exonerate_gff = "proteins.exonerate.${query_tag}.hints.gff"
 		"""
 			cat $chunks > all_chunks.out
-			exonerate2gff.pl --infile all_chunks.out --source protein --outfile $exonerate_gff
+			exonerate2gff.pl --infile all_chunks.out --pri ${params.pri_protein} --outfile $exonerate_gff
 		"""
 	}
+
 
 } // close protein loop
 
