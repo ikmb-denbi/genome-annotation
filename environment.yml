@@ -2,9 +2,9 @@
 #   conda env create -f genome-annotation-conda.yml
 name: genome-annotation-1.0
 channels:
- - defaults
  - conda-forge
  - bioconda
+ - defaults
 dependencies:
  - parallel
  - samtools=1.9
