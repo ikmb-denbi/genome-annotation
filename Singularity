@@ -7,7 +7,7 @@ From:nfcore/base
     VERSION 0.1
 
 %environment
-    PATH=/opt/conda/envs/genome-annotation-1.0/bin:/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:$PATH
+    PATH=/opt/conda/envs/genome-annotation-1.0/bin:/opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/bin:/opt/bin:$PATH
     export PATH
 
     PERL5LIB=$PERL5LIB:/usr/local/share/perl/5.24.1
@@ -35,3 +35,7 @@ mkdir -p /ifs
 
 # Create the default config file
 cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.template /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/conf.txt
+
+# Install rapid fasta splitter
+mkdir -p /opt/bin && cd /opt/bin && wget ftp://saf.bio.caltech.edu/pub/software/molbio/fastasplitn.c && gcc -o fastasplitn fastasplitn.c && chmod +x fastasplitn
+
