@@ -27,7 +27,7 @@ From:nfcore/base
     /opt/conda/bin/conda clean -a
 
 # Prereqs for Nextflow
-apt-get -y install procps make
+apt-get -y install procps make gcc
 
 cpan -i URI::Encode
 # Create mount point for RZCluster
