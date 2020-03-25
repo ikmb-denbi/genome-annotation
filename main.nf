@@ -341,9 +341,10 @@ process splitGenome {
 	file("*_chunk_*") into fasta_chunks
 
 	script:
+	ref_name = genome_fa.getBaseName() + "_chunk_%3.3d"
 
 	"""
-		fastasplit -f $genome_fa -c ${params.nchunks} -o .
+		fastasplitn -f $genome_fa -n ${params.nchunks} -t $ref_name
 	"""
 
 }
@@ -631,7 +632,7 @@ if (params.proteins) {
 	// Run Exonerate on the blast regions
 	process protExonerate {
 
-		//publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
+		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
 		scratch true
 
@@ -642,10 +643,12 @@ if (params.proteins) {
 		output:
 		file(exonerate_chunk) optional true into (exonerate_result_prots, exonerate_protein_chunk_evm)
 		file("merged.${chunk_name}.exonerate.out") optional true into exonerate_raw_results
-	
+		file(commands) 
+
 		script:
 		query_tag = protein_db.baseName
 		chunk_name = hits_chunk.getName().tokenize('.')[-2]
+		commands = "commands." + chunk_name + ".txt"
 		exonerate_chunk = "${hits_chunk.baseName}.${query_tag}.exonerate.out"
 		
 		// get the protein fasta sequences, produce the exonerate command and genomic target interval fasta, run the whole thing,
@@ -654,8 +657,8 @@ if (params.proteins) {
 
 		"""
 			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
-			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile commands.txt
-			parallel -j ${task.cpus} < commands.txt
+			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile $commands
+			parallel -j ${task.cpus} < $commands
 			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
 			rm *.align
@@ -1308,7 +1311,7 @@ process predAugustus {
 
 	//publishDir "${OUTDIR}/annotation/augustus/chunks"
 
-	scratch true 
+	//scratch true 
 
         when:
         params.augustus != false
