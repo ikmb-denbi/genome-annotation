@@ -39,3 +39,7 @@ cp /opt/conda/envs/genome-annotation-1.0/opt/pasa-2.3.3/pasa_conf/pasa.CONFIG.te
 # Install rapid fasta splitter
 mkdir -p /opt/bin && cd /opt/bin && wget ftp://saf.bio.caltech.edu/pub/software/molbio/fastasplitn.c && gcc -o fastasplitn fastasplitn.c && chmod +x fastasplitn
 
+# Install local Blast+ to circumvent buggy version shipping with RepeatMasker
+mkdir /opt/blast+ && cd /opt/blast+ && wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/ncbi-blast-2.10.0+-x64-linux.tar.gz && tar -xvf ncbi-blast-2.10.0+-x64-linux.tar.gz && \
+rm *.tar.gz && mv ncbi-blast-2.10.0+ 2.10.0
+
