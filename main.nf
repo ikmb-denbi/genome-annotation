@@ -86,6 +86,7 @@ EVM_WEIGHTS = file(evm_weights)
 
 uniprot_path = "${baseDir}/assets/Eumetazoa_UniProt_reviewed_evidence.fa"
 
+// Need a non-conda Blast executable for tblastn jobs to avoid segfault error in old blat
 BLAST_LOCAL_PATH = "/opt/blast+/2.10.0/bin"
 
 if (params.pasa) {
