@@ -95,7 +95,7 @@ while (<$BED>) {
 		my $outfile = $chr . "_" . $from . "-" . $to . ".augustus.gff" ;
 		my $infile = $chr . ".fa" ;
 		
-		my $command = "augustus --species=$model --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;
+		my $command = "augustus --species=$model --alternatives-from-sampling=false --alternatives-from-evidence=false --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;
 		printf $command . "\n" ;
 	}
 }

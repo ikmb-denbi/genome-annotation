@@ -344,7 +344,7 @@ process splitGenome {
 	ref_name = genome_fa.getBaseName() + "_chunk_%3.3d"
 
 	"""
-		fastasplitn -f $genome_fa -n ${params.nchunks} -t $ref_name
+		fastasplitn -in $genome_fa -n ${params.nchunks} -t $ref_name
 	"""
 
 }
@@ -510,6 +510,8 @@ if (params.proteins) {
 	// Split the genome into smaller chunks for Blastx
 	process prepSplitAssembly {
 
+		publishDir "${OUTDIR}/databases/genome/", mode: 'copy'
+
 		label 'short_running'
 
 		input:
@@ -593,7 +595,7 @@ if (params.proteins) {
 		chunk_name = genome_chunk.getName().tokenize('.')[-2]
 		protein_blast_report = "${genome_chunk.baseName}.blast"
 		"""
-			diamond blastx --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt ${params.blast_options} --db $db_name --query $genome_chunk --out $protein_blast_report
+			diamond blastx --sensitive --threads ${task.cpus} --evalue ${params.blast_evalue} --outfmt ${params.blast_options} --db $db_name --query $genome_chunk --out $protein_blast_report
 		"""
 	}
 
@@ -661,9 +663,6 @@ if (params.proteins) {
 			parallel -j ${task.cpus} < $commands
 			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
-			rm *.align
-			rm *._target_.fa*
-			rm *._query_.fa*
 		"""
 	}
 
@@ -1279,6 +1278,8 @@ process prepMergeHints {
 
 process prepHintsToBed {
 
+	publishDir "${OUTDIR}/annotation/augustus/targets"
+
 	label 'short_running'
 
 	input:
@@ -1309,7 +1310,7 @@ augustus_input_chunk = acf_prediction
 
 process predAugustus {
 
-	//publishDir "${OUTDIR}/annotation/augustus/chunks"
+	publishDir "${OUTDIR}/annotation/augustus/chunks"
 
 	//scratch true 
 
@@ -1323,17 +1324,19 @@ process predAugustus {
 
 	output:
 	file(augustus_result) into augustus_out_gff
-	
+	file(command_file)
+
 	script:
 	chunk_name = genome_chunk.getName().tokenize(".")[-2]
 	augustus_result = "augustus.${chunk_name}.out.gff"
 	genome_fai = genome_chunk.getName() + ".fai"
+	command_file = "commands." + chunk_name + ".txt"
 
 	"""
 		samtools faidx $genome_chunk
 		fastaexplode -f $genome_chunk -d . 
-		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr off --isof false --aug_conf $AUG_CONF --hints $hints --bed $regions > commands.txt	
-		parallel -j ${task.cpus} < commands.txt
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr off --isof false --aug_conf $AUG_CONF --hints $hints --bed $regions > $command_file
+		parallel -j ${task.cpus} < $command_file
 		touch dummy.augustus.gff
 		cat *augustus.gff > $augustus_result
 	"""
