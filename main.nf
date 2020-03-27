@@ -885,7 +885,7 @@ if (params.reads) {
 		hisat_hints = "RNAseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 5 -s 'E' --in=$bam --out=$hisat_hints
+			bam2hints --intronsonly 0 -p 4 -s 'E' --in=$bam --out=$hisat_hints
 		"""
 	}
 

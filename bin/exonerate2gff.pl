@@ -34,7 +34,7 @@ my %source_keys = (
 	},
 	"protein" => {
 		"src" => "P",
-		"pri" => 4,
+		"pri" => 5,
 		"source" => "protein2genome"
 		
 	},
