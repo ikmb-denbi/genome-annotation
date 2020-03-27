@@ -66,7 +66,7 @@ open BAM,"samtools view $bam |";
 	my $per_id = sprintf("%.1f", 100 - $num_mismatches/$align_len * 100); 
 
 	# discard all mappings below 80%
-	if ($per_id < 80.0) {
+	if ($per_id < 90.0) {
 		next;
 	}
 

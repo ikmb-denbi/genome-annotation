@@ -23,12 +23,12 @@ perl my_script.pl
 
 my $outfile = undef;
 my $infile = undef;
-my $source = "minimap";
+my $source = "est2genome";
 my $GeneID = undef;
 my $help;
 
 my $src = "T";
-my $pri = 4;
+my $pri = 3;
 my $hintfeature = "exonpart";
 
 my $help;
@@ -52,6 +52,9 @@ if ($outfile) {
 # open the minimap GFF file
 open (my $IN, '<', $infile) or die "FATAL: Can't open file: $infile for reading.\n$!\n";
 
+my @bucket;
+my $previous_group = "placeholder";
+
 while (<$IN>) {
 	
 	my $line = $_;
@@ -60,12 +63,36 @@ while (<$IN>) {
 	if ( $line =~ /^#.*/ ) {
 		printf $line . "\n";
 	} else {
-	#I       genome  cDNA_match      15053797        15053899        100.0   -       .       ID=F31C3.6a.p1;Target=F31C3.6a 1560 1662
+
 		my ($chr,$origin,$feature,$from,$to,$score,$strand,$phase,$info) = split("\t",$line);
 		my $group = (split /[;,=]/ , $info)[1];
-		printf $chr . "\t" . $source . "\t" . $hintfeature . "\t" . $from . "\t" . $to . "\t" . $score . "\t" . $strand . "\t" . $phase . "\t" . "src=$src;grp=$group;pri=$pri\n"
 
+		my $entry =  $chr . "\t" . $source . "\t" . $hintfeature . "\t" . $from . "\t" . $to . "\t" . $score . "\t" . $strand . "\t" . $phase . "\t" . "src=$src;grp=$group;pri=$pri" ;
+		
+		# Collect mappings until a new group starts
+		if ($previous_group ne $group) {
+			# only consider multi-hit, i.e. spliced, mappings
+			if (scalar(@bucket) > 1) {
+				foreach my $e (@bucket){
+					printf $e . "\n" ;
+				}
+			} else {
+				print STDERR "Skipping single exon group $group\n";
+			}
+			@bucket = ();
+			
+		} 
+
+		$previous_group = $group;
+		push(@bucket,$entry);
 	}
+
+}
+
+if (scalar(@bucket) > 1) {
+	foreach my $e (@bucket){
+        	printf $e . "\n" ;
+        }
 }
 
 close $IN;

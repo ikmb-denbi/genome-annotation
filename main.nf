@@ -127,7 +127,7 @@ if (params.trinity && !params.reads ) {
 
 // Use a default config file for Augustus if none is provided
 if (params.augustus  && !params.augCfg ) {
-	AUG_CONF = "$workflow.projectDir/bin/augustus_default.cfg"
+	AUG_CONF = "$workflow.projectDir/assets/augustus/augustus_default.cfg"
 } else if (params.augustus) {
 	AUG_CONF = file(params.augCfg)
 }
@@ -636,7 +636,7 @@ if (params.proteins) {
 
 		publishDir "${OUTDIR}/evidence/proteins/exonerate/chunks", mode: 'copy'
 
-		scratch true
+		//scratch true
 
 		input:
 		set file(hits_chunk),file(protein_db),file(protein_db_index) from query2target_chunk_prots
@@ -722,7 +722,7 @@ if (params.ESTs) {
 		minimap_gff = "ESTs.minimap.gff"
 		minimap_bam = "ESTS.minimap.bam"
 		"""
-			minimap2 -t ${task.cpus} -ax splice -c $genome_rm $est_chunks | samtools sort -O BAM -o $minimap_bam
+			minimap2 -t ${task.cpus} -ax splice:hq -c -G ${params.max_intron_size}  $genome_rm $est_chunks | samtools sort -O BAM -o $minimap_bam
 			minimap2_bam2gff.pl $minimap_bam > $minimap_gff
 		"""	
 

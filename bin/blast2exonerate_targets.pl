@@ -164,10 +164,10 @@ foreach my $query ( keys %bucket ) {
 		my @bucket;
 		push(@bucket,$first_entry);
 
-		# stitch matches into clusters, gaps may be no longer than 4 times the max intron size
+		# stitch matches into clusters, gaps may be no longer than 2 times the max intron size
 		# This prevents creating absurdely large clusters in case a proteins maps to a scaffold more than once
 		foreach my $match (@clean_matches) {
-			if ($match->{"query_start"} > $this_start+($max_intron_size*4) ) {
+			if ($match->{"query_start"} > $this_start+($max_intron_size*2) ) {
 				# this gap is too large - dump out what we have and start new cluster
 				print_cluster(\@bucket,$max_intron_size);
 				@bucket = ();
