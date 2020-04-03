@@ -14,6 +14,8 @@ perl my_script.pl
 		The name of the file to read. 
     [--source string]
 		A valid source for processing (est, protein or trinity)
+    [--pri integer]
+		Priority of the resulting hints (default: 5)
   Ouput:    
     [--outfile filename]
         The name of the output file. By default the output is the
@@ -24,6 +26,7 @@ my $outfile = undef;
 my $infile = undef;
 my $source = undef;
 my $GeneID = undef;
+my $pri = 5;
 my $help;
 
 my %source_keys = (
@@ -49,6 +52,7 @@ my $help;
 GetOptions(
     "help" => \$help,
     "infile=s" => \$infile,
+    "pri=i" => \$pri,
     "source=s" => \$source,
     "outfile=s" => \$outfile);
 
@@ -73,13 +77,15 @@ unless ( grep( /^$source$/, @sources ) ) {
 open (my $IN, '<', $infile) or die "FATAL: Can't open file: $infile for reading.\n$!\n";
 
 my $src = $source_keys{$source}{"src"};
-my $pri = $source_keys{$source}{"pri"};
 my $method = $source_keys{$source}{"source"};
 
 while (<$IN>) {
 	
 	my $line = $_;
 	chomp $line;
+
+	// skip comment lines
+	next if ($line =~ m/^#.*/ );
 
 	my ($Chrom,$met,$feature,$start,$end,$score,$strand,$frame,$comment) = split(/\t+/,$line);
 
@@ -88,7 +94,8 @@ while (<$IN>) {
 		# if this is a protein alignment, we use the bounds as start and stop hints
 		if ($source eq "protein2genome") {
 			printf $Chrom."\t".$method."\tstart\t". ($start-20) . "\t" . ($start+20) . "\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
-			printf $Chrom."\t".$method."\tstop\t" . ($end-20) . "\t" . ($end+20) ."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";	
+			printf $Chrom."\t".$method."\tstop\t" . ($end-20) . "\t" . ($end+20) ."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";
+			printf $Chrom."\t".$method."\tgenicpart\t" . ($start-20) . "\t" . ($end+20) . "\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";	
 		}
 	} elsif ($feature eq "exon") {
 		printf $Chrom."\t".$method."\texonpart\t".$start."\t".$end."\t".$score."\t".$strand."\t".$frame."\tgrp=".$GeneID.";src=$src;pri=$pri\n";

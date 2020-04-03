@@ -46,6 +46,7 @@ open (my $IN, '<', $infile) or die "FATAL: Can't open file: $infile for reading.
 
 my $this_start = 0;
 my $previous_start = 0;
+my $previous_strand = "-";
 
 my %this_block = undef;
 
@@ -58,33 +59,37 @@ while (<$IN>) {
 
 	# printf $seq . "\t" . $start .  "\n";
 
+	if ($strand eq ".") {
+		$strand = $previous_strand;
+	}
+
 	$this_start = $start;
 
 	if (!defined $this_block{'seq_name'}) {
 		#printf "Starting a new block\n";
-                %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
+                %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop , 'strand' => $strand);
 
 	# Existing block, same sequence - extend or finish
 	} elsif ( $this_block{'seq_name'} eq $seq ) {
 		
 	        die "File not coordinate sorted! Previous start was $previous_start and this start is $this_start\n" if ($this_start < $previous_start );
 	
-		# Within range of the previous range
-		if ($this_block{'stop'} >= ($start-$max_intron)) {
+		# Within range of the previous range and on the same strand
+		if ($this_block{'stop'} >= ($start-$max_intron) && $strand eq $previous_strand) {
 			$this_block{'stop'} = $stop;
 		# out of range
 		} else {
 
-			my $gap = ($start - $this_block{'stop'});
+			#my $gap = ($start - $this_block{'stop'});
 			#printf "Starting a new block - gap of $gap\n";
 
 			# finish and print block
 			$this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
 			$this_block{'stop'} = ($this_block{'stop'}+$max_intron);
-			printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";
+			printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\t" . $this_block{'strand'} . "\n";
 
 			# start a new block
-	                %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
+	                %this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop , 'strand' => $strand);
 		}
 
 	# This is a new sequence, so starts a new block by default
@@ -93,15 +98,16 @@ while (<$IN>) {
 		# finish and print block
                 $this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
                 $this_block{'stop'} = ($this_block{'stop'}+$max_intron);
-                printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";
+                printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\t" . $this_block{'strand'} . "\n";
 		
-		%this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop );
+		%this_block = ( 'seq_name' => $seq, 'start' => $start, 'stop' => $stop, 'strand' => $strand );
 	}
 	
 	$previous_start = $this_start;
+	$previous_strand = $strand;
 }
 
 # finish and print block
 $this_block{'start'} = 1 if ($this_block{'start'} - $max_intron < 0);
 $this_block{'stop'} = ($this_block{'stop'}+$max_intron);
-printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\n";
+printf $this_block{'seq_name'} . "\t" . $this_block{'start'} . "\t" . $this_block{'stop'} . "\t" . $this_block{'strand'} . "\n";

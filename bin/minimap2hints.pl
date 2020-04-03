@@ -15,6 +15,9 @@ perl my_script.pl
 		The name of the file to read. 
     [--source string]
 		A valid source for processing (est, protein or trinity)
+    [--pri integer]
+		Priority of the resulting hints (default: 3)
+
   Ouput:    
     [--outfile filename]
         The name of the output file. By default the output is the
@@ -25,6 +28,7 @@ my $outfile = undef;
 my $infile = undef;
 my $source = "est2genome";
 my $GeneID = undef;
+my $pri = 3;
 my $help;
 
 my $src = "T";
@@ -36,6 +40,7 @@ my $help;
 GetOptions(
     "help" => \$help,
     "source=s" => \$source,
+    "pri=i" => \$pri,
     "infile=s" => \$infile,
     "outfile=s" => \$outfile);
 

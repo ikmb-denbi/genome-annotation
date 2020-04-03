@@ -49,6 +49,11 @@ def helpMessage() {
     --max_intron_size	Maximum length of introns to consider for spliced alignments [ default = 20000 ]
     --evm		Whether to run EvicenceModeler at the end to produce a consensus gene build [true | false (default) ]
     --evm_weights	Custom weights file for EvidenceModeler (overrides the internal default)
+  
+    Evidence tuning
+    --pri_prot		A positive number between 1 and 5 - the higher, the more important the hint is for gene calling (default: 5)
+    --pri_est		A positive number between 1 and 5 - the higher, the more important the hint is for gene calling (default: 3)
+    --pri_rnaseq	A positive number between 1 and 5 - the higher, the more important the hint is for gene calling (default: 4)
  	
     How to split programs:
     --nblast		Chunks (# of sequences) to divide genome for blastx jobs [ default = 100 ]
@@ -432,7 +437,7 @@ rm_lib_path = RMLibPath
 // if nothing was masked, return the original genome sequence instead and an empty gff file. 
 process repeatMask {
 
-	scratch true
+	//scratch true
 
 	publishDir "${OUTDIR}/repeatmasker/chunks"
 
@@ -444,6 +449,7 @@ process repeatMask {
 	file(genome_rm) into RMFastaChunks
 	file(genome_rm) into (genome_to_minimap_chunk,genome_chunk_to_augustus)
 	file(rm_gff) into RMGFF
+	set file(rm_gff),file(rm_tbl),file(rm_out)
 
 	script:
 
@@ -462,6 +468,8 @@ process repeatMask {
 
 	genome_rm = "${genome_fa.getName()}.masked"
 	rm_gff = "${genome_fa.getName()}.out.gff"
+	rm_tbl = "${genome_fa.getName()}.tbl"
+	rm_out = "${genome_fa.getName()}.out"
 	
 	"""
 		echo \$REPEATMASKER_LIB_DIR > lib_dir.txt
@@ -663,6 +671,8 @@ if (params.proteins) {
 			parallel -j ${task.cpus} < $commands
 			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
+
+			test -f $exonerate_chunk || cat "#" > $exonerate_chunk
 		"""
 	}
 
@@ -686,7 +696,7 @@ if (params.proteins) {
 		exonerate_gff = "proteins.exonerate.${query_tag}.hints.gff"
 		"""
 			cat $chunks > all_chunks.out
-			exonerate2gff.pl --infile all_chunks.out --source protein --outfile $exonerate_gff
+			exonerate2gff.pl --infile all_chunks.out --pri ${params.pri_prot} --source protein --outfile $exonerate_gff
 		"""
 	}
 
@@ -745,7 +755,7 @@ if (params.ESTs) {
 		minimap_hints = "ESTs.minimap.hints.gff"
 			
 		"""
-			minimap2hints.pl --source minimap_est --infile $minimap_gff --outfile $minimap_hints
+			minimap2hints.pl --source est2genome --pri ${params.pri_est} --infile $minimap_gff --outfile $minimap_hints
 		"""
 	}
 
@@ -885,7 +895,7 @@ if (params.reads) {
 		hisat_hints = "RNAseq.hisat.hints.gff"
 
 		"""
-			bam2hints --intronsonly 0 -p 4 -s 'E' --in=$bam --out=$hisat_hints
+			bam2hints --intronsonly 0 -p ${params.pri_rnaseq} -s 'E' --in=$bam --out=$hisat_hints
 		"""
 	}
 
@@ -958,7 +968,7 @@ if (params.reads) {
                 	minimap_hints = "trinity.minimap.hints.gff"
 
 	                """
-        	                minimap2hints.pl --source minimap_trinity --infile $trinity_gff --outfile $minimap_hints
+        	                minimap2hints.pl --source est2genome --pri ${params.pri_est} --infile $trinity_gff --outfile $minimap_hints
                 	"""
 		}
 
@@ -1276,6 +1286,9 @@ process prepMergeHints {
 	"""
 }
 
+// ****************************
+// Split hints by strand and calculate windows for downstream annotation
+// ****************************
 process prepHintsToBed {
 
 	publishDir "${OUTDIR}/annotation/augustus/targets"
@@ -1294,7 +1307,11 @@ process prepHintsToBed {
 
 	"""
                 grep -v "#" $hints | grep -v "false" | sort -k1,1 -k4,4n -k5,5n -t\$'\t' > hints.sorted
-		gff2clusters.pl --infile hints.sorted --max_intron $params.max_intron_size > $bed
+
+		gff_by_strand.pl --infile hints.sorted
+		gff2clusters.pl --infile hints.plus.gff --max_intron $params.max_intron_size > $bed
+                gff2clusters.pl --infile hints.minus.gff --max_intron $params.max_intron_size >> $bed
+
 	"""
 }
 
@@ -1335,7 +1352,7 @@ process predAugustus {
 	"""
 		samtools faidx $genome_chunk
 		fastaexplode -f $genome_chunk -d . 
-		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr off --isof false --aug_conf $AUG_CONF --hints $hints --bed $regions > $command_file
+		augustus_from_regions.pl --genome_fai $genome_fai --model $params.model --utr ${params.utr} --isof false --aug_conf $AUG_CONF --hints $hints --bed $regions > $command_file
 		parallel -j ${task.cpus} < $command_file
 		touch dummy.augustus.gff
 		cat *augustus.gff > $augustus_result

@@ -84,7 +84,7 @@ while (<$BED>) {
 	my $line = $_;
 	chomp($line);
 
-	my ($chr,$from,$to) = split("\t",$line);
+	my ($chr,$from,$to,$strand) = split("\t",$line);
 
 	# If this scaffold is part of our target chunk
 	if ( exists $dictionary{$chr}) {
@@ -92,10 +92,17 @@ while (<$BED>) {
 
 		my $max_len = ($to > $scaffold_len) ? $to = $scaffold_len : $to = $to;
 
-		my $outfile = $chr . "_" . $from . "-" . $to . ".augustus.gff" ;
+		my $outfile = $chr . "_" . $from . "-" . $to . "." . $strand . ".augustus.gff" ;
 		my $infile = $chr . ".fa" ;
+
+		my $direction = "";
+		if ($strand eq "+") {
+			$direction = "--strand=forward";
+		} elsif ($strand eq "-") {
+			$direction = "--strand=backward";
+		}
 		
-		my $command = "augustus --species=$model --alternatives-from-sampling=false --alternatives-from-evidence=false --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;
+		my $command = "augustus --species=$model $direction --alternatives-from-sampling=false --alternatives-from-evidence=false --hintsfile=$hints --gff3=on --UTR=$utr --alternatives-from-evidence=$isof --extrinsicCfgFile=$aug_conf --hintsfile=$hints --predictionStart=$from --predictionEnd=$to --uniqueGeneId=true $chr.fa > $outfile" ;
 		printf $command . "\n" ;
 	}
 }

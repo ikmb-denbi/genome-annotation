@@ -8,10 +8,10 @@ trinity: false
 training: false
 training_models: 1000
 pasa: false
-augustus: false
+augustus: true
 model: "human"
 augCfg: false
-evm: true
+evm: false
 nevm: 10
 uniprot: false
 chunk_size: 50000
