@@ -651,9 +651,8 @@ if (params.proteins) {
 		set file(genome),file(genome_faidx) from RMGenomeIndexProtein
 	
 		output:
-		file(exonerate_chunk) optional true into (exonerate_result_prots, exonerate_protein_chunk_evm)
-		file("merged.${chunk_name}.exonerate.out") optional true into exonerate_raw_results
-		file(commands) 
+		file(exonerate_chunk) into (exonerate_result_prots, exonerate_protein_chunk_evm)
+		file(commands)
 
 		script:
 		query_tag = protein_db.baseName
@@ -669,9 +668,12 @@ if (params.proteins) {
 			extractMatchTargetsFromIndex.pl --matches $hits_chunk --db $protein_db_index
 			exonerate_from_blast_hits.pl --matches $hits_chunk --assembly_index $genome --max_intron_size $params.max_intron_size --query_index $protein_db_index --analysis protein2genome --outfile $commands
 			parallel -j ${task.cpus} < $commands
-			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' > merged.${chunk_name}.exonerate.out
+			echo "Finished exonerate run" >> log.txt
+			echo "# from ${chunk_name}" > merged.${chunk_name}.exonerate.out ;
+			cat *.exonerate.align | grep -v '#' | grep 'exonerate:protein2genome:local' >> merged.${chunk_name}.exonerate.out 2>/dev/null
+			echo "Finished merging exonerate alignments" >> log.txt
 			exonerate_offset2genomic.pl --infile merged.${chunk_name}.exonerate.out --outfile $exonerate_chunk
-
+			echo "Finished translating genomic coordinates" >> log.txt
 			test -f $exonerate_chunk || cat "#" > $exonerate_chunk
 		"""
 	}
@@ -947,7 +949,7 @@ if (params.reads) {
 			trinity_gff = "trinity.minimap.gff"
 
 			"""
-				minimap2 -t ${task.cpus} -ax splice -c $genome_rm $trinity_fasta | samtools sort -O BAM -o minimap.bam
+				minimap2 -t ${task.cpus} -ax splice:hq -c $genome_rm $trinity_fasta | samtools sort -O BAM -o minimap.bam
 				minimap2_bam2gff.pl minimap.bam > $trinity_gff
 			"""
 		}
@@ -1036,7 +1038,7 @@ if (params.pasa) {
 			minimap_bam = "minimap.transcripts.bam"
 
 			"""
-				minimap2 -t ${task.cpus} -ax splice -c $genome $transcripts_clean  | samtools sort -O BAM -o $minimap_bam
+				minimap2 -t ${task.cpus} -ax splice:hq -c $genome $transcripts_clean  | samtools sort -O BAM -o $minimap_bam
 				minimap2_bam2gff.pl $minimap_bam > out.gff
 				if [ -s out.gff ] ; then 
 					mv out.gff $minimap_gff
@@ -1332,7 +1334,7 @@ process predAugustus {
 	//scratch true 
 
         when:
-        params.augustus != false
+        params.augustus
 
 	input:
 	set env(AUGUSTUS_CONFIG_PATH),file(genome_chunk) from augustus_input_chunk

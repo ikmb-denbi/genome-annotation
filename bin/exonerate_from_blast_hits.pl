@@ -91,3 +91,8 @@ while (<$IN>) {
 	printf($cmd_run);
 
 }
+
+close($IN);
+
+print STDERR "Finished building exonerate jobs!\n";
+

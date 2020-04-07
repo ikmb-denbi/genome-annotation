@@ -36,6 +36,10 @@ if ($outfile) {
     open(STDOUT, ">$outfile") or die("Cannot open $outfile");
 }
 
+print STDERR "Starting Exonerate offset2genomic parser...\n";
+
+printf "## from $infile\n";
+
 open (my $IN, '<', $infile) or die "FATAL: Can't open file: $infile for reading.\n$!\n";
 
 while (<$IN>) {
@@ -56,3 +60,5 @@ while (<$IN>) {
 }
 
 close $IN;
+
+print STDERR "Finished converting back to genomic coordinates\n";
