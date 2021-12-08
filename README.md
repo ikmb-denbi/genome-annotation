@@ -1,3 +1,5 @@
+!!! THIS PROJECT HAS BEEN RETIRED. PLEASE WORK WITH ITS DROP-IN REPLACEMENT: https://github.com/ikmb/esga
+
 ![](images/deNBI_logo.jpg) ![](images/ikmb_bfx_logo.png) 
 
 # ESGA - Genome Annotation 
